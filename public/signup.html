@@ -628,7 +628,7 @@
               autocomplete="new-password"
               aria-describedby="confirmError"
             >
-            <span class="input-icon" aria-hidden="true">🔐</span>
+            <span class="input-icon" aria-hidden="true">🔑</span>
           </div>
           <span class="input-error" id="confirmError"></span>
         </div>
@@ -656,6 +656,7 @@
 </div>
 
 <script>
+  const API_BASE = "https://anicrunch-backend.onrender.com";
   let isPasswordVisible = false;
 
   function togglePassword() {
@@ -844,9 +845,10 @@
     btn.innerHTML = '<span><div class="spinner"></div></span>';
 
     try {
-      const res = await fetch('/api/signup', {
+      const res = await fetch(`${API_BASE}/api/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           username: document.getElementById('username').value.trim(),
           email: document.getElementById('email').value.trim(),
@@ -917,41 +919,3 @@
 
 </body>
 </html>
-
-
-<script>
-document.querySelector(".auth-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const username = document.querySelector('input[type="text"], input[type="email"]').value.trim();
-  const password = document.querySelector('input[type="password"]').value;
-
-  if (!username || !password) {
-    alert("Please fill in all fields");
-    return;
-  }
-
-  try {
-    const res = await fetch("/api/signup", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      credentials: "include",
-      body: JSON.stringify({ username, password })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      alert(data.message || "Signup failed");
-      return;
-    }
-
-    // ✅ success
-    window.location.href = "/";
-  } catch (err) {
-    alert("Network error. Try again.");
-  }
-});
-</script>
