@@ -545,7 +545,7 @@
 
       const data = await res.json();
 
-      if (data.username) {
+      if (res.ok) {
         // Success
         btn.classList.add("success");
         btn.innerHTML = '<span>✓ Success! Redirecting...</span>';
