@@ -356,6 +356,10 @@
       display: inline-block;
     }
 
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
     @media (max-width: 480px) {
       .auth-card {
         padding: 32px 24px;
@@ -456,6 +460,7 @@
 </div>
 
 <script>
+  const API_BASE = "https://anicrunch-backend.onrender.com";
   let isPasswordVisible = false;
 
   function togglePassword() {
@@ -531,9 +536,10 @@
     btn.innerHTML = '<span><div class="spinner"></div></span>';
 
     try {
-      const res = await fetch("/api/login", {
+      const res = await fetch(`${API_BASE}/api/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(formData)
       });
 
@@ -574,42 +580,3 @@
 
 </body>
 </html>
-
-
-
-<script>
-document.querySelector(".auth-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const username = document.querySelector('input[type="text"], input[type="email"]').value.trim();
-  const password = document.querySelector('input[type="password"]').value;
-
-  if (!username || !password) {
-    alert("Please fill in all fields");
-    return;
-  }
-
-  try {
-    const res = await fetch("/api/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      credentials: "include",
-      body: JSON.stringify({ username, password })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      alert(data.message || "Login failed");
-      return;
-    }
-
-    // ✅ success
-    window.location.href = "/";
-  } catch (err) {
-    alert("Network error. Try again.");
-  }
-});
-</script>
