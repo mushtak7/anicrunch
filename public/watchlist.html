@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>anicrunch · My Watchlist</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .watchlist-page { min-height: 100vh; }
+
+    /* Hero Header */
+    .watchlist-hero {
+      position: relative;
+      padding: 60px 40px;
+      background: linear-gradient(135deg, rgba(255, 60, 172, 0.1) 0%, rgba(120, 75, 160, 0.1) 100%);
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .watchlist-hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .watchlist-hero h1 {
+      font-size: 42px;
+      margin: 0 0 12px 0;
+      background: linear-gradient(90deg, #fff, #ccc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .stats-bar {
+      display: flex;
+      gap: 20px;
+      margin-top: 30px;
+      flex-wrap: wrap;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 15px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 160px;
+    }
+
+    .stat-icon { font-size: 24px; }
+    .stat-info h3 { font-size: 24px; margin: 0; font-weight: 700; }
+    .stat-info p { font-size: 13px; color: var(--muted); margin: 0; }
+
+    /* Filters */
+    .filters-bar {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 40px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 8px 18px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .filter-btn:hover, .filter-btn.active {
+      background: linear-gradient(90deg, #ff3cac, #784ba0);
+      border-color: transparent;
+      color: white;
+    }
+
+    .search-filter { margin-left: auto; position: relative; }
+    .search-filter input {
+      padding: 10px 16px 10px 40px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--text);
+      width: 200px;
+      outline: none;
+    }
+    .search-filter::before {
+      content: "🔍"; position: absolute; left: 14px; top: 50%; 
+      transform: translateY(-50%); font-size: 14px; pointer-events: none; 
+    }
+
+    /* Grid */
+    .watchlist-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px 40px 60px;
+    }
+
+    .watchlist-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 24px;
+    }
+
+    /* Card */
+    .watchlist-card {
+      background: #1a1a2e;
+      border-radius: 16px;
+      overflow: hidden;
+      transition: transform 0.3s ease;
+      position: relative;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .watchlist-card:hover { transform: translateY(-5px); }
+    .watchlist-card.hidden { display: none; }
+
+    .card-image { position: relative; aspect-ratio: 16/9; }
+    .card-image img { width: 100%; height: 100%; object-fit: cover; }
+    
+    .card-badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: bold;
+      color: white;
+      z-index: 2;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    .badge-watching { background: #3b82f6; } 
+    .badge-completed { background: #10b981; } 
+    .badge-plan { background: #f59e0b; } 
+
+    .card-info { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; gap: 10px; }
+    
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+    }
+    .card-title:hover { color: var(--accent); }
+
+    /* Progress Control */
+    .progress-wrapper {
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: auto;
+    }
+
+    .progress-text {
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .progress-text span { color: white; }
+
+    .progress-btns { display: flex; gap: 5px; }
+    
+    .ep-btn {
+      width: 24px; height: 24px;
+      border-radius: 4px;
+      border: none;
+      background: rgba(255,255,255,0.1);
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+    .ep-btn:hover { background: var(--accent); }
+
+    /* Controls Overlay */
+    .card-actions-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .card-image:hover .card-actions-overlay { opacity: 1; }
+
+    .status-select {
+      width: 100%;
+      padding: 10px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      color: white;
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+    .status-select option { background: #1a1a2e; }
+
+    .remove-btn {
+      width: 100%;
+      padding: 10px;
+      background: rgba(255, 82, 82, 0.2);
+      color: #ff5252;
+      border: 1px solid rgba(255, 82, 82, 0.3);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .remove-btn:hover { background: rgba(255, 82, 82, 0.3); }
+
+    /* States */
+    .empty-state, .loading-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 60px;
+      color: var(--muted);
+    }
+    .empty-btn {
+      display: inline-block;
+      margin-top: 15px;
+      padding: 10px 24px;
+      background: var(--gradient);
+      color: white;
+      text-decoration: none;
+      border-radius: 50px;
+    }
+    .loader {
+      width: 40px; height: 40px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+  </style>
+</head>
+<body class="watchlist-page">
+
+<header>
+  <h1 onclick="location.href='/'" style="cursor:pointer">anicrunch</h1>
+  <div style="flex:1"></div>
+  <div id="authArea"></div>
+</header>
+
+<section class="watchlist-hero">
+  <div class="watchlist-hero-content">
+    <h1>📚 My Watchlist</h1>
+    <p>Track your anime progress</p>
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-icon">📺</div>
+        <div class="stat-info"><h3 id="statWatching">0</h3><p>Watching</p></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-info"><h3 id="statCompleted">0</h3><p>Completed</p></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📅</div>
+        <div class="stat-info"><h3 id="statPlan">0</h3><p>Plan to Watch</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="filters-bar">
+  <button class="filter-btn active" onclick="setFilter('all')">All</button>
+  <button class="filter-btn" onclick="setFilter('watching')">Watching</button>
+  <button class="filter-btn" onclick="setFilter('completed')">Completed</button>
+  <button class="filter-btn" onclick="setFilter('plan')">Plan to Watch</button>
+  
+  <div class="search-filter">
+    <input type="text" id="searchInput" placeholder="Search my list...">
+  </div>
+</div>
+
+<main class="watchlist-content">
+  <div class="watchlist-grid" id="watchlistGrid">
+    <div class="loading-state">
+      <div class="loader"></div>
+      <p>Syncing your library...</p>
+    </div>
+  </div>
+</main>
+
+<script>
+// =====================
+// STATE MANAGEMENT
+// =====================
+let allAnime = [];
+let currentFilter = 'all';
+
+// --- Local Storage Helpers ---
+const getStorage = (key) => JSON.parse(localStorage.getItem(key)) || {};
+const setStorage = (key, data) => localStorage.setItem(key, JSON.stringify(data));
+
+// Status Management
+const getStatus = (id) => getStorage('anime_statuses')[id] || 'plan';
+const saveStatus = (id, status) => {
+  const map = getStorage('anime_statuses');
+  map[id] = status;
+  setStorage('anime_statuses', map);
+  updateStats();
+};
+
+// Progress Management
+const getProgress = (id) => getStorage('anime_progress')[id] || 0;
+const saveProgress = (id, ep) => {
+  const map = getStorage('anime_progress');
+  map[id] = ep;
+  setStorage('anime_progress', map);
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+  const authArea = document.getElementById("authArea");
+
+  // Auth Check
+  fetch("/api/me").then(r => r.json()).then(d => {
+    if (d.user) {
+      authArea.innerHTML = `<span style="color:var(--muted)">👤 ${d.user}</span> <button class="auth-link" onclick="logout()">Logout</button>`;
+    } else {
+      showLoginState();
+    }
+  }).catch(() => showLoginState());
+
+  window.logout = () => fetch("/api/logout", { method: "POST" }).then(() => location.reload());
+
+  loadWatchlist();
+
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    applyFilter(currentFilter, e.target.value);
+  });
+});
+
+async function loadWatchlist() {
+  try {
+    const res = await fetch("/api/watchlist");
+    if (res.status === 401) { showLoginState(); return; }
+    
+    const ids = await res.json();
+    if (!ids || !ids.length) { showEmptyState(); return; }
+
+    // Initialize defaults if needed
+    const statusMap = getStorage('anime_statuses');
+    ids.forEach(id => { if(!statusMap[id]) saveStatus(id, 'plan'); });
+
+    document.getElementById("watchlistGrid").innerHTML = "";
+
+    // Load Cards
+    for (const id of ids) {
+      await fetchAndRenderCard(id);
+    }
+    
+    updateStats();
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById("watchlistGrid").innerHTML = `<div class="empty-state"><p>Error loading watchlist</p></div>`;
+  }
+}
+
+async function fetchAndRenderCard(id) {
+  try {
+    const res = await fetch(`https://api.jikan.moe/v4/anime/${id}`);
+    const data = await res.json();
+    const anime = data.data;
+
+    anime.userStatus = getStatus(id);
+    anime.progress = getProgress(id);
+    allAnime.push(anime);
+
+    const card = document.createElement("div");
+    card.className = "watchlist-card";
+    card.dataset.id = id;
+    
+    renderCardContent(card, anime);
+    document.getElementById("watchlistGrid").appendChild(card);
+
+  } catch (e) { console.error(e); }
+}
+
+function renderCardContent(card, anime) {
+  const statusLabels = { watching: 'Watching', completed: 'Completed', plan: 'Plan to Watch' };
+  const badgeClass = `badge-${anime.userStatus}`;
+  const totalEps = anime.episodes || '?';
+  
+  // Progress Bar Width
+  const progressPercent = (typeof totalEps === 'number') ? Math.min((anime.progress / totalEps) * 100, 100) : 0;
+
+  card.innerHTML = `
+    <span class="card-badge ${badgeClass}">${statusLabels[anime.userStatus]}</span>
+    <div class="card-image">
+      <img src="${anime.images.jpg.large_image_url}" alt="${anime.title}">
+      <div class="card-actions-overlay">
+        <select class="status-select" onchange="updateAnimeStatus(${anime.mal_id}, this.value)">
+          <option value="watching" ${anime.userStatus === 'watching' ? 'selected' : ''}>📺 Watching</option>
+          <option value="completed" ${anime.userStatus === 'completed' ? 'selected' : ''}>✅ Completed</option>
+          <option value="plan" ${anime.userStatus === 'plan' ? 'selected' : ''}>📅 Plan to Watch</option>
+        </select>
+        <button class="remove-btn" onclick="removeAnime(${anime.mal_id})">Remove</button>
+      </div>
+      <div style="position:absolute; bottom:0; left:0; width:100%; height:4px; background:rgba(255,255,255,0.2);">
+        <div style="width:${progressPercent}%; height:100%; background:var(--accent); transition:width 0.3s;"></div>
+      </div>
+    </div>
+    
+    <div class="card-info">
+      <div class="card-title" onclick="location.href='/anime.html?id=${anime.mal_id}'">${anime.title}</div>
+      
+      <div class="progress-wrapper">
+        <div class="progress-text">
+          EP <span>${anime.progress}</span> / ${totalEps}
+        </div>
+        <div class="progress-btns">
+          <button class="ep-btn" onclick="changeProgress(${anime.mal_id}, -1)">-</button>
+          <button class="ep-btn" onclick="changeProgress(${anime.mal_id}, 1)">+</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// =====================
+// ACTIONS
+// =====================
+window.changeProgress = function(id, amount) {
+  const anime = allAnime.find(a => a.mal_id === id);
+  if(!anime) return;
+
+  let newEp = anime.progress + amount;
+  if (newEp < 0) newEp = 0;
+  if (anime.episodes && newEp > anime.episodes) newEp = anime.episodes;
+
+  // Auto-update status if finished
+  if (anime.episodes && newEp === anime.episodes && anime.userStatus !== 'completed') {
+    anime.userStatus = 'completed';
+    saveStatus(id, 'completed');
+  }
+
+  // Save & Render
+  anime.progress = newEp;
+  saveProgress(id, newEp);
+  
+  const card = document.querySelector(`.watchlist-card[data-id="${id}"]`);
+  if(card) renderCardContent(card, anime);
+  
+  // Re-apply filters just in case status changed
+  applyFilter(currentFilter, document.getElementById('searchInput').value);
+  updateStats();
+};
+
+window.updateAnimeStatus = function(id, newStatus) {
+  saveStatus(id, newStatus);
+  const anime = allAnime.find(a => a.mal_id === id);
+  if (anime) {
+    anime.userStatus = newStatus;
+    const card = document.querySelector(`.watchlist-card[data-id="${id}"]`);
+    if(card) renderCardContent(card, anime);
+  }
+  updateStats();
+  applyFilter(currentFilter, document.getElementById('searchInput').value);
+};
+
+window.removeAnime = async function(id) {
+  if(!confirm('Remove from watchlist?')) return;
+  try {
+    await fetch("/api/watchlist/remove", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ animeId: id })
+    });
+    
+    allAnime = allAnime.filter(a => a.mal_id !== id);
+    document.querySelector(`.watchlist-card[data-id="${id}"]`)?.remove();
+    
+    // Clean LocalStorage
+    const sMap = getStorage('anime_statuses'); delete sMap[id]; setStorage('anime_statuses', sMap);
+    const pMap = getStorage('anime_progress'); delete pMap[id]; setStorage('anime_progress', pMap);
+    
+    updateStats();
+    if(allAnime.length === 0) showEmptyState();
+  } catch(e) { alert('Failed to remove'); }
+};
+
+// =====================
+// FILTERS & STATS
+// =====================
+window.setFilter = function(filter) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.toggle('active', b.innerText.toLowerCase().includes(filter === 'plan' ? 'plan' : filter));
+    if(filter === 'all' && b.innerText === 'All') b.classList.add('active');
+  });
+  applyFilter(filter, document.getElementById('searchInput').value);
+};
+
+function applyFilter(filter, search) {
+  const cards = document.getElementsByClassName("watchlist-card");
+  search = search.toLowerCase();
+
+  for (let card of cards) {
+    const id = parseInt(card.dataset.id);
+    const anime = allAnime.find(a => a.mal_id === id);
+    if (!anime) continue;
+
+    const matchesFilter = filter === 'all' || anime.userStatus === filter;
+    const matchesSearch = anime.title.toLowerCase().includes(search);
+
+    if (matchesFilter && matchesSearch) {
+      card.classList.remove('hidden');
+    } else {
+      card.classList.add('hidden');
+    }
+  }
+}
+
+function updateStats() {
+  const counts = { watching: 0, completed: 0, plan: 0 };
+  allAnime.forEach(a => { if(counts[a.userStatus] !== undefined) counts[a.userStatus]++; });
+  document.getElementById('statWatching').innerText = counts.watching;
+  document.getElementById('statCompleted').innerText = counts.completed;
+  document.getElementById('statPlan').innerText = counts.plan;
+}
+
+function showEmptyState() {
+  document.getElementById("watchlistGrid").innerHTML = `<div class="empty-state"><h2>Your list is empty</h2><a href="/" class="empty-btn">Find Anime</a></div>`;
+}
+
+function showLoginState() {
+  document.getElementById("watchlistGrid").innerHTML = `<div class="empty-state"><h2>Please Login</h2><a href="/login.html" class="empty-btn">Sign In</a></div>`;
+}
+</script>
+</body>
+</html>

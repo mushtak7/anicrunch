@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>anicrunch · Anime Details</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* =====================
+       PAGE LAYOUT
+    ===================== */
+    .details-page { min-height: 100vh; font-family: 'Poppins', sans-serif; background: #0b0b1a; color: #fff; }
+    
+    .page-bg { position: fixed; inset: 0; z-index: -1; }
+    .page-bg-image {
+      position: absolute; inset: 0; background-size: cover; background-position: center top;
+      filter: blur(60px) saturate(1.2) brightness(0.3); opacity: 0.6;
+    }
+    
+    .details-container { 
+      position: relative; max-width: 1100px; margin: 0 auto; padding: 40px 20px; 
+      display: grid; grid-template-columns: 260px 1fr; gap: 40px;
+    }
+
+    /* =====================
+       SIDEBAR (Left)
+    ===================== */
+    .sidebar { display: flex; flex-direction: column; gap: 25px; }
+
+    .poster-card {
+      position: relative; border-radius: 12px; overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
+    }
+    .poster-image { width: 100%; height: auto; display: block; aspect-ratio: 2/3; object-fit: cover; }
+
+    /* SHINING GOLD RANK BADGE */
+    .rank-badge {
+      position: absolute; top: 10px; left: 10px;
+      width: 55px; height: 55px;
+      /* Realistic Metallic Gold Gradient */
+      background: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
+      background-size: 200% 200%;
+      border: 2px solid white;
+      border-radius: 50%;
+      display: none; /* Hidden by default, shown by JS */
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 25px rgba(255, 215, 0, 0.6); /* Gold Glow */
+      z-index: 10;
+      animation: goldShine 3s ease infinite;
+    }
+
+    @keyframes goldShine {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .rank-badge span:first-child { 
+      font-size: 9px; font-weight: 800; color: #5a4a1b; letter-spacing: 1px;
+    }
+    .rank-badge span:last-child { 
+      font-size: 20px; font-weight: 900; color: #222; line-height: 1; text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+    }
+
+    /* Info List */
+    .info-box { background: rgba(255,255,255,0.03); border-radius: 12px; padding: 20px; border: 1px solid rgba(255,255,255,0.05); }
+    .info-header { font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
+    
+    .info-row { margin-bottom: 12px; font-size: 13px; line-height: 1.5; }
+    .info-label { font-weight: 600; color: var(--muted); display: block; margin-bottom: 2px; }
+    .info-value { color: #ddd; }
+
+    /* Streaming Links */
+    .stream-btn {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      padding: 10px 15px; border-radius: 8px; color: #fff; text-decoration: none;
+      font-size: 13px; transition: all 0.2s; margin-bottom: 8px;
+    }
+    .stream-btn:hover { background: var(--accent); border-color: transparent; }
+
+    /* =====================
+       MAIN CONTENT (Right)
+    ===================== */
+    .content-area { display: flex; flex-direction: column; gap: 40px; min-width: 0; }
+
+    /* Header */
+    .anime-header { border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 25px; }
+    .anime-title { font-size: 32px; font-weight: 800; line-height: 1.2; margin: 0 0 5px 0; }
+    .anime-subtitle { font-size: 16px; color: var(--muted); margin: 0 0 15px 0; }
+    
+    .score-badge { 
+      display: inline-flex; align-items: center; gap: 8px; 
+      background: rgba(255,255,255,0.05); padding: 8px 16px; border-radius: 8px;
+      font-size: 18px; font-weight: 700; color: #ffd700; margin-bottom: 20px;
+    }
+    .score-badge span { font-size: 12px; font-weight: 400; color: var(--muted); }
+
+    /* Genres */
+    .genre-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 25px; }
+    .genre-tag { font-size: 12px; padding: 5px 12px; border-radius: 50px; background: rgba(255,255,255,0.1); color: #ccc; }
+
+    /* Action Buttons */
+    .action-row { display: flex; flex-wrap: wrap; gap: 12px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600;
+      border: none; cursor: pointer; transition: transform 0.2s; text-decoration: none;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-primary { background: var(--gradient); color: white; }
+    .btn-secondary { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.1); }
+    .btn-trailer { background: #ff0000; color: white; }
+    .btn-search { background: #222; border: 1px solid #444; color: #ccc; } /* Search fallback style */
+
+    /* Sections */
+    .section-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+    .synopsis-text { font-size: 15px; line-height: 1.8; color: #ccc; }
+
+    /* Horizontal Scrolls */
+    .scroll-container {
+      display: flex;
+      gap: 15px;
+      overflow-x: auto;
+      padding-bottom: 15px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--accent) rgba(255,255,255,0.05);
+    }
+    .scroll-container::-webkit-scrollbar { height: 6px; }
+    .scroll-container::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+    .scroll-container::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+
+    .char-card { flex: 0 0 110px; text-align: center; }
+    .char-img { width: 110px; height: 110px; object-fit: cover; border-radius: 50%; margin-bottom: 8px; border: 3px solid rgba(255,255,255,0.05); transition: border-color 0.2s; }
+    .char-card:hover .char-img { border-color: var(--accent); }
+    .char-name { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .char-role { font-size: 11px; color: var(--muted); }
+
+    .rec-card { flex: 0 0 160px; cursor: pointer; transition: transform 0.2s; }
+    .rec-card:hover { transform: translateY(-5px); }
+    .rec-img { width: 160px; height: 220px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; }
+    .rec-title { font-size: 13px; font-weight: 600; line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+    /* Trailer Section */
+    .trailer-box { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; }
+    .trailer-thumb { position: absolute; inset: 0; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .trailer-thumb::before { content:''; position: absolute; inset: 0; background: rgba(0,0,0,0.4); }
+    .play-icon { width: 60px; height: 60px; background: rgba(255,0,0,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; z-index: 2; transition: transform 0.2s; }
+    .play-icon::after { content:''; border-left: 20px solid white; border-top: 12px solid transparent; border-bottom: 12px solid transparent; margin-left: 4px; }
+    .trailer-thumb:hover .play-icon { transform: scale(1.1); }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .details-container { grid-template-columns: 1fr; }
+      .sidebar { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
+      .poster-card { width: 180px; flex-shrink: 0; }
+      .info-box { flex: 1; min-width: 250px; }
+    }
+    @media (max-width: 600px) {
+      .sidebar { flex-direction: column; align-items: center; }
+      .poster-card { width: 220px; }
+      .info-box { width: 100%; }
+      .action-row { flex-direction: column; }
+      .btn { width: 100%; justify-content: center; }
+    }
+
+    /* Modal */
+    .modal { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: opacity 0.3s; }
+    .modal.active { opacity: 1; visibility: visible; }
+    .modal iframe { width: 90%; max-width: 1000px; aspect-ratio: 16/9; border: none; border-radius: 12px; }
+    .modal-close { position: absolute; top: 20px; right: 20px; color: white; background: none; border: none; font-size: 40px; cursor: pointer; }
+  </style>
+</head>
+<body class="details-page">
+
+<div class="page-bg"><div class="page-bg-image" id="bg"></div></div>
+
+<header style="padding: 20px 40px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; background: rgba(0,0,0,0.3); backdrop-filter: blur(10px);">
+  <h1 onclick="location.href='/'" style="margin:0; font-size:24px; cursor:pointer; color:white;">anicrunch</h1>
+  <div style="flex:1"></div>
+  <a href="/" class="btn btn-secondary" style="padding: 8px 16px;">← Home</a>
+</header>
+
+<div class="details-container">
+  
+  <aside class="sidebar">
+    <div class="poster-card">
+      <img id="poster" class="poster-image" src="">
+      <div id="rankBadge" class="rank-badge">
+        <span>RANK</span>
+        <span id="rankNumber">#1</span>
+      </div>
+    </div>
+
+    <div id="streamingBox" style="display:none">
+      <h3 style="font-size:14px; color:var(--muted); margin-bottom:10px;">Where to Watch</h3>
+      <div id="streamList"></div>
+    </div>
+
+    <div class="info-box">
+      <div class="info-header">Information</div>
+      <div class="info-row"><span class="info-label">Type</span><span class="info-value" id="infoType">-</span></div>
+      <div class="info-row"><span class="info-label">Episodes</span><span class="info-value" id="infoEps">-</span></div>
+      <div class="info-row"><span class="info-label">Status</span><span class="info-value" id="infoStatus">-</span></div>
+      <div class="info-row"><span class="info-label">Aired</span><span class="info-value" id="infoAired">-</span></div>
+      <div class="info-row"><span class="info-label">Studios</span><span class="info-value" id="infoStudios">-</span></div>
+      <div class="info-row"><span class="info-label">Source</span><span class="info-value" id="infoSource">-</span></div>
+      <div class="info-row"><span class="info-label">Rating</span><span class="info-value" id="infoRating">-</span></div>
+    </div>
+  </aside>
+
+  <main class="content-area">
+    
+    <div class="anime-header">
+      <h1 class="anime-title" id="title">Loading...</h1>
+      <div class="anime-subtitle" id="subtitle"></div>
+      
+      <div class="score-badge">
+        <span id="score">N/A</span> <span>Score</span>
+      </div>
+
+      <div class="genre-list" id="genres"></div>
+
+      <div class="action-row">
+        <button class="btn btn-primary" id="watchlistBtn">➕ Add to Watchlist</button>
+        
+        <button class="btn btn-trailer" id="trailerBtn" style="display:none" onclick="openModal()">▶ Watch Trailer</button>
+        
+        <a id="malLink" class="btn btn-secondary" target="_blank">MyAnimeList ↗</a>
+      </div>
+    </div>
+
+    <div>
+      <h2 class="section-title">Synopsis</h2>
+      <p class="synopsis-text" id="synopsis"></p>
+    </div>
+
+    <div id="trailerSection" style="display:none">
+      <h2 class="section-title">Trailer</h2>
+      <div class="trailer-box">
+        <div class="trailer-thumb" id="trailerThumb">
+          <div class="play-icon"></div>
+        </div>
+        <iframe id="trailerFrame" allowfullscreen></iframe>
+      </div>
+    </div>
+
+    <div id="charSection" style="display:none">
+      <h2 class="section-title">Characters</h2>
+      <div class="scroll-container" id="charList"></div>
+    </div>
+
+    <div id="recSection" style="display:none">
+      <h2 class="section-title">Recommendations</h2>
+      <div class="scroll-container" id="recList"></div>
+    </div>
+
+  </main>
+
+</div>
+
+<div class="modal" id="videoModal" onclick="closeModal()">
+  <button class="modal-close" onclick="closeModal()">✕</button>
+  <iframe id="modalFrame" allow="autoplay" allowfullscreen></iframe>
+</div>
+
+<script>
+// Logic
+const animeId = new URLSearchParams(location.search).get('id');
+let trailerId = null;
+
+if (!animeId) location.href = '/';
+
+async function load() {
+  try {
+    const res = await fetch(`https://api.jikan.moe/v4/anime/${animeId}`);
+    const { data } = await res.json();
+    render(data);
+    loadExtras();
+  } catch (e) {
+    document.querySelector('.details-container').innerHTML = `<h2 style="text-align:center">Error loading anime.</h2>`;
+  }
+}
+
+function render(data) {
+  document.title = data.title;
+  
+  // Background & Poster
+  document.getElementById('bg').style.backgroundImage = `url('${data.images.jpg.large_image_url}')`;
+  document.getElementById('poster').src = data.images.jpg.large_image_url;
+
+  // Header
+  document.getElementById('title').innerText = data.title;
+  document.getElementById('subtitle').innerText = data.title_japanese || '';
+  document.getElementById('score').innerText = data.score || 'N/A';
+  
+  // Rank Badge (Show if ranked)
+  if (data.rank) {
+    document.getElementById('rankBadge').style.display = 'flex';
+    document.getElementById('rankNumber').innerText = `#${data.rank}`;
+  }
+
+  // Genres
+  const gDiv = document.getElementById('genres');
+  data.genres.forEach(g => gDiv.innerHTML += `<span class="genre-tag">${g.name}</span>`);
+
+  // Sidebar Info
+  document.getElementById('infoType').innerText = data.type || '-';
+  document.getElementById('infoEps').innerText = data.episodes || '-';
+  document.getElementById('infoStatus').innerText = data.status || '-';
+  document.getElementById('infoAired').innerText = data.aired?.string || '-';
+  document.getElementById('infoStudios').innerText = data.studios?.map(s=>s.name).join(', ') || '-';
+  document.getElementById('infoSource').innerText = data.source || '-';
+  document.getElementById('infoRating').innerText = data.rating || '-';
+
+  // Synopsis
+  document.getElementById('synopsis').innerText = data.synopsis || 'No synopsis available.';
+  
+  // Buttons
+  document.getElementById('malLink').href = data.url;
+
+  // Trailer Logic
+  const tBtn = document.getElementById('trailerBtn');
+  if (data.trailer?.youtube_id) {
+    trailerId = data.trailer.youtube_id;
+    tBtn.style.display = 'inline-flex';
+    document.getElementById('trailerSection').style.display = 'block';
+    
+    // Inline Player
+    const thumb = document.getElementById('trailerThumb');
+    thumb.style.backgroundImage = `url('${data.trailer.images.maximum_image_url}')`;
+    thumb.onclick = () => {
+      thumb.style.display = 'none';
+      document.getElementById('trailerFrame').src = `https://www.youtube.com/embed/${trailerId}?autoplay=1`;
+    };
+  } else {
+    // No Trailer - Show Search
+    tBtn.style.display = 'inline-flex';
+    tBtn.innerText = '🔍 Search Trailer';
+    tBtn.className = 'btn btn-search'; // Darker style
+    tBtn.onclick = () => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(data.title + ' trailer')}`, '_blank');
+  }
+}
+
+// Watchlist
+document.getElementById('watchlistBtn').onclick = async function() {
+  this.innerText = 'Adding...';
+  this.disabled = true;
+  const res = await fetch('/api/watchlist/add', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({animeId: Number(animeId)})
+  });
+  if (res.ok) {
+    this.innerText = '✓ Added!';
+    this.style.background = '#00e676';
+    // Save status
+    const map = JSON.parse(localStorage.getItem('anime_statuses')) || {};
+    map[animeId] = 'plan';
+    localStorage.setItem('anime_statuses', JSON.stringify(map));
+  } else {
+    this.innerText = 'Login Required';
+    setTimeout(() => location.href = '/login.html', 1000);
+  }
+};
+
+// Load Extras
+async function loadExtras() {
+  // Characters
+  const cRes = await fetch(`https://api.jikan.moe/v4/anime/${animeId}/characters`);
+  const cData = await cRes.json();
+  if (cData.data?.length) {
+    document.getElementById('charSection').style.display = 'block';
+    const list = document.getElementById('charList');
+    cData.data.slice(0, 15).forEach(c => {
+      list.innerHTML += `
+        <div class="char-card">
+          <img class="char-img" src="${c.character.images.jpg.image_url}">
+          <div class="char-name">${c.character.name}</div>
+          <div class="char-role">${c.role}</div>
+        </div>`;
+    });
+  }
+
+  // Recommendations
+  const rRes = await fetch(`https://api.jikan.moe/v4/anime/${animeId}/recommendations`);
+  const rData = await rRes.json();
+  if (rData.data?.length) {
+    document.getElementById('recSection').style.display = 'block';
+    const list = document.getElementById('recList');
+    rData.data.slice(0, 10).forEach(r => {
+      const div = document.createElement('div');
+      div.className = 'rec-card';
+      div.innerHTML = `<img class="rec-img" src="${r.entry.images.jpg.image_url}"><div class="rec-title">${r.entry.title}</div>`;
+      div.onclick = () => location.href = `/anime.html?id=${r.entry.mal_id}`;
+      list.appendChild(div);
+    });
+  }
+
+  // Streaming
+  const sRes = await fetch(`https://api.jikan.moe/v4/anime/${animeId}/streaming`);
+  const sData = await sRes.json();
+  if (sData.data?.length) {
+    document.getElementById('streamingBox').style.display = 'block';
+    const list = document.getElementById('streamList');
+    sData.data.forEach(s => {
+      list.innerHTML += `<a href="${s.url}" target="_blank" class="stream-btn">▶ ${s.name}</a>`;
+    });
+  }
+}
+
+// Modal
+function openModal() {
+  if(!trailerId) return;
+  const modal = document.getElementById('videoModal');
+  document.getElementById('modalFrame').src = `https://www.youtube.com/embed/${trailerId}?autoplay=1`;
+  modal.classList.add('active');
+}
+function closeModal() {
+  document.getElementById('videoModal').classList.remove('active');
+  setTimeout(() => document.getElementById('modalFrame').src = '', 300);
+}
+
+load();
+</script>
+</body>
+</html>

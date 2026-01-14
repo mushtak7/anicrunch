@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>anicrunch</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header>
+  <h1 onclick="location.href='/'">anicrunch</h1>
+  
+  <div class="search-container">
+    <input id="search" placeholder="Search anime..." autocomplete="off" />
+    <button id="searchClear" class="search-clear" style="display: none;">✕</button>
+  </div>
+
+  <div style="display:flex; gap:15px; align-items:center; margin: 0 20px;">
+    <a href="/schedule.html" style="text-decoration:none; color:var(--muted); font-size:14px; font-weight:500;">📅 Schedule</a>
+    <button onclick="spinWheel()" style="background:none; border:1px solid rgba(255,255,255,0.2); padding:6px 12px; border-radius:8px; color:white; cursor:pointer;">🎲 Random</button>
+  </div>
+
+  <div id="authArea">
+    <a href="/login.html" class="auth-link">Login</a>
+    <a href="/signup.html" class="auth-link">Sign Up</a>
+  </div>
+</header>
+
+<!-- HERO SECTION -->
+<section class="hero" id="hero">
+  <div class="hero-bg" id="heroBg"></div>
+  <div class="hero-overlay"></div>
+  
+  <div class="hero-content">
+    <span class="hero-badge" id="heroBadge">🔥 Featured</span>
+    <h1 id="heroTitle">Loading...</h1>
+    <p class="hero-meta" id="heroMeta"></p>
+    <p class="hero-synopsis" id="heroSynopsis"></p>
+    
+    <div class="hero-genres" id="heroGenres"></div>
+    
+    <div class="hero-actions">
+      <button class="hero-btn primary" id="heroDetails">
+        <span class="btn-icon">▶</span> View Details
+      </button>
+      <button class="hero-btn secondary" id="heroWatchlist">
+        <span class="btn-icon">+</span> Add to Watchlist
+      </button>
+    </div>
+  </div>
+  
+  <div class="hero-nav">
+    <button class="hero-dot active" data-index="0"></button>
+    <button class="hero-dot" data-index="1"></button>
+    <button class="hero-dot" data-index="2"></button>
+    <button class="hero-dot" data-index="3"></button>
+    <button class="hero-dot" data-index="4"></button>
+  </div>
+  
+  <button class="hero-arrow left" id="heroPrev">‹</button>
+  <button class="hero-arrow right" id="heroNext">›</button>
+</section>
+
+<!-- GENRE FILTER SECTION (NEW!) -->
+<section class="genre-filter-section" id="genreFilterSection">
+  <div class="genre-filter-content">
+    <h2>🎭 Browse by Genre</h2>
+    <div class="genre-chips" id="genreChips"></div>
+  </div>
+</section>
+
+<!-- MAIN LAYOUT -->
+<main class="layout">
+
+  <section class="left">
+
+    <!-- SEASONAL -->
+    <div class="block">
+      <h2>🌸 Seasonal</h2>
+      <div class="row-wrapper">
+        <button class="nav-btn left" data-target="seasonal">‹</button>
+        <div id="seasonal" class="row-scroll"></div>
+        <button class="nav-btn right" data-target="seasonal">›</button>
+      </div>
+    </div>
+
+    <!-- TRENDING -->
+    <div class="block">
+      <h2>🔥 Trending</h2>
+      <div class="row-wrapper">
+        <button class="nav-btn left" data-target="trending">‹</button>
+        <div id="trending" class="row-scroll"></div>
+        <button class="nav-btn right" data-target="trending">›</button>
+      </div>
+    </div>
+
+    <!-- SEARCH RESULTS -->
+    <div class="block" id="searchBlock" style="display:none">
+      <div id="animeContainer"></div>
+    </div>
+
+  </section>
+
+  <aside class="right">
+    <h2>🏆 Top Anime</h2>
+    <div id="topAnime" class="top-list"></div>
+  </aside>
+
+</main>
+
+<footer class="site-footer">
+  <p>Made with ❤️ by anicrunch · Powered by <a href="https://jikan.moe" target="_blank">Jikan API</a></p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
