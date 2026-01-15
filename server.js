@@ -24,10 +24,23 @@ app.set("trust proxy", 1);
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-// FIX 1: Explicit CORS for your frontend
+// FIX: Dynamic CORS to allow Production AND Vercel Previews
 app.use(
   cors({
-    origin: "https://anicrunch.vercel.app", // Your Vercel domain
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+
+      // Check if origin is your main domain OR a vercel subdomain
+      if (
+        origin === "https://anicrunch.vercel.app" ||
+        origin.endsWith(".vercel.app")
+      ) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("CORS blocked"));
+    },
     credentials: true, // Allow cookies to pass
   })
 );
@@ -43,7 +56,7 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      // FIX 2: Allow cross-site usage (Vercel -> Render)
+      // Allow cross-site usage (Vercel -> Render)
       secure: true,        // REQUIRED for SameSite="none"
       sameSite: "none",    // REQUIRED for cross-domain cookies
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
