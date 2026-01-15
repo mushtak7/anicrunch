@@ -341,12 +341,12 @@ const saveProgress = (id, ep) => {
 document.addEventListener("DOMContentLoaded", () => {
   const authArea = document.getElementById("authArea");
 
-  // Auth Check (FIXED: Added API_BASE and credentials)
+  // Auth Check (FIXED: Added .username to fix [object Object])
   fetch(`${API_BASE}/api/me`, { credentials: "include" })
     .then(r => r.json())
     .then(d => {
       if (d.user) {
-        authArea.innerHTML = `<span style="color:var(--muted)">👤 ${d.user}</span> <button class="auth-link" onclick="logout()">Logout</button>`;
+        authArea.innerHTML = `<span style="color:var(--muted)">👤 ${d.user.username}</span> <button class="auth-link" onclick="logout()">Logout</button>`;
       } else {
         showLoginState();
       }
