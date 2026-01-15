@@ -12,15 +12,23 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // =====================
+// ESSENTIAL FOR RENDER/VERCEL
+// =====================
+// Required because Render sits behind a proxy. 
+// Without this, 'secure: true' cookies won't be sent!
+app.set("trust proxy", 1); 
+
+// =====================
 // BASIC MIDDLEWARE
 // =====================
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
+// FIX 1: Explicit CORS for your frontend
 app.use(
   cors({
-    origin: true,
-    credentials: true
+    origin: "https://anicrunch.vercel.app", // Your Vercel domain
+    credentials: true, // Allow cookies to pass
   })
 );
 
@@ -35,8 +43,9 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      // FIX 2: Allow cross-site usage (Vercel -> Render)
+      secure: true,        // REQUIRED for SameSite="none"
+      sameSite: "none",    // REQUIRED for cross-domain cookies
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     }
   })
