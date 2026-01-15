@@ -307,6 +307,11 @@
 
 <script>
 // =====================
+// API CONFIGURATION (FIXED)
+// =====================
+const API_BASE = "https://anicrunch-backend.onrender.com";
+
+// =====================
 // STATE MANAGEMENT
 // =====================
 let allAnime = [];
@@ -336,16 +341,23 @@ const saveProgress = (id, ep) => {
 document.addEventListener("DOMContentLoaded", () => {
   const authArea = document.getElementById("authArea");
 
-  // Auth Check
-  fetch("/api/me").then(r => r.json()).then(d => {
-    if (d.user) {
-      authArea.innerHTML = `<span style="color:var(--muted)">👤 ${d.user}</span> <button class="auth-link" onclick="logout()">Logout</button>`;
-    } else {
-      showLoginState();
-    }
-  }).catch(() => showLoginState());
+  // Auth Check (FIXED: Added API_BASE and credentials)
+  fetch(`${API_BASE}/api/me`, { credentials: "include" })
+    .then(r => r.json())
+    .then(d => {
+      if (d.user) {
+        authArea.innerHTML = `<span style="color:var(--muted)">👤 ${d.user}</span> <button class="auth-link" onclick="logout()">Logout</button>`;
+      } else {
+        showLoginState();
+      }
+    })
+    .catch(() => showLoginState());
 
-  window.logout = () => fetch("/api/logout", { method: "POST" }).then(() => location.reload());
+  // Logout (FIXED: Added API_BASE and credentials)
+  window.logout = () => fetch(`${API_BASE}/api/logout`, { 
+    method: "POST", 
+    credentials: "include" 
+  }).then(() => location.reload());
 
   loadWatchlist();
 
@@ -356,7 +368,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 async function loadWatchlist() {
   try {
-    const res = await fetch("/api/watchlist");
+    // Load Watchlist (FIXED: Added API_BASE and credentials)
+    const res = await fetch(`${API_BASE}/api/watchlist`, { credentials: "include" });
+    
     if (res.status === 401) { showLoginState(); return; }
     
     const ids = await res.json();
@@ -383,6 +397,7 @@ async function loadWatchlist() {
 
 async function fetchAndRenderCard(id) {
   try {
+    // Jikan API Call (Stays the same - this is 3rd party)
     const res = await fetch(`https://api.jikan.moe/v4/anime/${id}`);
     const data = await res.json();
     const anime = data.data;
@@ -486,8 +501,11 @@ window.updateAnimeStatus = function(id, newStatus) {
 window.removeAnime = async function(id) {
   if(!confirm('Remove from watchlist?')) return;
   try {
-    await fetch("/api/watchlist/remove", {
-      method: "POST", headers: { "Content-Type": "application/json" },
+    // Remove (FIXED: Added API_BASE and credentials)
+    await fetch(`${API_BASE}/api/watchlist/remove`, {
+      method: "POST", 
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ animeId: id })
     });
     
