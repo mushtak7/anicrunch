@@ -304,7 +304,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (d.user && authArea) {
         authArea.innerHTML = `
           <a href="/watchlist.html" class="auth-link">📚 Watchlist</a>
-          <span class="user-name">👤 ${d.user}</span>
+          <span class="user-name">👤 ${d.user.username}</span>
           <button class="auth-link" onclick="logout()">Logout</button>
         `;
       }
