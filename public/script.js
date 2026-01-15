@@ -1,4 +1,9 @@
 // =====================
+// API CONFIGURATION
+// =====================
+const API_BASE = "https://anicrunch-backend.onrender.com";
+
+// =====================
 // GLOBAL STATE
 // =====================
 const appState = {
@@ -291,7 +296,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const CARDS_PER_PAGE = appState.preferences.cardsPerPage;
 
   // --- AUTH ---
-  fetch("/api/me")
+  fetch(`${API_BASE}/api/me`, {
+    credentials: "include"
+  })
     .then(r => r.ok ? r.json() : Promise.reject('Not authenticated'))
     .then(d => {
       if (d.user && authArea) {
@@ -305,7 +312,10 @@ document.addEventListener("DOMContentLoaded", () => {
     .catch(() => {});
 
   window.logout = function() {
-    fetch("/api/logout", { method: "POST" })
+    fetch(`${API_BASE}/api/logout`, {
+      method: "POST",
+      credentials: "include"
+    })
       .then(() => location.reload())
       .catch(() => location.reload());
   };
@@ -340,14 +350,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (hero) hero.style.display = 'none';
     
     // Show search block
-if (searchBlock) {
-  searchBlock.style.display = "block";
-}
+    if (searchBlock) {
+      searchBlock.style.display = "block";
+    }
 
-// Hide home sections only
-if (seasonalBox) seasonalBox.parentElement.style.display = "none";
-if (trendingBox) trendingBox.parentElement.style.display = "none";
-
+    // Hide home sections only
+    if (seasonalBox) seasonalBox.parentElement.style.display = "none";
+    if (trendingBox) trendingBox.parentElement.style.display = "none";
 
     resultsBox.innerHTML = `
       <div class="filter-header" style="margin-bottom: 20px;">
@@ -368,66 +377,66 @@ if (trendingBox) trendingBox.parentElement.style.display = "none";
   }
 
   async function loadSearchPage(query, btnElement = null) {
-  if (!resultsBox) return;
+    if (!resultsBox) return;
 
-  try {
-    let data = [];
-
-    // 1️⃣ Try backend proxy first
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
-        signal: currentSearchAbortController.signal
-      });
+      let data = [];
 
-      if (res.ok) {
+      // 1️⃣ Try backend proxy first
+      try {
+        const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(query)}`, {
+          signal: currentSearchAbortController.signal,
+          credentials: "include"
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          data = Array.isArray(json.data) ? json.data : [];
+        }
+      } catch (_) {}
+
+      // 2️⃣ Fallback to Jikan API
+      if (!data.length) {
+        const res = await fetch(
+          `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=24`,
+          { signal: currentSearchAbortController.signal }
+        );
+
         const json = await res.json();
         data = Array.isArray(json.data) ? json.data : [];
       }
-    } catch (_) {}
 
-    // 2️⃣ Fallback to Jikan API
-    if (!data.length) {
-      const res = await fetch(
-        `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=24`,
-        { signal: currentSearchAbortController.signal }
-      );
-
-      const json = await res.json();
-      data = Array.isArray(json.data) ? json.data : [];
-    }
-
-    // 3️⃣ CLEAR + HEADER
-    resultsBox.innerHTML = `
-      <div class="filter-header" style="margin-bottom:20px">
-        <h2>🔍 Results for "${escapeHtml(query)}"</h2>
-      </div>
-    `;
-
-    // 4️⃣ EMPTY STATE
-    if (!data.length) {
-      resultsBox.innerHTML += `
-        <div class="empty-state">
-          <p>No results found.</p>
+      // 3️⃣ CLEAR + HEADER
+      resultsBox.innerHTML = `
+        <div class="filter-header" style="margin-bottom:20px">
+          <h2>🔍 Results for "${escapeHtml(query)}"</h2>
         </div>
       `;
-      return;
+
+      // 4️⃣ EMPTY STATE
+      if (!data.length) {
+        resultsBox.innerHTML += `
+          <div class="empty-state">
+            <p>No results found.</p>
+          </div>
+        `;
+        return;
+      }
+
+      // 5️⃣ 🔥 THIS WAS MISSING — RENDER RESULTS
+      renderAnimeGrid(resultsBox, data);
+
+    } catch (err) {
+      if (err.name === "AbortError") return;
+
+      resultsBox.innerHTML = `
+        <div class="empty-state">
+          <p>⚠️ Failed to load search results</p>
+        </div>
+      `;
+      console.error(err);
     }
-
-    // 5️⃣ 🔥 THIS WAS MISSING — RENDER RESULTS
-    renderAnimeGrid(resultsBox, data);
-
-  } catch (err) {
-    if (err.name === "AbortError") return;
-
-    resultsBox.innerHTML = `
-      <div class="empty-state">
-        <p>⚠️ Failed to load search results</p>
-      </div>
-    `;
-    console.error(err);
   }
-}
-
 
   function resetToHome() {
     appState.viewState = { mode: 'home', currentQuery: '', currentPage: 1, isLoading: false, hasMore: true };
@@ -537,9 +546,10 @@ if (trendingBox) trendingBox.parentElement.style.display = "none";
       heroWatchlist.onclick = () => {
         heroWatchlist.innerText = 'Adding...';
         heroWatchlist.disabled = true;
-        fetch("/api/watchlist/add", {
+        fetch(`${API_BASE}/api/watchlist/add`, {
           method: "POST", 
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({ animeId: Number(anime.mal_id) })
         })
           .then(res => {
@@ -692,7 +702,7 @@ if (trendingBox) trendingBox.parentElement.style.display = "none";
 
       if (!data.length) {
         if (page === 1) {
-          resultsBox.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><h3>No anime found</h3><p>Try a different genre</p></div>';
+          resultsBox.innerHTML = '<div class="empty-state"><div class="empty-icon">🔭</div><h3>No anime found</h3><p>Try a different genre</p></div>';
         } else if (btnElement) {
           btnElement.innerText = 'No more results';
           btnElement.disabled = true;
@@ -952,11 +962,6 @@ async function loadSchedule(day) {
     console.error('Schedule load error:', e);
     grid.innerHTML = '<div class="error-state"><p>Failed to load schedule</p><button class="retry-btn" onclick="loadSchedule(\'' + normalizedDay + '\')">Retry</button></div>';
   }
-}
-
-// Helper function for global scope
-function getElement(id) {
-  return document.getElementById(id);
 }
 
 // 2. Spin The Wheel (Random Anime)
