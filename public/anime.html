@@ -267,7 +267,8 @@
 </div>
 
 <script>
-// Logic
+// 🔥 Logic - GLOBAL API BASE DEFINITION
+const API_BASE = "https://anicrunch-backend.onrender.com";
 const animeId = new URLSearchParams(location.search).get('id');
 let trailerId = null;
 
@@ -344,24 +345,37 @@ function render(data) {
   }
 }
 
-// Watchlist
+// 🔥 Watchlist - FIXED FETCH & CREDENTIALS
 document.getElementById('watchlistBtn').onclick = async function() {
   this.innerText = 'Adding...';
   this.disabled = true;
-  const res = await fetch('/api/watchlist/add', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({animeId: Number(animeId)})
-  });
-  if (res.ok) {
-    this.innerText = '✓ Added!';
-    this.style.background = '#00e676';
-    // Save status
-    const map = JSON.parse(localStorage.getItem('anime_statuses')) || {};
-    map[animeId] = 'plan';
-    localStorage.setItem('anime_statuses', JSON.stringify(map));
-  } else {
-    this.innerText = 'Login Required';
-    setTimeout(() => location.href = '/login.html', 1000);
+
+  try {
+    const res = await fetch(`${API_BASE}/api/watchlist/add`, {
+      method: 'POST', 
+      headers: {'Content-Type': 'application/json'},
+      credentials: 'include', // 🔥 REQUIRED for cookies
+      body: JSON.stringify({animeId: Number(animeId)})
+    });
+
+    if (res.ok) {
+      this.innerText = '✓ Added!';
+      this.style.background = '#00e676';
+      // Save status
+      const map = JSON.parse(localStorage.getItem('anime_statuses')) || {};
+      map[animeId] = 'plan';
+      localStorage.setItem('anime_statuses', JSON.stringify(map));
+    } else {
+      // Improved error handling
+      this.innerText = 'Login Required';
+      this.disabled = false;
+      this.style.background = '#ff5252';
+      setTimeout(() => location.href = '/login.html', 1500);
+    }
+  } catch (err) {
+    console.error(err);
+    this.innerText = 'Error';
+    this.disabled = false;
   }
 };
 
