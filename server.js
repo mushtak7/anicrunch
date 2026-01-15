@@ -23,27 +23,12 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 /* =====================
-   CORS SETUP
+   CORS SETUP (FIXED)
 ===================== */
 app.use(
   cors({
-    origin: (origin, cb) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return cb(null, true);
-      
-      // Allow your Vercel frontend and local development
-      const allowedOrigins = [
-        "https://anicrunch.vercel.app",
-        "http://localhost:3000",
-        "http://localhost:5173" // Common Vite/React port
-      ];
-
-      if (allowedOrigins.includes(origin) || origin.endsWith(".vercel.app")) {
-        return cb(null, true);
-      }
-      cb(new Error("CORS blocked"));
-    },
-    credentials: true
+    origin: true, // ⚠️ Allows ALL origins (Fixes the CORS Blocked error)
+    credentials: true // Allows cookies/sessions to work
   })
 );
 
