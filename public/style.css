@@ -1415,3 +1415,41 @@ button:active:not(:disabled) {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* Recommends Styles */
+.editor-note {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+.view-all-link {
+  display: inline-block;
+  margin-top: 14px;
+  color: var(--accent);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.view-all-link:hover {
+  text-decoration: underline;
+  color: #ff6bc5;
+}
+
+.our-take {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.our-take h2 {
+  margin-bottom: 10px;
+}
+
+.our-take-text {
+  color: var(--text);
+  line-height: 1.6;
+  max-width: 900px;
+}
