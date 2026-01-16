@@ -19,7 +19,6 @@ const appState = {
     isLoading: false,
     hasMore: true
   },
-  // Store intervals/observers for cleanup
   intervals: {
     hero: null
   }
@@ -35,15 +34,12 @@ function delay(ms) {
 function debounce(func, wait) {
   let timeout;
   return function executedFunction(...args) {
-    const later = () => {
-      func(...args);
-    };
+    const later = () => { func(...args); };
     clearTimeout(timeout);
     timeout = setTimeout(later, wait);
   };
 }
 
-// Frontend Cache (Short term UI cache)
 function cacheResponse(key, data, ttl = 300000) {
   appState.cache.set(key, { data, expires: Date.now() + ttl });
 }
@@ -55,22 +51,18 @@ function getCached(key) {
   return null;
 }
 
-// Safely get element
 function getElement(id) {
   return document.getElementById(id);
 }
 
 // =====================
-// UI HELPERS (GRID SYSTEM)
+// UI HELPERS
 // =====================
 function resetContainerLayout(container) {
   if (!container) return;
-
-  // Do NOT override layout for search results
   container.style.display = "block";
   container.style.width = "100%";
 }
-
 
 function renderAnimeGrid(container, animeList, append = false) {
   if (!container) return;
@@ -156,7 +148,6 @@ async function fetchWithRetry(url, retries = 3, backoff = 1000) {
         throw new Error('Invalid JSON response');
       }
       
-      // Handle different API structures (Server vs Jikan direct)
       const data = Array.isArray(json) ? json : (Array.isArray(json.data) ? json.data : []);
       
       if (data.length > 0) cacheResponse(url, data);
@@ -186,7 +177,6 @@ const imageObserver = new IntersectionObserver((entries, observer) => {
   });
 }, { rootMargin: '100px', threshold: 0.01 });
 
-// Cleanup function for observer
 function cleanupObserver() {
   imageObserver.disconnect();
 }
@@ -320,11 +310,10 @@ document.addEventListener("DOMContentLoaded", () => {
       .catch(() => location.reload());
   };
 
-  // --- SEARCH UX & LOGIC (FIXED) ---
+  // --- SEARCH ---
   const handleSearch = debounce(async (query) => {
     if (searchClear) searchClear.style.display = query.length > 0 ? 'block' : 'none';
 
-    // 1. CRITICAL FIX: Redirect if not on home page (e.g., Schedule page)
     if (!resultsBox) {
       if (query.length >= 3) {
         window.location.href = `/?search=${encodeURIComponent(query)}`;
@@ -337,7 +326,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Cancel previous search if any
     if (currentSearchAbortController) {
       currentSearchAbortController.abort();
     }
@@ -346,15 +334,8 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll('.genre-chip').forEach(c => c.classList.remove('active'));
     appState.viewState = { mode: 'search', currentQuery: query, currentPage: 1, isLoading: true, hasMore: true };
 
-    // Toggle Views
     if (hero) hero.style.display = 'none';
-    
-    // Show search block
-    if (searchBlock) {
-      searchBlock.style.display = "block";
-    }
-
-    // Hide home sections only
+    if (searchBlock) searchBlock.style.display = "block";
     if (seasonalBox) seasonalBox.parentElement.style.display = "none";
     if (trendingBox) trendingBox.parentElement.style.display = "none";
 
@@ -365,11 +346,9 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="loading">Searching...</div>
     `;
 
-    // Call Backend Proxy (with Fallback logic inside loadSearchPage)
     await loadSearchPage(query);
   }, 300);
 
-  // Escape HTML to prevent XSS
   function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
@@ -382,7 +361,6 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       let data = [];
 
-      // 1️⃣ Try backend proxy first
       try {
         const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(query)}`, {
           signal: currentSearchAbortController.signal,
@@ -395,7 +373,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       } catch (_) {}
 
-      // 2️⃣ Fallback to Jikan API
       if (!data.length) {
         const res = await fetch(
           `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=24`,
@@ -406,14 +383,12 @@ document.addEventListener("DOMContentLoaded", () => {
         data = Array.isArray(json.data) ? json.data : [];
       }
 
-      // 3️⃣ CLEAR + HEADER
       resultsBox.innerHTML = `
         <div class="filter-header" style="margin-bottom:20px">
           <h2>🔍 Results for "${escapeHtml(query)}"</h2>
         </div>
       `;
 
-      // 4️⃣ EMPTY STATE
       if (!data.length) {
         resultsBox.innerHTML += `
           <div class="empty-state">
@@ -423,7 +398,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // 5️⃣ 🔥 THIS WAS MISSING — RENDER RESULTS
       renderAnimeGrid(resultsBox, data);
 
     } catch (err) {
@@ -464,7 +438,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (searchInput) searchInput.value = '';
     if (searchClear) searchClear.style.display = 'none';
     
-    // Clean up URL
     if (window.history.replaceState) {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -473,7 +446,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (searchInput) {
     searchInput.oninput = (e) => handleSearch(e.target.value.trim());
     
-    // Enter Key Support
     searchInput.onkeydown = (e) => { 
       if (e.key === 'Escape') {
         e.preventDefault();
@@ -489,7 +461,6 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  // Clear Button Logic
   if (searchClear) {
     searchClear.onclick = () => {
       if (searchInput) {
@@ -500,19 +471,20 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  // --- CHECK URL PARAMS (Redirect Handling) ---
+  // --- URL PARAMS ---
   const urlParams = new URLSearchParams(window.location.search);
   const searchParam = urlParams.get('search');
+  
   if (searchParam && searchInput && resultsBox) {
-    // If we were redirected here with a search
     searchInput.value = searchParam;
     handleSearch(searchParam);
   } else {
-    // Normal Load: Only load home data if NOT searching
-    if (seasonalBox) loadAllData();
+    if (seasonalBox) {
+      loadAllData();
+    }
   }
   
-  // --- HERO ---
+  // --- HERO FUNCTIONS ---
   function updateHero(anime) {
     if (!anime) return;
     
@@ -565,7 +537,6 @@ document.addEventListener("DOMContentLoaded", () => {
       };
     }
     
-    // Detail button
     if (heroDetails) {
       heroDetails.onclick = () => {
         if (anime.mal_id) {
@@ -574,7 +545,6 @@ document.addEventListener("DOMContentLoaded", () => {
       };
     }
 
-    // Update dots
     heroDots.forEach((dot, i) => {
       dot.classList.toggle("active", i === currentHeroIndex);
     });
@@ -584,7 +554,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!heroAnimes.length) return;
     currentHeroIndex = ((index % heroAnimes.length) + heroAnimes.length) % heroAnimes.length;
     updateHero(heroAnimes[currentHeroIndex]);
-    startHeroAutoplay(); // Reset timer
+    startHeroAutoplay();
   }
 
   function nextHero() {
@@ -604,7 +574,6 @@ document.addEventListener("DOMContentLoaded", () => {
     clearInterval(appState.intervals.hero);
   }
 
-  // Hero dot click handlers
   heroDots.forEach((dot, i) => {
     dot.onclick = () => goToHero(i);
     dot.onkeydown = (e) => {
@@ -615,7 +584,6 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   });
 
-  // Hero arrow handlers
   if (heroArrowLeft) {
     heroArrowLeft.onclick = prevHero;
   }
@@ -623,13 +591,12 @@ document.addEventListener("DOMContentLoaded", () => {
     heroArrowRight.onclick = nextHero;
   }
 
-  // Pause autoplay on hover
   if (hero) {
     hero.onmouseenter = stopHeroAutoplay;
     hero.onmouseleave = startHeroAutoplay;
   }
 
-  // --- GENRE LOGIC ---
+  // --- GENRES ---
   const genres = [
     { id: 1, name: 'Action', icon: '⚔️' }, 
     { id: 2, name: 'Adventure', icon: '🗺️' },
@@ -733,16 +700,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // --- INITIAL DATA LOAD ---
+  // --- LOAD DATA ---
   async function loadAllData() {
     try {
       await loadHero();
-      // Add delay between requests to avoid rate limiting
-      await delay(400);
+      await delay(1000); // ⚠️ FIXED: Increased to 1000ms
       await loadSection("seasonal", "https://api.jikan.moe/v4/seasons/now?sfw=true&limit=25");
-      await delay(400);
+      await delay(1000); // ⚠️ FIXED: Increased to 1000ms
       await loadSection("trending", "https://api.jikan.moe/v4/top/anime?filter=airing&sfw=true&limit=25");
-      await delay(400);
+      await delay(1000); // ⚠️ FIXED: Increased to 1000ms
       await loadTopAnime();
     } catch (e) {
       console.error('Error loading data:', e);
@@ -762,12 +728,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // --- CAROUSEL RENDERER ---
   async function loadSection(id, url) {
     const box = getElement(id);
     if (!box) return;
     
-    // Initialize carousel state if not exists
     if (!carousels[id]) {
       carousels[id] = { currentPage: 0, totalCards: 0 };
     }
@@ -963,6 +927,7 @@ async function loadSchedule(day) {
     grid.innerHTML = '<div class="error-state"><p>Failed to load schedule</p><button class="retry-btn" onclick="loadSchedule(\'' + normalizedDay + '\')">Retry</button></div>';
   }
 }
+window.loadSchedule = loadSchedule; // ⚠️ FIXED: Button Fix
 
 // 2. Spin The Wheel (Random Anime)
 async function spinWheel() {
@@ -1009,6 +974,7 @@ async function spinWheel() {
     overlay.setAttribute('aria-busy', 'false');
   }
 }
+window.spinWheel = spinWheel; // ⚠️ FIXED: Button Fix
 
 // Toast notification helper
 function showToast(message, type = 'info') {
