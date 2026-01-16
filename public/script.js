@@ -13,7 +13,7 @@ const appState = {
     cardsPerPage: 6
   },
   viewState: {
-    mode: 'home',
+    mode: 'home', 
     currentQuery: '',
     currentPage: 1,
     isLoading: false,
@@ -33,17 +33,11 @@ function delay(ms) {
 
 function debounce(func, wait) {
   let timeout;
-  const wrapped = function executedFunction(...args) {
+  return function executedFunction(...args) {
     const later = () => { func(...args); };
     clearTimeout(timeout);
     timeout = setTimeout(later, wait);
   };
-  // expose a way to call immediately
-  wrapped.flush = function(...args) {
-    clearTimeout(timeout);
-    func(...args);
-  };
-  return wrapped;
 }
 
 function cacheResponse(key, data, ttl = 300000) {
@@ -72,9 +66,9 @@ function resetContainerLayout(container) {
 
 function renderAnimeGrid(container, animeList, append = false) {
   if (!container) return;
-
+  
   resetContainerLayout(container);
-
+  
   const loader = container.querySelector('.loading');
   if (loader) loader.remove();
 
@@ -97,35 +91,35 @@ function renderAnimeGrid(container, animeList, append = false) {
   animeList.forEach(anime => {
     const card = createCard(anime);
     card.style.width = '100%';
-    card.style.height = '100%';
+    card.style.height = '100%'; 
     grid.appendChild(card);
   });
 }
 
 function renderLoadMoreButton(container, onClick) {
   if (!container) return;
-
+  
   const existing = container.querySelector('.load-more-container');
   if (existing) existing.remove();
 
   const btnContainer = document.createElement('div');
   btnContainer.className = 'load-more-container';
   btnContainer.style.cssText = `width: 100%; display: flex; justify-content: center; padding: 30px 0 50px 0;`;
-
+  
   const btn = document.createElement('button');
   btn.innerText = '⬇ Load More';
   btn.style.cssText = `padding: 12px 30px; background: #3b82f6; color: white; border: none; border-radius: 50px; cursor: pointer; font-weight: bold; transition: transform 0.2s; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);`;
-
+  
   btn.onmouseover = () => { btn.style.transform = 'scale(1.05)'; };
   btn.onmouseout = () => { btn.style.transform = 'scale(1)'; };
-
+  
   btn.onclick = () => {
     btn.innerText = '⏳ Loading...';
     btn.disabled = true;
     btn.style.opacity = '0.7';
     onClick(btn);
   };
-
+  
   btnContainer.appendChild(btn);
   container.appendChild(btnContainer);
 }
@@ -145,7 +139,7 @@ async function fetchWithRetry(url, retries = 3, backoff = 1000) {
         continue;
       }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
+      
       const text = await res.text();
       let json;
       try {
@@ -153,14 +147,9 @@ async function fetchWithRetry(url, retries = 3, backoff = 1000) {
       } catch (parseError) {
         throw new Error('Invalid JSON response');
       }
-
-      // Support both array responses and { data: [...] } responses.
-      let data = [];
-      if (Array.isArray(json)) data = json;
-      else if (Array.isArray(json.data)) data = json.data;
-      // If json.data is a single object (e.g., random endpoint), keep it in array form
-      else if (json.data && typeof json.data === 'object') data = [json.data];
-
+      
+      const data = Array.isArray(json) ? json : (Array.isArray(json.data) ? json.data : []);
+      
       if (data.length > 0) cacheResponse(url, data);
       return data;
     } catch (e) {
@@ -201,13 +190,13 @@ function createCard(anime) {
   div.setAttribute('tabindex', '0');
   div.setAttribute('role', 'button');
   div.setAttribute('aria-label', `View details for ${anime.title || 'Untitled'}`);
-
+  
   const imgUrl = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || '';
   const title = anime.title || "Untitled";
   const score = anime.score || 'N/A';
   const year = anime.year || 'Unknown';
   const type = anime.type || 'TV';
-
+  
   div.style.cssText = `display: flex; flex-direction: column; overflow: hidden; position: relative; cursor: pointer;`;
 
   div.innerHTML = `
@@ -230,13 +219,13 @@ function createCard(anime) {
       </div>
     </div>
   `;
-
+  
   const navigateToAnime = () => {
     if (anime.mal_id) {
       location.href = `/anime.html?id=${anime.mal_id}`;
     }
   };
-
+  
   div.onclick = navigateToAnime;
   div.onkeydown = (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -244,10 +233,10 @@ function createCard(anime) {
       navigateToAnime();
     }
   };
-
+  
   const img = div.querySelector('img');
   if (img) imageObserver.observe(img);
-
+  
   return div;
 }
 
@@ -275,23 +264,21 @@ document.addEventListener("DOMContentLoaded", () => {
   const heroGenres = getElement("heroGenres");
   const heroWatchlist = getElement("heroWatchlist");
   const heroDetails = getElement("heroDetails");
-  // find hero dots container (flexible)
-  const heroDotsContainer = document.querySelector('.hero-dots') || getElement('heroDots') || null;
-  const staticHeroDots = document.querySelectorAll(".hero-dot");
+  const heroDots = document.querySelectorAll(".hero-dot");
   const heroArrowLeft = document.querySelector(".hero-arrow.left");
   const heroArrowRight = document.querySelector(".hero-arrow.right");
 
   if (heroBg) {
     heroBg.style.filter = "none";
     heroBg.style.backdropFilter = "none";
-    heroBg.style.transform = "none";
+    heroBg.style.transform = "none"; 
   }
 
   // STATE
   let heroAnimes = [];
   let currentHeroIndex = 0;
   let currentSearchAbortController = null;
-
+  
   const carousels = {
     seasonal: { currentPage: 0, totalCards: 0 },
     trending: { currentPage: 0, totalCards: 0 }
@@ -324,19 +311,13 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   // --- SEARCH ---
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
-  // Perform an immediate search (used for Enter and initial URL search)
-  async function performSearch(query) {
-    query = (query || '').trim();
+  const handleSearch = debounce(async (query) => {
     if (searchClear) searchClear.style.display = query.length > 0 ? 'block' : 'none';
 
     if (!resultsBox) {
       if (query.length >= 3) {
+        // [FIX 2: Wired Search Input correctly]
+        appState.viewState.mode = 'search'; 
         window.location.href = `/?search=${encodeURIComponent(query)}`;
       }
       return;
@@ -348,7 +329,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (currentSearchAbortController) {
-      try { currentSearchAbortController.abort(); } catch (e) {}
+      currentSearchAbortController.abort();
     }
     currentSearchAbortController = new AbortController();
 
@@ -367,45 +348,41 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="loading">Searching...</div>
     `;
 
-    await loadSearchPage(query, currentSearchAbortController);
+    await loadSearchPage(query);
+  }, 300);
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
-  const handleSearch = debounce((q) => performSearch(q), 300);
-
-  async function loadSearchPage(query, abortController = null, btnElement = null) {
+  async function loadSearchPage(query, btnElement = null) {
     if (!resultsBox) return;
 
     try {
       let data = [];
 
-      // Try backend search first (if available)
       try {
         const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(query)}`, {
-          signal: abortController ? abortController.signal : undefined,
+          signal: currentSearchAbortController.signal,
           credentials: "include"
         });
 
         if (res.ok) {
           const json = await res.json();
-          data = Array.isArray(json.data) ? json.data : (Array.isArray(json) ? json : []);
-        }
-      } catch (_) {
-        // ignore backend errors / aborts and fallback to jikan
-      }
-
-      // Fallback to jikan search
-      if (!data.length) {
-        const jikanController = abortController || new AbortController();
-        const res = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=24`, {
-          signal: jikanController.signal
-        });
-
-        if (res.ok) {
-          const json = await res.json();
           data = Array.isArray(json.data) ? json.data : [];
-        } else {
-          data = [];
         }
+      } catch (_) {}
+
+      if (!data.length) {
+        const res = await fetch(
+          `https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=24`,
+          { signal: currentSearchAbortController.signal }
+        );
+
+        const json = await res.json();
+        data = Array.isArray(json.data) ? json.data : [];
       }
 
       resultsBox.innerHTML = `
@@ -426,7 +403,7 @@ document.addEventListener("DOMContentLoaded", () => {
       renderAnimeGrid(resultsBox, data);
 
     } catch (err) {
-      if (err && err.name === "AbortError") return;
+      if (err.name === "AbortError") return;
 
       resultsBox.innerHTML = `
         <div class="empty-state">
@@ -439,11 +416,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function resetToHome() {
     appState.viewState = { mode: 'home', currentQuery: '', currentPage: 1, isLoading: false, hasMore: true };
-
+    
     document.querySelectorAll('.genre-chip').forEach(c => c.classList.remove('active'));
     const allChip = document.querySelector('.genre-chip');
-    if (allChip) allChip.classList.add('active');
-
+    if (allChip) allChip.classList.add('active'); 
+    
     if (hero) hero.style.display = 'flex';
     if (leftCol) {
       Array.from(leftCol.children).forEach(b => {
@@ -454,15 +431,15 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
     }
-
+    
     if (resultsBox) {
-      resultsBox.innerHTML = '';
-      resultsBox.style.cssText = '';
+      resultsBox.innerHTML = ''; 
+      resultsBox.style.cssText = ''; 
     }
-
+    
     if (searchInput) searchInput.value = '';
     if (searchClear) searchClear.style.display = 'none';
-
+    
     if (window.history.replaceState) {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -470,27 +447,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (searchInput) {
     searchInput.oninput = (e) => handleSearch(e.target.value.trim());
-
-    searchInput.onkeydown = (e) => {
+    
+    searchInput.onkeydown = (e) => { 
       if (e.key === 'Escape') {
         e.preventDefault();
         resetToHome();
       }
       if (e.key === 'Enter') {
         e.preventDefault();
-        const val = (searchInput.value || '').trim();
-        // Immediate search on Enter if >=3 chars
-        if (val.length >= 3) {
-          performSearch(val);
-          return;
-        }
-        // if already in search mode and at least one card exists, open first result
         const firstCard = resultsBox ? resultsBox.querySelector('.anime-card') : null;
         if (firstCard && appState.viewState.mode === 'search') {
           firstCard.click();
-        } else if (val.length >= 1) {
-          // for short queries, navigate to search page so server/index can handle param
-          window.location.href = `/?search=${encodeURIComponent(val)}`;
         }
       }
     };
@@ -506,41 +473,10 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  // --- URL PARAMS ---
-  const urlParams = new URLSearchParams(window.location.search);
-  const searchParam = urlParams.get('search');
-
-  if (searchParam && searchInput && resultsBox) {
-    searchInput.value = searchParam;
-    // call immediate performer (avoid debounce delay)
-    performSearch(searchParam);
-  } else {
-    if (seasonalBox) {
-      loadAllData();
-    }
-  }
-
   // --- HERO FUNCTIONS ---
-  function buildHeroDots(count) {
-    // if a container for dots exists, (re)build it
-    if (!heroDotsContainer) return null;
-
-    heroDotsContainer.innerHTML = '';
-    const dots = [];
-    for (let i = 0; i < count; i++) {
-      const dot = document.createElement('button');
-      dot.className = 'hero-dot';
-      dot.setAttribute('aria-label', `Show hero ${i + 1}`);
-      dot.setAttribute('tabindex', '0');
-      heroDotsContainer.appendChild(dot);
-      dots.push(dot);
-    }
-    return dots;
-  }
-
   function updateHero(anime) {
     if (!anime) return;
-
+    
     if (heroBg) {
       heroBg.style.opacity = "0";
       setTimeout(() => {
@@ -555,7 +491,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const synopsis = anime.synopsis || "No synopsis available.";
       heroSynopsis.textContent = synopsis.length > 180 ? synopsis.substring(0, 180) + "..." : synopsis;
     }
-
+    
     if (heroGenres) {
       heroGenres.innerHTML = "";
       (anime.genres || []).slice(0, 3).forEach(g => {
@@ -572,7 +508,7 @@ document.addEventListener("DOMContentLoaded", () => {
         heroWatchlist.innerText = 'Adding...';
         heroWatchlist.disabled = true;
         fetch(`${API_BASE}/api/watchlist/add`, {
-          method: "POST",
+          method: "POST", 
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({ animeId: Number(anime.mal_id) })
@@ -589,7 +525,7 @@ document.addEventListener("DOMContentLoaded", () => {
           });
       };
     }
-
+    
     if (heroDetails) {
       heroDetails.onclick = () => {
         if (anime.mal_id) {
@@ -598,16 +534,9 @@ document.addEventListener("DOMContentLoaded", () => {
       };
     }
 
-    // Update dot states (either static dots or our built ones)
-    let dots = staticHeroDots && staticHeroDots.length ? Array.from(staticHeroDots) : null;
-    if (!dots && heroDotsContainer) {
-      dots = Array.from(heroDotsContainer.querySelectorAll('.hero-dot'));
-    }
-    if (dots && dots.length) {
-      dots.forEach((dot, i) => {
-        dot.classList.toggle("active", i === currentHeroIndex);
-      });
-    }
+    heroDots.forEach((dot, i) => {
+      dot.classList.toggle("active", i === currentHeroIndex);
+    });
   }
 
   function goToHero(index) {
@@ -626,31 +555,23 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function startHeroAutoplay() {
-    try { clearInterval(appState.intervals.hero); } catch (_) {}
+    clearInterval(appState.intervals.hero);
     appState.intervals.hero = setInterval(nextHero, 8000);
   }
 
   function stopHeroAutoplay() {
-    try { clearInterval(appState.intervals.hero); } catch (_) {}
+    clearInterval(appState.intervals.hero);
   }
 
-  // attach listeners to dots (dynamic if necessary)
-  function attachHeroDotsListeners() {
-    let dots = staticHeroDots && staticHeroDots.length ? Array.from(staticHeroDots) : null;
-    if (!dots && heroDotsContainer) {
-      dots = Array.from(heroDotsContainer.querySelectorAll('.hero-dot'));
-    }
-    if (!dots || !dots.length) return;
-    dots.forEach((dot, i) => {
-      dot.onclick = () => goToHero(i);
-      dot.onkeydown = (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          goToHero(i);
-        }
-      };
-    });
-  }
+  heroDots.forEach((dot, i) => {
+    dot.onclick = () => goToHero(i);
+    dot.onkeydown = (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        goToHero(i);
+      }
+    };
+  });
 
   if (heroArrowLeft) {
     heroArrowLeft.onclick = prevHero;
@@ -666,15 +587,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- GENRES ---
   const genres = [
-    { id: 1, name: 'Action', icon: '⚔️' },
+    { id: 1, name: 'Action', icon: '⚔️' }, 
     { id: 2, name: 'Adventure', icon: '🗺️' },
-    { id: 4, name: 'Comedy', icon: '😂' },
+    { id: 4, name: 'Comedy', icon: '😂' }, 
     { id: 8, name: 'Drama', icon: '🎭' },
-    { id: 10, name: 'Fantasy', icon: '🧙' },
+    { id: 10, name: 'Fantasy', icon: '🧙' }, 
     { id: 14, name: 'Horror', icon: '👻' },
-    { id: 22, name: 'Romance', icon: '💕' },
+    { id: 22, name: 'Romance', icon: '💕' }, 
     { id: 24, name: 'Sci-Fi', icon: '🚀' },
-    { id: 30, name: 'Sports', icon: '⚽' },
+    { id: 30, name: 'Sports', icon: '⚽' }, 
     { id: 36, name: 'Slice of Life', icon: '🌸' }
   ];
 
@@ -710,7 +631,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
     }
-
+    
     if (searchBlock) searchBlock.style.display = 'block';
 
     if (resultsBox) {
@@ -727,11 +648,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function loadGenrePage(genreId, btnElement = null) {
     if (!resultsBox) return;
-
+    
     try {
       const page = appState.viewState.currentPage;
       const data = await fetchWithRetry(`https://api.jikan.moe/v4/anime?genres=${genreId}&order_by=popularity&sfw=true&limit=24&page=${page}`);
-
+      
       const loader = resultsBox.querySelector('.loading');
       if (loader) loader.remove();
 
@@ -754,7 +675,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const container = btnElement.closest('.load-more-container');
         if (container) container.remove();
       }
-    } catch (e) {
+    } catch (e) { 
       console.error('Genre load error:', e);
       if (btnElement) {
         btnElement.disabled = false;
@@ -772,11 +693,11 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadAllData() {
     try {
       await loadHero();
-      await delay(1000);
+      await delay(1000); 
       await loadSection("seasonal", "https://api.jikan.moe/v4/seasons/now?sfw=true&limit=25");
-      await delay(1000);
+      await delay(1000); 
       await loadSection("trending", "https://api.jikan.moe/v4/top/anime?filter=airing&sfw=true&limit=25");
-      await delay(1000);
+      await delay(1000); 
       await loadTopAnime();
     } catch (e) {
       console.error('Error loading data:', e);
@@ -788,43 +709,35 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await fetchWithRetry("https://api.jikan.moe/v4/top/anime?filter=airing&sfw=true&limit=7");
       if (data.length) {
         heroAnimes = data;
-        currentHeroIndex = 0;
-
-        // build dots dynamically if container available
-        if (heroDotsContainer) {
-          buildHeroDots(heroAnimes.length);
-        }
-
-        attachHeroDotsListeners();
         updateHero(data[0]);
         startHeroAutoplay();
       }
-    } catch (e) {
-      console.error('Hero load error:', e);
+    } catch(e) { 
+      console.error('Hero load error:', e); 
     }
   }
 
   async function loadSection(id, url) {
     const box = getElement(id);
     if (!box) return;
-
+    
     if (!carousels[id]) {
       carousels[id] = { currentPage: 0, totalCards: 0 };
     }
-
+    
     try {
       const data = await fetchWithRetry(url);
       box.innerHTML = "";
       carousels[id].totalCards = data.length;
-
+      
       data.forEach(a => {
         const div = createCard(a);
-        div.style.width = '100%';
+        div.style.width = '100%'; 
         div.style.height = '100%';
         box.appendChild(div);
       });
       updateCarousel(id);
-    } catch (e) {
+    } catch(e) { 
       console.error(`Section ${id} load error:`, e);
       box.innerHTML = '<div class="error-state">Failed to load</div>';
     }
@@ -834,7 +747,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const container = getElement(id);
     const state = carousels[id];
     if (!container || !state) return;
-
+    
     const cards = container.querySelectorAll(".anime-card");
     const totalPages = Math.ceil(state.totalCards / CARDS_PER_PAGE);
 
@@ -848,7 +761,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (wrapper) {
       const leftBtn = wrapper.querySelector(".nav-btn.left");
       const rightBtn = wrapper.querySelector(".nav-btn.right");
-
+      
       if (leftBtn) {
         leftBtn.disabled = state.currentPage <= 0;
         leftBtn.style.opacity = leftBtn.disabled ? '0.3' : '1';
@@ -864,7 +777,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.onclick = () => {
       const id = btn.dataset.target;
       if (!id || !carousels[id]) return;
-
+      
       const state = carousels[id];
       const dir = btn.classList.contains("left") ? -1 : 1;
       const totalPages = Math.ceil(state.totalCards / CARDS_PER_PAGE);
@@ -879,7 +792,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function loadTopAnime() {
     if (!topBox) return;
-
+    
     try {
       const data = await fetchWithRetry("https://api.jikan.moe/v4/top/anime?sfw=true&limit=10");
       topBox.innerHTML = "";
@@ -889,13 +802,13 @@ document.addEventListener("DOMContentLoaded", () => {
         div.setAttribute('tabindex', '0');
         div.setAttribute('role', 'button');
         div.setAttribute('aria-label', `#${i + 1}: ${a.title}`);
-
+        
         const navigateToAnime = () => {
           if (a.mal_id) {
             location.href = `/anime.html?id=${a.mal_id}`;
           }
         };
-
+        
         div.onclick = navigateToAnime;
         div.onkeydown = (e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -903,7 +816,7 @@ document.addEventListener("DOMContentLoaded", () => {
             navigateToAnime();
           }
         };
-
+        
         div.innerHTML = `
           <span class="rank">#${i + 1}</span>
           <img src="${a.images?.jpg?.image_url || ''}" alt="${a.title}" style="width: 50px; height: 70px; object-fit: cover; border-radius: 4px;">
@@ -914,9 +827,27 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
         topBox.appendChild(div);
       });
-    } catch (e) {
+    } catch(e) { 
       console.error('Top anime load error:', e);
       topBox.innerHTML = '<div class="error-state">Failed to load</div>';
+    }
+  }
+
+  // --- URL PARAMS & INITIAL LOAD [FIX 1: GUARANTEE HERO LOADS] ---
+  const urlParams = new URLSearchParams(window.location.search);
+  const searchParam = urlParams.get('search');
+  
+  if (searchParam && searchInput && resultsBox) {
+    searchInput.value = searchParam;
+    handleSearch(searchParam);
+  } else {
+    // ALWAYS load hero, even if seasonalBox is missing
+    if (typeof loadHero === "function") {
+      loadHero();
+    }
+
+    if (seasonalBox) {
+      loadAllData();
     }
   }
 
@@ -935,7 +866,7 @@ document.addEventListener("DOMContentLoaded", () => {
 async function loadSchedule(day) {
   const grid = getElement('scheduleGrid');
   const buttons = document.querySelectorAll('.day-btn');
-
+  
   if (!grid) return; // Not on schedule page
 
   // Validate day parameter
@@ -955,7 +886,7 @@ async function loadSchedule(day) {
 
   try {
     const data = await fetchWithRetry(`https://api.jikan.moe/v4/schedules?filter=${normalizedDay}&sfw=true`);
-
+    
     grid.innerHTML = '';
     if (!data.length) {
       grid.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div><h3>No anime airing this day</h3></div>';
@@ -967,13 +898,13 @@ async function loadSchedule(day) {
       div.className = 'schedule-card';
       div.setAttribute('tabindex', '0');
       div.setAttribute('role', 'button');
-
+      
       const navigateToAnime = () => {
         if (anime.mal_id) {
           location.href = `/anime.html?id=${anime.mal_id}`;
         }
       };
-
+      
       div.onclick = navigateToAnime;
       div.onkeydown = (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -981,7 +912,8 @@ async function loadSchedule(day) {
           navigateToAnime();
         }
       };
-
+      
+      // Safe property access
       const time = anime.broadcast?.time || 'TBA';
       const genres = (anime.genres || []).slice(0, 2).map(g => g.name).join(', ') || 'N/A';
       const imgUrl = anime.images?.jpg?.image_url || '';
@@ -1002,7 +934,7 @@ async function loadSchedule(day) {
     grid.innerHTML = '<div class="error-state"><p>Failed to load schedule</p><button class="retry-btn" onclick="loadSchedule(\'' + normalizedDay + '\')">Retry</button></div>';
   }
 }
-window.loadSchedule = loadSchedule;
+window.loadSchedule = loadSchedule; 
 
 // 2. Spin The Wheel (Random Anime)
 async function spinWheel() {
@@ -1028,82 +960,65 @@ async function spinWheel() {
   try {
     // Small artificial delay for effect
     await new Promise(r => setTimeout(r, 1500));
+    
+    // Fetch Random with SFW filter
+    const res = await fetch('https://api.jikan.moe/v4/random/anime?sfw=true');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    
+    const json = await res.json();
+    const anime = json.data;
 
-    // Try the random endpoint directly (it returns { data: {...} })
-    let anime = null;
-    try {
-      const res = await fetch('https://api.jikan.moe/v4/random/anime?sfw=true');
-      if (res.ok) {
-        const json = await res.json();
-        if (json && json.data) {
-          anime = json.data;
-        }
-      }
-    } catch (e) {
-      console.warn('Random endpoint failed, will fallback to random pick from top list.', e);
-    }
-
-    // Fallback: fetch a top list and pick one at random
-    if (!anime) {
-      try {
-        const list = await fetchWithRetry('https://api.jikan.moe/v4/top/anime?sfw=true&limit=50');
-        if (list && list.length) {
-          anime = list[Math.floor(Math.random() * list.length)];
-        }
-      } catch (e) {
-        console.error('Fallback random fetch failed:', e);
-      }
-    }
-
-    // Redirect if we have something
+    // Redirect
     if (anime && anime.mal_id) {
       location.href = `/anime.html?id=${anime.mal_id}`;
-      return;
+    } else {
+      throw new Error("No valid anime data received");
     }
-
-    throw new Error('No valid anime received');
   } catch (e) {
     console.error('Spin error:', e);
     showToast('Spin failed! Please try again.', 'error');
-    if (overlay) {
-      overlay.classList.remove('active');
-      overlay.setAttribute('aria-busy', 'false');
-    }
+    overlay.classList.remove('active');
+    overlay.setAttribute('aria-busy', 'false');
   }
 }
-window.spinWheel = spinWheel;
+window.spinWheel = spinWheel; 
 
 // Toast notification helper
 function showToast(message, type = 'info') {
   // Remove existing toast
   const existingToast = document.querySelector('.toast');
   if (existingToast) existingToast.remove();
-
+  
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
-
+  
   const icons = {
     success: '✅',
     error: '❌',
     warning: '⚠️',
     info: 'ℹ️'
   };
-
+  
   toast.innerHTML = `
     <span class="toast-icon">${icons[type] || icons.info}</span>
     <span class="toast-message">${message}</span>
   `;
-
+  
   document.body.appendChild(toast);
-
+  
   // Trigger animation
   requestAnimationFrame(() => {
     toast.classList.add('show');
   });
-
+  
   // Auto hide
   setTimeout(() => {
     toast.classList.remove('show');
     setTimeout(() => toast.remove(), 400);
   }, 4000);
 }
+
+// [FIX 3: Global Button Safety]
+// Ensure global access for inline HTML handlers
+window.spinWheel = spinWheel;
+window.loadSchedule = loadSchedule;
