@@ -27,7 +27,6 @@
   </div>
 </header>
 
-<!-- HERO SECTION -->
 <section class="hero" id="hero">
   <div class="hero-bg" id="heroBg"></div>
   <div class="hero-overlay"></div>
@@ -62,7 +61,6 @@
   <button class="hero-arrow right" id="heroNext">›</button>
 </section>
 
-<!-- GENRE FILTER SECTION (NEW!) -->
 <section class="genre-filter-section" id="genreFilterSection">
   <div class="genre-filter-content">
     <h2>🎭 Browse by Genre</h2>
@@ -70,12 +68,10 @@
   </div>
 </section>
 
-<!-- MAIN LAYOUT -->
 <main class="layout">
 
   <section class="left">
 
-    <!-- SEASONAL -->
     <div class="block">
       <h2>🌸 Seasonal</h2>
       <div class="row-wrapper">
@@ -85,7 +81,6 @@
       </div>
     </div>
 
-    <!-- TRENDING -->
     <div class="block">
       <h2>🔥 Trending</h2>
       <div class="row-wrapper">
@@ -94,8 +89,20 @@
         <button class="nav-btn right" data-target="trending">›</button>
       </div>
     </div>
+    
+    <div class="block">
+      <h2>⭐ AniCrunch Recommends</h2>
+      <p class="section-subtitle" style="color: var(--muted); font-size: 14px; margin-bottom: 20px;">
+        Hand-picked anime we believe everyone should experience at least once.
+      </p>
 
-    <!-- SEARCH RESULTS -->
+      <div id="recommendsPreview" class="row-scroll"></div>
+
+      <a href="/recommendations.html" class="view-all-link">
+        View all recommendations →
+      </a>
+    </div>
+
     <div class="block" id="searchBlock" style="display:none">
       <div id="animeContainer"></div>
     </div>
