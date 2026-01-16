@@ -25,6 +25,80 @@ const appState = {
 };
 
 // =====================
+// CURATED LISTS DATA
+// =====================
+const curatedLists = {
+  mustWatch: [
+    { id: 9253, note: "Smart, emotional sci-fi that respects the viewer." }, // Steins;Gate
+    { id: 16498, note: "A landmark series that changed modern anime." }, // AoT
+    { id: 5114, note: "A complete story with strong themes and payoff." }, // FMAB
+    { id: 1535, note: "Stylish, timeless, and deeply influential." }, // Death Note
+    { id: 52991, note: "Quiet fantasy with emotional depth." } // Frieren
+  ],
+
+  hiddenGems: [
+    { id: 48849, note: "Abstract storytelling that demands attention." }, // Sonny Boy
+    { id: 6211, note: "Character-driven sports anime with unique art." }, // Ping Pong
+    { id: 387, note: "Atmospheric and philosophical sci-fi." }, // Haibane Renmei
+    { id: 457, note: "Slow, reflective, and deeply calming." } // Mushishi
+  ],
+
+  topTen: [
+    { id: 9253 }, // Steins;Gate
+    { id: 16498 }, // AoT
+    { id: 48849 }, // Sonny Boy
+    { id: 44511 }, // Chainsaw Man
+    { id: 14813 }, // Oregairu
+    { id: 10087 }, // Fate/Zero
+    { id: 52991 }, // Frieren
+    { id: 20 }, // Naruto
+    { id: 21 }, // One Piece
+    { id: 16067 } // Railgun
+  ]
+};
+
+// =====================
+// EDITORIAL REVIEWS (NEW)
+// =====================
+const editorialTakes = {
+  21: `One Piece is less about catching up and more about settling in.
+Its length can be intimidating, but the emotional payoff and world-building
+reward patience in a way very few long-running series manage to achieve.`,
+
+  20: `Naruto is deeply flawed, especially in its pacing, but its impact on
+modern anime is undeniable. At its best, it captures themes of loneliness,
+growth, and perseverance that still resonate years later.`,
+
+  16498: `Attack on Titan redefined expectations for anime storytelling.
+Its willingness to embrace moral ambiguity and long-term consequences
+pushed the medium toward more mature narratives.`,
+
+  38000: `Demon Slayer thrives on presentation. While its story is fairly
+straightforward, the emotional sincerity and exceptional animation
+make it easy to understand its massive popularity.`,
+
+  40748: `Jujutsu Kaisen blends style and chaos extremely well.
+Its strength lies more in momentum and atmosphere than deep character work,
+which makes it consistently engaging.`,
+
+  9253: `Steins;Gate rewards patience more than almost any other series.
+What begins slowly evolves into an emotionally heavy and carefully structured
+story that benefits immensely from hindsight.`,
+
+  52991: `Frieren approaches fantasy from a reflective angle.
+Instead of spectacle, it focuses on memory, time, and emotional distance,
+making it quietly powerful rather than dramatic.`,
+
+  44511: `Chainsaw Man embraces messiness by design.
+Its raw emotion and unpredictability stand out more than traditional structure,
+especially when viewed alongside its manga arcs.`,
+
+  31964: `My Hero Academia starts with a strong thematic foundation,
+but struggles later under its own popularity.
+At its best, it still captures what makes hero stories inspiring.`
+};
+
+// =====================
 // UTILITIES
 // =====================
 function delay(ms) {
@@ -256,6 +330,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const genreChips = getElement("genreChips");
   const leftCol = document.querySelector(".left");
 
+  // NEW: Recommends Preview
+  const recommendsPreview = getElement("recommendsPreview");
+
   // Hero Elements
   const heroBg = getElement("heroBg");
   const heroTitle = getElement("heroTitle");
@@ -316,7 +393,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!resultsBox) {
       if (query.length >= 3) {
-        // [FIX 2: Wired Search Input correctly]
         appState.viewState.mode = 'search'; 
         window.location.href = `/?search=${encodeURIComponent(query)}`;
       }
@@ -340,6 +416,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (searchBlock) searchBlock.style.display = "block";
     if (seasonalBox) seasonalBox.parentElement.style.display = "none";
     if (trendingBox) trendingBox.parentElement.style.display = "none";
+    // Hide Recommends Preview during search
+    if (recommendsPreview) recommendsPreview.parentElement.style.display = "none";
 
     resultsBox.innerHTML = `
       <div class="filter-header" style="margin-bottom: 20px;">
@@ -703,6 +781,96 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error('Error loading data:', e);
     }
   }
+
+  // NEW: Load Recommends Preview
+  const recommendsPreviewList = [
+    { id: 9253, note: "A rare time-travel story that rewards patience and attention." }, // Steins;Gate
+    { id: 16498, note: "A series that redefined how dark and ambitious anime could be." }, // AoT
+    { id: 52991, note: "Quiet, emotional fantasy that values reflection over spectacle." }, // Frieren
+    { id: 48849, note: "Abstract, unsettling, and deeply personal." }, // Sonny Boy
+    { id: 5114, note: "A complete story with strong themes and unforgettable characters." } // FMAB
+  ];
+
+  if (recommendsPreview) {
+    recommendsPreviewList.forEach(async item => {
+      try {
+        const res = await fetchWithRetry(`https://api.jikan.moe/v4/anime/${item.id}`);
+        const anime = res.length ? res[0] : res; // Handle if cached array
+
+        const card = createCard(anime);
+        // Force width in preview grid
+        card.style.minWidth = "200px";
+
+        if (item.note) {
+          const note = document.createElement("p");
+          note.className = "editor-note";
+          note.textContent = item.note;
+          // Add note inside card text content area
+          const contentDiv = card.querySelector('div:last-child');
+          if (contentDiv) contentDiv.appendChild(note);
+        }
+
+        recommendsPreview.appendChild(card);
+      } catch (e) {
+        console.error("Failed to load recommended anime", e);
+      }
+    });
+  }
+
+  // NEW: Render Curated Lists on recommendations.html
+  function renderCuratedList(containerId, list) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    // Use a grid for these sections
+    container.className = "responsive-grid";
+    container.style.cssText = `
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+    `;
+
+    list.forEach(async item => {
+      try {
+        const res = await fetchWithRetry(`https://api.jikan.moe/v4/anime/${item.id}`);
+        // Jikan API by ID returns single object in 'data', fetchWithRetry usually returns array if search, 
+        // but here we might need to adjust fetchWithRetry or just use standard fetch for single ID if fetchWithRetry is optimized for lists.
+        // Actually fetchWithRetry returns cached array. 
+        // Let's use direct fetch for specific ID to be safe, or cache properly. 
+        // Jikan ID endpoint returns {data: {...}}.
+        
+        let anime;
+        if (Array.isArray(res)) anime = res[0];
+        else anime = res; // If fetchWithRetry returned object
+
+        // Fallback if fetchWithRetry isn't suited for single ID
+        if (!anime) {
+           const r = await fetch(`https://api.jikan.moe/v4/anime/${item.id}`);
+           const json = await r.json();
+           anime = json.data;
+        }
+
+        const card = createCard(anime);
+
+        if (item.note) {
+          const note = document.createElement("p");
+          note.className = "editor-note";
+          note.textContent = item.note;
+          const contentDiv = card.querySelector('div:last-child');
+          if (contentDiv) contentDiv.appendChild(note);
+        }
+
+        container.appendChild(card);
+      } catch (e) {
+        console.error("Failed to render curated list", e);
+      }
+    });
+  }
+
+  // Execute render if elements exist
+  renderCuratedList("mustWatch", curatedLists.mustWatch);
+  renderCuratedList("hiddenGems", curatedLists.hiddenGems);
+  renderCuratedList("topTen", curatedLists.topTen);
 
   async function loadHero() {
     try {
