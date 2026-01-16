@@ -119,6 +119,28 @@
     .section-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
     .synopsis-text { font-size: 15px; line-height: 1.8; color: #ccc; }
 
+    /* OUR TAKE (NEW) */
+    .our-take {
+      background: rgba(255, 255, 255, 0.03); 
+      border-radius: 12px; 
+      padding: 24px;
+      border-left: 4px solid var(--accent); /* Accent border */
+      margin-top: 10px;
+    }
+    .our-take h2 {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 0 0 12px 0;
+      color: #fff;
+    }
+    .our-take-text {
+      font-size: 15px;
+      line-height: 1.7;
+      color: #ddd; 
+      font-style: italic;
+      margin: 0;
+    }
+
     /* Horizontal Scrolls */
     .scroll-container {
       display: flex;
@@ -237,6 +259,14 @@
       <p class="synopsis-text" id="synopsis"></p>
     </div>
 
+    <section id="ourTakeSection" class="our-take">
+      <h2>Our Take</h2>
+      <p id="ourTakeText" class="our-take-text">
+        This anime is on our editorial list for a future review.
+        Our take will be added once we revisit the series.
+      </p>
+    </section>
+
     <div id="trailerSection" style="display:none">
       <h2 class="section-title">Trailer</h2>
       <div class="trailer-box">
@@ -271,6 +301,47 @@
 const API_BASE = "https://anicrunch-backend.onrender.com";
 const animeId = new URLSearchParams(location.search).get('id');
 let trailerId = null;
+
+// =====================
+// EDITORIAL REVIEWS (NEW)
+// =====================
+const editorialTakes = {
+  21: `One Piece is less about catching up and more about settling in.
+Its length can be intimidating, but the emotional payoff and world-building
+reward patience in a way very few long-running series manage to achieve.`,
+
+  20: `Naruto is deeply flawed, especially in its pacing, but its impact on
+modern anime is undeniable. At its best, it captures themes of loneliness,
+growth, and perseverance that still resonate years later.`,
+
+  16498: `Attack on Titan redefined expectations for anime storytelling.
+Its willingness to embrace moral ambiguity and long-term consequences
+pushed the medium toward more mature narratives.`,
+
+  38000: `Demon Slayer thrives on presentation. While its story is fairly
+straightforward, the emotional sincerity and exceptional animation
+make it easy to understand its massive popularity.`,
+
+  40748: `Jujutsu Kaisen blends style and chaos extremely well.
+Its strength lies more in momentum and atmosphere than deep character work,
+which makes it consistently engaging.`,
+
+  9253: `Steins;Gate rewards patience more than almost any other series.
+What begins slowly evolves into an emotionally heavy and carefully structured
+story that benefits immensely from hindsight.`,
+
+  52991: `Frieren approaches fantasy from a reflective angle.
+Instead of spectacle, it focuses on memory, time, and emotional distance,
+making it quietly powerful rather than dramatic.`,
+
+  44511: `Chainsaw Man embraces messiness by design.
+Its raw emotion and unpredictability stand out more than traditional structure,
+especially when viewed alongside its manga arcs.`,
+
+  31964: `My Hero Academia starts with a strong thematic foundation,
+but struggles later under its own popularity.
+At its best, it still captures what makes hero stories inspiring.`
+};
 
 if (!animeId) location.href = '/';
 
@@ -318,6 +389,18 @@ function render(data) {
 
   // Synopsis
   document.getElementById('synopsis').innerText = data.synopsis || 'No synopsis available.';
+
+  // OUR TAKE LOGIC (NEW)
+  const ourTakeText = document.getElementById("ourTakeText");
+  if (ourTakeText) {
+    if (editorialTakes[data.mal_id]) {
+      ourTakeText.textContent = editorialTakes[data.mal_id];
+    } else {
+      ourTakeText.textContent =
+        "This anime is on our editorial list for a future review. " +
+        "Our take will be added once we revisit the series.";
+    }
+  }
   
   // Buttons
   document.getElementById('malLink').href = data.url;
