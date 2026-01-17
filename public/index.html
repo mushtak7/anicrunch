@@ -3,16 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>anicrunch</title>
+  
+  <title>AniCrunch – Discover Anime, Reviews & Recommendations</title>
   <meta name="description" content="AniCrunch – Discover anime with curated recommendations, reviews, schedules, and hidden gems. Built for anime fans by anime fans.">
   
-  <link 
-    rel="preload" 
-    as="image" 
-    href="https://cdn.myanimelist.net/images/anime/5/73199.jpg" 
-    id="heroPreload" 
-    fetchpriority="high" 
-  />
+  <meta name="theme-color" content="#141428">
+  
+  <meta property="og:title" content="AniCrunch – Discover Anime">
+  <meta property="og:description" content="Curated anime recommendations, schedules, and hidden gems.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://anicrunch.vercel.app">
+
+  <link rel="preconnect" href="https://api.jikan.moe">
+  <link rel="dns-prefetch" href="https://api.jikan.moe">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="preload" as="image" id="heroPreload" />
 
   <link rel="preload" href="style.css" as="style" onload="this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="style.css"></noscript>
@@ -45,9 +54,9 @@
   </div>
 
   <div style="display:flex; gap:15px; align-items:center; margin: 0 20px;">
-    <a href="/blog/" style="text-decoration:none; color:var(--muted); font-size:14px; font-weight:500;">📖 Blog</a>
-    <a href="/schedule.html" style="text-decoration:none; color:var(--muted); font-size:14px; font-weight:500;">📅 Schedule</a>
-    <button onclick="spinWheel()" style="background:none; border:1px solid rgba(255,255,255,0.2); padding:6px 12px; border-radius:8px; color:white; cursor:pointer;" aria-label="Spin the wheel for random anime">🎲 Random</button>
+    <a href="/blog/" class="nav-link">📖 Blog</a>
+    <a href="/schedule.html" class="nav-link">📅 Schedule</a>
+    <button onclick="spinWheel()" class="btn-random" aria-label="Spin the wheel for random anime">🎲 Random</button>
   </div>
 
   <div id="authArea">
@@ -61,6 +70,8 @@
     id="heroBg"
     class="hero-bg" 
     alt="Featured Anime" 
+    width="1200"
+    height="675"
     fetchpriority="high" 
     decoding="async"
     sizes="(max-width: 768px) 100vw, 1200px" 
