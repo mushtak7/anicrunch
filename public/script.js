@@ -94,7 +94,7 @@ let requestQueue = Promise.resolve();
 function queuedFetch(url) {
   // Chain requests to ensure they run one by one
   requestQueue = requestQueue.then(async () => {
-    // [FIX] Increased delay to prevent 429
+    // Increased delay to prevent 429
     await delay(800); 
     return fetchWithRetry(url);
   });
@@ -504,13 +504,16 @@ document.addEventListener("DOMContentLoaded", () => {
   function updateHero(anime) {
     if (!anime) return;
     if (heroBg) {
-      const bgUrl = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || '';
-      heroBg.src = bgUrl;
-      heroBg.fetchPriority = "high";
+      // [FIX] Responsive Image Logic
+      const standard = anime.images?.jpg?.image_url;
+      const large = anime.images?.jpg?.large_image_url || standard;
       
-      // [FIX] Update LCP Preload
+      heroBg.src = standard; // Mobile-friendly default
+      heroBg.srcset = `${standard} 480w, ${large} 960w`;
+      
+      // Update LCP Preload
       const preload = document.getElementById("heroPreload");
-      if (preload) preload.href = bgUrl;
+      if (preload) preload.href = standard;
     }
     if (heroTitle) heroTitle.textContent = anime.title || 'Unknown Title';
     if (heroMeta) heroMeta.innerHTML = `⭐ ${anime.score || "N/A"} • ${anime.episodes || "?"} eps`;
@@ -647,7 +650,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       await loadHero(); 
       
-      // [FIX] Stagger requests to prevent 429 rate limiting
+      // Stagger requests to prevent 429 rate limiting
       setTimeout(() => {
         loadSection("seasonal", "https://api.jikan.moe/v4/seasons/now?sfw=true&limit=25");
       }, 800);
@@ -726,7 +729,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // [PERFORMANCE] Defer non-critical curated lists
+  // Defer non-critical curated lists
   setTimeout(() => {
     renderCuratedList("mustWatch", curatedLists.mustWatch);
     renderCuratedList("hiddenGems", curatedLists.hiddenGems);
@@ -735,7 +738,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function loadHero() {
     try {
-      // [FIX] Reduced limit to 5 to save bandwidth
+      // Reduced limit to 5 to save bandwidth
       const data = await queuedFetch("https://api.jikan.moe/v4/top/anime?filter=airing&sfw=true&limit=5");
       if (data && data.length) {
         heroAnimes = data;
@@ -832,7 +835,7 @@ document.addEventListener("DOMContentLoaded", () => {
     searchInput.value = searchParam;
     handleSearch(searchParam);
   } else {
-    // [FIX] Avoid Double Load for Hero
+    // Avoid Double Load for Hero
     if (seasonalBox) {
         loadAllData(); // Loads Hero internally
     } else if (typeof loadHero === "function") {
@@ -861,6 +864,7 @@ async function loadSchedule(day) {
   grid.innerHTML = `<div class="loading">Fetching ${normalizedDay}'s anime...</div>`;
 
   try {
+    // [FIX] Use queuedFetch
     const data = await queuedFetch(`https://api.jikan.moe/v4/schedules?filter=${normalizedDay}&sfw=true`);
     grid.innerHTML = '';
     if (!data.length) { grid.innerHTML = '<div class="empty-state"><h3>No anime airing this day</h3></div>'; return; }
@@ -894,6 +898,7 @@ async function spinWheel() {
   overlay.classList.add('active');
   try {
     await new Promise(r => setTimeout(r, 1500));
+    // [FIX] Use queuedFetch and use unwrapped anime object
     const anime = await queuedFetch('https://api.jikan.moe/v4/random/anime?sfw=true');
     if (anime && anime.mal_id) location.href = `/anime.html?id=${anime.mal_id}`;
     else throw new Error("No data");
