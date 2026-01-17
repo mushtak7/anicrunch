@@ -129,12 +129,34 @@ function getElement(id) {
   return document.getElementById(id);
 }
 
-// [FIX] Helper to normalize single anime response
+// Helper to normalize single anime response
 function normalizeSingleAnimeResponse(json) {
   if (json && json.data && json.data.mal_id) {
     return json.data;
   }
   return null;
+}
+
+// [NEW] Skeleton Generator
+function createSkeletonCard() {
+  const div = document.createElement("div");
+  div.className = "anime-card skeleton-card";
+  div.style.cssText = `
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 200px;
+  `;
+
+  div.innerHTML = `
+    <div class="skeleton-poster"></div>
+    <div class="skeleton-body">
+      <div class="skeleton-line short"></div>
+      <div class="skeleton-line"></div>
+    </div>
+  `;
+
+  return div;
 }
 
 // =====================
@@ -264,7 +286,7 @@ function cleanupObserver() {
 }
 
 // =====================
-// CARD CREATOR (FIXED)
+// CARD CREATOR
 // =====================
 function createCard(anime, options = {}) { 
   const div = document.createElement("div");
@@ -273,7 +295,7 @@ function createCard(anime, options = {}) {
   div.setAttribute('role', 'button');
   div.setAttribute('aria-label', `View details for ${anime.title || 'Untitled'}`);
   
-  // [FIX] Added image fallback safety
+  // Image fallback safety
   const imgUrl = anime.images?.jpg?.large_image_url || 
                  anime.images?.jpg?.image_url || 
                  "https://via.placeholder.com/300x420?text=No+Image";
@@ -320,7 +342,7 @@ function createCard(anime, options = {}) {
     }
   };
   
-  // FIX: Handle Lazy vs Direct Loading
+  // Handle Lazy vs Direct Loading
   const img = div.querySelector('img');
   if (img) {
     if (options.disableLazy) {
@@ -351,9 +373,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const genreChips = getElement("genreChips");
   const leftCol = document.querySelector(".left");
 
-  // NEW: Recommends Preview
+  // Recommends Preview
   const recommendsPreview = getElement("recommendsPreview");
-  // [FIX] Get the wrapper for home sections
   const homeSections = getElement("homeSections");
 
   // Hero Elements
@@ -385,7 +406,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
   const CARDS_PER_PAGE = appState.preferences.cardsPerPage;
 
-  // --- VIEW HELPERS (The Core Logic Fix) ---
+  // --- VIEW HELPERS ---
   function showHome() {
     appState.viewState.mode = 'home';
     if (homeSections) homeSections.style.display = "block";
@@ -445,7 +466,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // [FIX] Hide home, show results block immediately
+    // Hide home, show results block immediately
     showResults();
 
     if (currentSearchAbortController) {
@@ -540,7 +561,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Clear Search Input
     if (searchInput) searchInput.value = '';
     
-    // [FIX] Use explicit Show Home Logic
+    // Use explicit Show Home Logic
     showHome();
     
     if (window.history.replaceState) {
@@ -554,7 +575,6 @@ document.addEventListener("DOMContentLoaded", () => {
     searchInput.onkeydown = (e) => { 
       if (e.key === 'Escape') {
         e.preventDefault();
-        // [FIX] Esc key triggers reset
         searchClear.click();
       }
       if (e.key === 'Enter') {
@@ -568,7 +588,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (searchClear) {
-    // [FIX] Clear button restores home AND reloads data
+    // Clear button restores home AND reloads data
     searchClear.onclick = () => {
       if (searchInput) {
         searchInput.value = '';
@@ -725,7 +745,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll('.genre-chip').forEach(c => c.classList.remove('active'));
     if (clickedChip) clickedChip.classList.add('active');
 
-    // [FIX] Hide home, show results mode for genre
+    // Hide home, show results mode for genre
     showResults();
 
     appState.viewState = { mode: 'genre', currentQuery: genreId, currentPage: 1, isLoading: true, hasMore: true };
@@ -800,7 +820,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // NEW: Load Recommends Preview
+  // Recommends Preview
   const recommendsPreviewList = [
     { id: 9253, note: "A rare time-travel story that rewards patience and attention." }, // Steins;Gate
     { id: 16498, note: "A series that redefined how dark and ambitious anime could be." }, // AoT
@@ -809,8 +829,17 @@ document.addEventListener("DOMContentLoaded", () => {
     { id: 5114, note: "A complete story with strong themes and unforgettable characters." } // FMAB
   ];
 
-  // [FIX] Completely updated Recommends Preview logic to use Direct Fetch
+  // [NEW] Added Skeletons to Recommends Preview logic
   if (recommendsPreview) {
+    // --- SHOW SKELETONS FIRST ---
+    recommendsPreview.innerHTML = "";
+    const SKELETON_COUNT = recommendsPreviewList.length;
+
+    for (let i = 0; i < SKELETON_COUNT; i++) {
+      recommendsPreview.appendChild(createSkeletonCard());
+    }
+
+    // --- LOAD REAL DATA ---
     recommendsPreviewList.forEach(async item => {
       try {
         // Direct fetch to handle single object response correctly
@@ -835,6 +864,12 @@ document.addEventListener("DOMContentLoaded", () => {
           if (contentDiv) contentDiv.appendChild(note);
         }
 
+        // Remove skeletons only once before adding the first real card
+        const skeletons = recommendsPreview.querySelectorAll(".skeleton-card");
+        if (skeletons.length) {
+          skeletons.forEach(s => s.remove());
+        }
+
         recommendsPreview.appendChild(card);
       } catch (e) {
         console.error("Failed to load recommended anime", e);
@@ -842,7 +877,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // NEW: Render Curated Lists on recommendations.html
+  // Render Curated Lists on recommendations.html
   function renderCuratedList(containerId, list) {
     const container = document.getElementById(containerId);
     if (!container) return;
