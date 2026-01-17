@@ -72,40 +72,6 @@
   50% { transform: translateY(-20px) rotate(180deg); }
 }
 
-/* [FIX] Hero slide animations */
-@keyframes heroSlideIn {
-  from {
-    opacity: 0;
-    transform: scale(1.05);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes heroSlideOut {
-  from {
-    opacity: 1;
-    transform: scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-}
-
-@keyframes heroContentFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 /* =====================
    GLOBAL
 ===================== */
@@ -369,7 +335,7 @@ header input:focus {
 }
 
 /* =====================
-   HERO SECTION - FIXED FOR MULTIPLE IMAGES
+   HERO SECTION - FIX 1 (Visibility)
 ===================== */
 .hero {
   position: relative;
@@ -379,7 +345,8 @@ header input:focus {
   overflow: hidden;
   margin-bottom: 20px;
   visibility: visible;
-  isolation: isolate;
+  /* [FIX 1] Create Stacking Context for Image Visibility */
+  isolation: isolate; 
 }
 
 .hero.hidden {
@@ -388,59 +355,21 @@ header input:focus {
   pointer-events: none;
 }
 
-/* [FIX 1] Container for Multiple Hero Slides */
-.hero-slides-container {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-}
-
-/* [FIX 1] Individual Hero Slide */
-.hero-slide {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.6s ease-in-out, visibility 0.6s ease-in-out;
-  z-index: 0;
-}
-
-.hero-slide.active {
-  opacity: 1;
-  visibility: visible;
-  z-index: 1;
-}
-
-/* [FIX 1] Hero Image - NO BLUR, Clear Display */
+/* [FIX 1] Hero Image: No blur, no scale, z-index 0 */
 .hero-bg {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  z-index: 0;
+
+  z-index: 0;          /* Placed inside the new stacking context */
   opacity: 1;
-  filter: none; /* [FIX] Explicitly no blur on image */
-  transform: none;
-  transition: opacity 0.6s ease-in-out, transform 0.6s ease-in-out;
-  image-rendering: auto; /* [FIX] Ensure crisp rendering */
-  -webkit-image-rendering: auto;
+  filter: none;        /* Remove visual noise */
+  transform: none;     /* Remove scaling */
 }
 
-/* [FIX] Smooth scale effect on active slide */
-.hero-slide.active .hero-bg {
-  animation: heroSlideIn 0.8s ease-out forwards;
-}
-
-.hero-slide.exiting .hero-bg {
-  animation: heroSlideOut 0.6s ease-in forwards;
-}
-
-/* [FIX 1] Hero Overlay - REMOVED BLUR */
+/* [FIX 1] Updated Overlay Gradients */
 .hero-overlay {
   position: absolute;
   inset: 0;
@@ -456,12 +385,10 @@ header input:focus {
       rgba(7, 7, 15, 0.6) 35%,
       transparent 65%
     );
-  /* [FIX] REMOVED backdrop-filter: blur(6px); - This was causing the blur */
   z-index: 1;
-  pointer-events: none;
 }
 
-/* [FIX 1] Hero Content - Above Overlay */
+/* [FIX 1] Ensure Content is above Overlay */
 .hero-content {
   position: relative;
   z-index: 2;
@@ -471,11 +398,6 @@ header input:focus {
   justify-content: center;
   padding: 60px 80px;
   max-width: 650px;
-}
-
-/* [FIX] Animate content when slide changes */
-.hero-slide.active .hero-content {
-  animation: heroContentFadeIn 0.6s ease-out 0.2s both;
 }
 
 .hero-badge {
@@ -633,25 +555,26 @@ header input:focus {
   transform: none !important;
 }
 
-/* [FIX 2] Hero Navigation - Compact Dots */
+/* Hero Navigation */
 .hero-nav {
   position: absolute;
   bottom: 25px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 5px;
+  gap: 6px;
   z-index: 5;
-  padding: 4px 8px;
+  padding: 5px 10px;
   background: rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(5px);
   border-radius: 20px;
 }
 
+/* [FIX 2] Smaller Hero Dots */
 .hero-dot {
-  width: 5px;
-  height: 5px;
-  margin: 0;
+  width: 6px;
+  height: 6px;
+  margin: 0 3px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.35);
   border: none;
@@ -663,14 +586,15 @@ header input:focus {
 .hero-dot:hover,
 .hero-dot:focus-visible {
   background: rgba(255, 255, 255, 0.5);
+  /* Removed scale to prevent CLS */
 }
 
 .hero-dot.active {
-  width: 10px;
-  height: 5px;
-  border-radius: 999px;
+  width: 12px;
+  height: 6px;
+  border-radius: 6px;
   background: var(--gradient);
-  transform: none;
+  transform: none; /* No scaling */
 }
 
 .hero-arrow {
@@ -792,10 +716,11 @@ header input:focus {
 /* =====================
    ROW SCROLL - FIXED DISPLAY
 ===================== */
-/* DESKTOP DEFAULT: 6 Columns Grid */
+/* [FIX 3] 3 Columns x 2 Rows Grid Layout (Global) */
 .row-scroll {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(3, 1fr); /* 3 columns grid */
+  grid-auto-rows: auto;
   gap: 20px;
   flex: 1;
   min-width: 0;
@@ -806,7 +731,7 @@ header input:focus {
   min-height: 460px;
 }
 
-/* Ensure hidden cards are truly hidden to maintain layout */
+/* Ensure hidden cards are truly hidden */
 .anime-card.hidden {
   display: none !important;
 }
@@ -1627,7 +1552,7 @@ header input:focus {
     display: none;
   }
 
-  /* Mobile Grid - 3 cols (2 rows visible with 6 items) */
+  /* [FIX 3] Mobile Grid - 3 cols (2 rows visible with 6 items) */
   .row-scroll {
     grid-template-columns: repeat(3, 1fr);
     gap: 14px;
