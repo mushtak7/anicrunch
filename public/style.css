@@ -136,8 +136,6 @@ body {
   border-radius: 16px;
 }
 
-/* [FIX] Disable skeleton animation on load if needed, but usually we want it. 
-   Kept enabled unless .loading * disables it globally */
 .skeleton-card {
   width: 100%;
   aspect-ratio: 3/4;
@@ -178,7 +176,6 @@ header {
   border-bottom: 1px solid var(--border);
 }
 
-/* [FIX] Fallback for browsers/devices struggling with backdrop-filter */
 @supports not (backdrop-filter: blur(20px)) {
   header {
     background: rgba(20, 20, 40, 0.95);
@@ -271,7 +268,6 @@ header input:focus {
   transition: all 0.25s ease;
   cursor: pointer;
   font-family: inherit;
-  /* [FIX] Removed will-change */
 }
 
 .auth-link:hover,
@@ -325,7 +321,6 @@ header input:focus {
   font-family: inherit;
   font-size: 14px;
   transition: all 0.25s ease;
-  /* [FIX] Removed will-change */
 }
 
 .btn-random:hover {
@@ -467,7 +462,6 @@ header input:focus {
   border: 1px solid var(--border);
   color: var(--text);
   transition: all 0.3s ease;
-  /* [FIX] Removed will-change */
 }
 
 .hero-genres span:hover {
@@ -495,7 +489,7 @@ header input:focus {
   border: none;
   font-family: inherit;
   overflow: hidden;
-  will-change: transform; /* Kept as requested for heaviest element */
+  will-change: transform;
 }
 
 .hero-btn::after {
@@ -589,7 +583,6 @@ header input:focus {
   cursor: pointer;
   transition: transform 0.3s ease, background-color 0.3s;
   padding: 0;
-  /* [FIX] Removed will-change */
 }
 
 .hero-dot:hover,
@@ -620,7 +613,6 @@ header input:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  /* [FIX] Removed will-change */
 }
 
 .hero-arrow:hover,
@@ -719,7 +711,6 @@ header input:focus {
   align-items: center;
   justify-content: center;
   font-family: inherit;
-  /* [FIX] Removed will-change */
 }
 
 .nav-btn:hover:not(:disabled),
@@ -752,7 +743,10 @@ header input:focus {
   transition: transform 0.3s cubic-bezier(.2,.8,.2,1);
   aspect-ratio: 3/4;
   width: 100%;
-  will-change: transform; /* Kept as requested */
+  will-change: transform;
+  /* [FIX #3] Move inline JS styles to CSS class */
+  display: flex;
+  flex-direction: column;
 }
 
 .anime-card::before {
@@ -783,7 +777,6 @@ header input:focus {
   object-fit: cover;
   transition: transform 0.5s ease;
   background: rgba(255,255,255,0.05);
-  /* [FIX] Removed will-change from img */
 }
 
 .anime-card:hover img,
@@ -812,6 +805,20 @@ header input:focus {
   overflow: hidden;
 }
 
+/* [FIX #3] New classes to replace inline styles in JS */
+.anime-card-poster {
+  position: relative;
+  width: 100%;
+  padding-top: 145%;
+}
+
+.anime-card-content {
+  padding: 10px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 /* =====================
    TOP ANIME SIDEBAR
 ===================== */
@@ -831,7 +838,6 @@ header input:focus {
   border: 1px solid var(--border);
   cursor: pointer;
   transition: transform 0.25s ease, background 0.25s;
-  /* [FIX] Removed will-change */
 }
 
 .top-item:hover,
@@ -893,7 +899,6 @@ header input:focus {
 /* =====================
    LOADING & ERROR STATES
 ===================== */
-/* [FIX] Default loading state has no animation to avoid conflict */
 .loading {
   text-align: center;
   color: var(--muted);
@@ -903,7 +908,6 @@ header input:focus {
   animation: none;
 }
 
-/* Only pulse when strictly active */
 .loading.active {
   animation: pulse 1.5s infinite;
 }
@@ -953,7 +957,6 @@ header input:focus {
   padding: 60px 20px;
 }
 
-/* [FIX] Paused by default to improve lighthouse score */
 .empty-icon {
   font-size: 56px;
   margin-bottom: 16px;
@@ -962,7 +965,6 @@ header input:focus {
   animation-play-state: paused;
 }
 
-/* Only run when container is active */
 .empty-state.active .empty-icon {
   animation-play-state: running;
 }
@@ -1091,7 +1093,6 @@ header input:focus {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  /* [FIX] Removed will-change */
 }
 
 .genre-chip:hover:not(.active) {
@@ -1142,7 +1143,6 @@ header input:focus {
   animation: fadeInUp 0.5s ease-out both;
 }
 
-/* [FIX] Disable staggered animation on mobile to improve TBT */
 @media (max-width: 768px) {
   .genre-results-grid .anime-card {
     animation: none !important;
@@ -1210,7 +1210,6 @@ header input:focus {
   border-radius: 12px;
   cursor: pointer;
   transition: transform 0.25s ease, background 0.25s;
-  /* [FIX] Removed will-change */
 }
 
 .schedule-card:hover,
