@@ -345,6 +345,8 @@ header input:focus {
   overflow: hidden;
   margin-bottom: 20px;
   visibility: visible;
+  /* [FIX 1] Create Stacking Context for Image Visibility */
+  isolation: isolate;
 }
 
 .hero.hidden {
@@ -353,7 +355,7 @@ header input:focus {
   pointer-events: none;
 }
 
-/* [FIX 1] Real Hero Image Visibility Fix */
+/* [FIX 1] Hero Image Fix: z-index 0 */
 .hero-bg {
   position: absolute;
   inset: 0;
@@ -361,16 +363,14 @@ header input:focus {
   height: 100%;
   object-fit: cover;
 
-  /* FIX: Remove blur and scale, force opacity */
+  z-index: 0; /* No negative z-index */
+  opacity: 1;
   filter: none;
   transform: none;
-  opacity: 1;
-
-  z-index: -1;
   transition: opacity 0.5s ease-in-out;
 }
 
-/* [FIX 1] Adjusted Overlay for visibility */
+/* [FIX 1] Ensure Overlay is above Image */
 .hero-overlay {
   position: absolute;
   inset: 0;
@@ -386,8 +386,11 @@ header input:focus {
       rgba(7, 7, 15, 0.6) 35%,
       transparent 65%
     );
+  backdrop-filter: blur(6px);
+  z-index: 1;
 }
 
+/* [FIX 1] Ensure Content is above Overlay */
 .hero-content {
   position: relative;
   z-index: 2;
@@ -554,26 +557,25 @@ header input:focus {
   transform: none !important;
 }
 
-/* Hero Navigation */
+/* [FIX 2] Hero Navigation - Compact Dots */
 .hero-nav {
   position: absolute;
   bottom: 25px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 6px;
+  gap: 5px; /* Compact Gap */
   z-index: 5;
-  padding: 5px 10px;
+  padding: 4px 8px; /* Compact Padding */
   background: rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(5px);
   border-radius: 20px;
 }
 
-/* [FIX 2] Smaller Hero Dots */
 .hero-dot {
-  width: 6px;
-  height: 6px;
-  margin: 0 3px;
+  width: 5px; /* Base size */
+  height: 5px;
+  margin: 0;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.35);
   border: none;
@@ -585,15 +587,14 @@ header input:focus {
 .hero-dot:hover,
 .hero-dot:focus-visible {
   background: rgba(255, 255, 255, 0.5);
-  /* Removed scale to prevent big jumps */
 }
 
 .hero-dot.active {
-  width: 12px; /* Smaller active state */
-  height: 6px;
-  border-radius: 6px;
+  width: 10px; /* Active width */
+  height: 5px;
+  border-radius: 999px;
   background: var(--gradient);
-  transform: none; /* Remove scaling */
+  transform: none;
 }
 
 .hero-arrow {
@@ -715,11 +716,10 @@ header input:focus {
 /* =====================
    ROW SCROLL - FIXED DISPLAY
 ===================== */
-/* [FIX 3] 3 Columns x 2 Rows Grid Layout (Global) */
+/* [FIX 3] DESKTOP DEFAULT: 6 Columns Grid */
 .row-scroll {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* 3 columns */
-  grid-auto-rows: auto;
+  grid-template-columns: repeat(6, 1fr); /* 6 visible cards */
   gap: 20px;
   flex: 1;
   min-width: 0;
@@ -1393,13 +1393,14 @@ header input:focus {
    RESPONSIVE
 ===================== */
 @media (max-width: 1400px) {
-  /* No changes needed here, 3 col layout is base */
+  .row-scroll {
+    grid-template-columns: repeat(5, 1fr);
+  }
 }
 
 @media (max-width: 1200px) {
-  /* Override existing column counts to enforce 3 cols */
   .row-scroll {
-    grid-template-columns: repeat(3, 1fr) !important;
+    grid-template-columns: repeat(4, 1fr);
   }
   
   .anime-card {
@@ -1449,7 +1450,7 @@ header input:focus {
 
 @media (max-width: 900px) {
   .row-scroll {
-    grid-template-columns: repeat(3, 1fr) !important;
+    grid-template-columns: repeat(3, 1fr);
   }
   
   .anime-card {
@@ -1461,6 +1462,7 @@ header input:focus {
   }
 }
 
+/* [FIX 3] Mobile Override Only (3 columns x 2 rows = 6 items) */
 @media (max-width: 768px) {
   header {
     flex-wrap: wrap;
@@ -1478,27 +1480,26 @@ header input:focus {
     margin-left: auto;
   }
 
-  /* [FIX 2B] Mobile Hero Layout Adjustments */
   .hero {
     height: auto;
-    min-height: 640px; /* Increased height */
+    min-height: 640px;
   }
   
   .hero-content {
-    padding: 28px 20px 140px; /* Space for dots */
+    padding: 28px 20px 140px;
   }
   
   .hero-actions {
-    flex-direction: column; /* Stack buttons */
+    flex-direction: column;
     gap: 12px;
   }
 
   .hero-nav {
-    bottom: 24px; /* Move dots lower */
+    bottom: 24px;
   }
 
   .hero-arrow {
-    display: none; /* Hide arrows on mobile */
+    display: none;
   }
   
   .hero-content h1,
@@ -1517,7 +1518,7 @@ header input:focus {
   .hero-btn {
     padding: 12px 20px;
     font-size: 14px;
-    width: 100%; /* Full width buttons */
+    width: 100%;
     justify-content: center;
   }
 
@@ -1547,14 +1548,13 @@ header input:focus {
   }
   
   .nav-links {
-    display: none; /* Hide on mobile for space, or move to hamburger menu */
+    display: none;
   }
 
-  /* [FIX 3] Mobile Grid - 3 cols x 2 rows = 6 items per view */
+  /* [FIX 3] Mobile Grid - 3 cols (2 rows visible with 6 items) */
   .row-scroll {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 14px; /* Tighter spacing for mobile */
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
     min-height: 460px;
   }
   
@@ -1566,10 +1566,16 @@ header input:focus {
     font-size: 14px !important;
     min-height: 40px;
   }
+  
+  .nav-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
 }
 
 @media (max-width: 600px) {
-  /* Still enforcing 3 cols, just smaller text/buttons if needed */
+  /* Still enforcing 3 cols */
   .nav-btn {
     width: 40px;
     height: 40px;
