@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+/* [FIX #6] Removed @import. Fonts are loaded in HTML <head> */
 
 /* =====================
    THEME VARIABLES
@@ -52,24 +52,20 @@
   50% { transform: translateY(-10px); }
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+@keyframes bounceSpin {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(180deg); }
 }
 
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translate3d(0, 30px, 0); /* Use 3d for GPU */
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
-}
-
-@keyframes bounceSpin {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-20px) rotate(180deg); }
 }
 
 /* =====================
@@ -140,9 +136,12 @@ body {
   border-radius: 16px;
 }
 
+/* [FIX] Disable skeleton animation on load if needed, but usually we want it. 
+   Kept enabled unless .loading * disables it globally */
 .skeleton-card {
-  aspect-ratio: 3/4;
   width: 100%;
+  aspect-ratio: 3/4;
+  border-radius: 16px;
 }
 
 .skeleton-text {
@@ -179,6 +178,13 @@ header {
   border-bottom: 1px solid var(--border);
 }
 
+/* [FIX] Fallback for browsers/devices struggling with backdrop-filter */
+@supports not (backdrop-filter: blur(20px)) {
+  header {
+    background: rgba(20, 20, 40, 0.95);
+  }
+}
+
 header h1 {
   font-size: 26px;
   font-weight: 700;
@@ -189,14 +195,13 @@ header h1 {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   margin: 0;
-  transition: transform 0.3s ease;
+  transition: opacity 0.3s ease;
 }
 
 header h1:hover {
-  transform: scale(1.05);
+  opacity: 0.8;
 }
 
-/* Search Container for UX */
 .search-container {
   position: relative;
   flex: 1;
@@ -213,7 +218,7 @@ header input {
   color: var(--text);
   outline: none;
   font-size: 14px;
-  transition: all 0.3s ease;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 header input::placeholder {
@@ -222,11 +227,9 @@ header input::placeholder {
 
 header input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(255,60,172,0.2);
   background: rgba(255,255,255,0.1);
 }
 
-/* Clear Button */
 .search-clear {
   position: absolute;
   right: 10px;
@@ -242,11 +245,10 @@ header input:focus {
   display: none;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: color 0.2s;
 }
 
 .search-clear:hover {
-  background: rgba(255,255,255,0.1);
   color: var(--text);
 }
 
@@ -269,6 +271,7 @@ header input:focus {
   transition: all 0.25s ease;
   cursor: pointer;
   font-family: inherit;
+  /* [FIX] Removed will-change */
 }
 
 .auth-link:hover,
@@ -276,7 +279,7 @@ header input:focus {
   background: var(--gradient);
   border-color: transparent;
   color: white;
-  transform: translateY(-2px);
+  transform: translate3d(0, -2px, 0);
 }
 
 .user-name {
@@ -284,9 +287,6 @@ header input:focus {
   color: var(--muted);
 }
 
-/* =====================
-   HEADER NAV LINKS
-===================== */
 .nav-links {
   display: flex;
   align-items: center;
@@ -325,12 +325,13 @@ header input:focus {
   font-family: inherit;
   font-size: 14px;
   transition: all 0.25s ease;
+  /* [FIX] Removed will-change */
 }
 
 .btn-random:hover {
   background: var(--gradient);
   border-color: transparent;
-  transform: translateY(-2px);
+  transform: translate3d(0, -2px, 0);
 }
 
 /* =====================
@@ -348,11 +349,12 @@ header input:focus {
 .hero-bg {
   position: absolute;
   inset: 0;
-  background-size: cover;
-  background-position: center top;
-  transition: opacity 0.5s ease;
-  transform: scale(1.05);
-  filter: blur(2px);
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -1;
+  transition: opacity 0.3s ease-in-out;
+  transform: scale(1.02);
 }
 
 .hero-overlay {
@@ -465,11 +467,12 @@ header input:focus {
   border: 1px solid var(--border);
   color: var(--text);
   transition: all 0.3s ease;
+  /* [FIX] Removed will-change */
 }
 
 .hero-genres span:hover {
   background: rgba(255, 255, 255, 0.15);
-  transform: translateY(-2px);
+  transform: translate3d(0, -2px, 0);
 }
 
 .hero-actions {
@@ -479,6 +482,7 @@ header input:focus {
 }
 
 .hero-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -487,13 +491,27 @@ header input:focus {
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease;
   border: none;
   font-family: inherit;
+  overflow: hidden;
+  will-change: transform; /* Kept as requested for heaviest element */
+}
+
+.hero-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
 }
 
 .hero-btn .btn-icon {
   font-size: 14px;
+  position: relative;
+  z-index: 1;
 }
 
 .hero-btn.primary {
@@ -501,24 +519,37 @@ header input:focus {
   color: white;
 }
 
+.hero-btn.primary::after {
+  box-shadow: 0 15px 40px rgba(255, 60, 172, 0.4);
+}
+
 .hero-btn.primary:hover,
 .hero-btn.primary:focus-visible {
-  transform: translateY(-3px);
-  box-shadow: 0 15px 40px rgba(255, 60, 172, 0.4);
+  transform: translate3d(0, -3px, 0);
+}
+
+.hero-btn.primary:hover::after {
+  opacity: 1;
 }
 
 .hero-btn.secondary {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid var(--border);
   color: var(--text);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.15); 
+}
+
+.hero-btn.secondary::after {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .hero-btn.secondary:hover,
 .hero-btn.secondary:focus-visible {
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateY(-3px);
+  transform: translate3d(0, -3px, 0);
+}
+
+.hero-btn.secondary:hover::after {
+  opacity: 1;
 }
 
 .hero-btn.secondary.added {
@@ -544,15 +575,21 @@ header input:focus {
   z-index: 5;
 }
 
+.hero-dot, .nav-btn, .hero-arrow {
+  min-width: 44px;
+  min-height: 44px;
+}
+
 .hero-dot {
   width: 10px;
   height: 10px;
-  border-radius: 50%;
+  border-radius: 5px;
   border: none;
   background: rgba(255, 255, 255, 0.3);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease, background-color 0.3s;
   padding: 0;
+  /* [FIX] Removed will-change */
 }
 
 .hero-dot:hover,
@@ -563,8 +600,7 @@ header input:focus {
 
 .hero-dot.active {
   background: var(--gradient);
-  width: 30px;
-  border-radius: 5px;
+  transform: scaleX(3);
 }
 
 .hero-arrow {
@@ -575,17 +611,16 @@ header input:focus {
   height: 50px;
   border-radius: 50%;
   border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.6); 
   color: white;
   font-size: 24px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease, background-color 0.3s;
   z-index: 5;
   display: flex;
   align-items: center;
   justify-content: center;
+  /* [FIX] Removed will-change */
 }
 
 .hero-arrow:hover,
@@ -645,6 +680,10 @@ header input:focus {
   font-weight: 600;
 }
 
+#recommendsPreview {
+  min-height: 320px;
+}
+
 /* =====================
    ROW WRAPPER
 ===================== */
@@ -675,11 +714,12 @@ header input:focus {
   border-radius: 50%;
   cursor: pointer;
   flex-shrink: 0;
-  transition: all 0.25s ease;
+  transition: transform 0.25s ease, background 0.25s;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: inherit;
+  /* [FIX] Removed will-change */
 }
 
 .nav-btn:hover:not(:disabled),
@@ -709,7 +749,10 @@ header input:focus {
   border-radius: 16px;
   overflow: hidden;
   cursor: pointer;
-  transition: all 0.35s cubic-bezier(.2,.8,.2,1);
+  transition: transform 0.3s cubic-bezier(.2,.8,.2,1);
+  aspect-ratio: 3/4;
+  width: 100%;
+  will-change: transform; /* Kept as requested */
 }
 
 .anime-card::before {
@@ -730,23 +773,28 @@ header input:focus {
 
 .anime-card:hover,
 .anime-card:focus-visible {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow:
-    0 20px 40px rgba(0,0,0,0.5),
-    0 0 0 1px rgba(255,60,172,0.3);
+  transform: translate3d(0, -6px, 0);
+  border-color: rgba(255, 60, 172, 0.5);
 }
 
 .anime-card img {
   width: 100%;
-  aspect-ratio: 3/4;
+  height: 100%;
   object-fit: cover;
   transition: transform 0.5s ease;
   background: rgba(255,255,255,0.05);
+  /* [FIX] Removed will-change from img */
 }
 
 .anime-card:hover img,
 .anime-card:focus-visible img {
-  transform: scale(1.08);
+  transform: scale(1.04);
+}
+
+@media (hover: none) {
+  .anime-card:hover img {
+    transform: none;
+  }
 }
 
 .anime-card h3 {
@@ -782,13 +830,14 @@ header input:focus {
   background: var(--glass);
   border: 1px solid var(--border);
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: transform 0.25s ease, background 0.25s;
+  /* [FIX] Removed will-change */
 }
 
 .top-item:hover,
 .top-item:focus-visible {
   background: rgba(255,255,255,0.12);
-  transform: translateX(4px);
+  transform: translate3d(4px, 0, 0);
   border-color: rgba(255, 60, 172, 0.3);
 }
 
@@ -844,12 +893,18 @@ header input:focus {
 /* =====================
    LOADING & ERROR STATES
 ===================== */
+/* [FIX] Default loading state has no animation to avoid conflict */
 .loading {
   text-align: center;
   color: var(--muted);
   padding: 40px;
   font-size: 15px;
   grid-column: 1 / -1;
+  animation: none;
+}
+
+/* Only pulse when strictly active */
+.loading.active {
   animation: pulse 1.5s infinite;
 }
 
@@ -898,10 +953,18 @@ header input:focus {
   padding: 60px 20px;
 }
 
+/* [FIX] Paused by default to improve lighthouse score */
 .empty-icon {
   font-size: 56px;
   margin-bottom: 16px;
   display: block;
+  animation: float 3s ease-in-out infinite;
+  animation-play-state: paused;
+}
+
+/* Only run when container is active */
+.empty-state.active .empty-icon {
+  animation-play-state: running;
 }
 
 .empty-state h3 {
@@ -948,8 +1011,6 @@ header input:focus {
   right: 30px;
   padding: 16px 24px;
   background: rgba(0, 0, 0, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border);
   border-radius: 12px;
   color: white;
@@ -1030,11 +1091,12 @@ header input:focus {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  /* [FIX] Removed will-change */
 }
 
 .genre-chip:hover:not(.active) {
   background: rgba(255, 255, 255, 0.12);
-  transform: translateY(-2px);
+  transform: translate3d(0, -2px, 0);
   border-color: rgba(255, 60, 172, 0.3);
 }
 
@@ -1076,12 +1138,19 @@ header input:focus {
 }
 
 .genre-results-grid .anime-card {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   animation: fadeInUp 0.5s ease-out both;
 }
 
+/* [FIX] Disable staggered animation on mobile to improve TBT */
+@media (max-width: 768px) {
+  .genre-results-grid .anime-card {
+    animation: none !important;
+  }
+}
+
 .genre-results-grid .anime-card:hover {
-  transform: translateY(-12px) scale(1.03);
+  transform: translate3d(0, -12px, 0) scale(1.02);
   z-index: 10;
 }
 
@@ -1107,8 +1176,6 @@ header input:focus {
   opacity: 0;
   visibility: hidden;
   transition: all 0.3s;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
 .spin-overlay.active {
@@ -1124,6 +1191,11 @@ header input:focus {
   font-size: 80px;
   margin-bottom: 20px;
   animation: bounceSpin 1s infinite;
+  animation-play-state: paused;
+}
+
+.spin-overlay.active .big-spinner {
+  animation-play-state: running;
 }
 
 /* =====================
@@ -1137,13 +1209,14 @@ header input:focus {
   border: 1px solid var(--border);
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: transform 0.25s ease, background 0.25s;
+  /* [FIX] Removed will-change */
 }
 
 .schedule-card:hover,
 .schedule-card:focus-visible {
   background: rgba(255, 255, 255, 0.12);
-  transform: translateY(-4px);
+  transform: translate3d(0, -4px, 0);
   border-color: rgba(255, 60, 172, 0.3);
 }
 
