@@ -403,10 +403,8 @@ document.addEventListener("DOMContentLoaded", () => {
   function showHome() {
     appState.viewState.mode = 'home';
     if (homeSections) {
-      // [FIX 2] Use hidden class to prevent layout collapse/CLS
       homeSections.classList.remove('hidden');
     }
-    // [FIX 3] Ensure Hero visibility is managed properly
     if (hero) hero.classList.remove('hidden');
     if (searchBlock) searchBlock.style.display = "none";
     if (resultsBox) resultsBox.replaceChildren(); 
@@ -415,10 +413,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function showResults() {
     if (homeSections) {
-      // [FIX 2] Use hidden class
       homeSections.classList.add('hidden');
     }
-    // [FIX 3] Hide Hero without collapsing layout (optional, based on design)
     if (hero) hero.classList.add('hidden');
     if (searchBlock) searchBlock.style.display = "block";
   }
@@ -512,22 +508,18 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll('.genre-chip').forEach(c => c.classList.remove('active'));
     appState.viewState = { mode: 'search', currentQuery: query, currentPage: 1, isLoading: true, hasMore: true };
 
-    // [FIX 3] Persist Search Header - Check if exists first
     let searchHeader = document.getElementById("searchHeader");
     if (!searchHeader) {
       searchHeader = document.createElement("div");
       searchHeader.id = "searchHeader";
       searchHeader.className = "filter-header";
-      // Insert before grid logic handles the grid separately
       resultsBox.parentElement.insertBefore(searchHeader, resultsBox);
     }
     searchHeader.innerHTML = `<h2>🔍 Results for "${escapeHtml(query)}"</h2>`;
     searchHeader.style.display = "block";
 
-    // Clear grid but keep container
     resultsBox.replaceChildren();
     
-    // Add loading indicator to grid
     const loader = document.createElement("div");
     loader.className = "loading active";
     loader.textContent = "Loading...";
@@ -581,7 +573,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (allChip) allChip.classList.add('active'); 
     if (searchInput) searchInput.value = '';
     
-    // Hide search header on reset
     const searchHeader = document.getElementById("searchHeader");
     if (searchHeader) searchHeader.style.display = "none";
     
@@ -592,13 +583,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // Hero Functions
   let heroPreloaded = false;
 
-  // [FIX 1] Updated updateHero with LCP Freeze Logic
   function updateHero(anime, isInitial = false) {
     if (!anime) return;
     
-    // Background Image Logic (Freeze on LCP)
+    // [FIX 1] LCP Freeze Logic
     if (heroBg) {
-      // If NOT initial load, DO NOT replace the image (stops layout shift/repaint)
+      // Only set source on initial load to preserve LCP
       if (isInitial) {
         const bgUrl = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || '';
         heroBg.src = bgUrl;
@@ -610,13 +600,10 @@ document.addEventListener("DOMContentLoaded", () => {
           heroBg.removeAttribute('fetchpriority');
         }
         
-        const preload = document.getElementById("heroPreload");
-        if (preload) preload.href = bgUrl;
+        // Remove the old preload logic here as it's no longer used
       }
-      // If !isInitial, we skip updating heroBg.src to "freeze" the background
     }
 
-    // Text Content Logic (Always Update)
     if (heroTitle) heroTitle.textContent = anime.title || 'Unknown Title';
     if (heroMeta) heroMeta.innerHTML = `⭐ ${anime.score || "N/A"} • ${anime.episodes || "?"} eps`;
     if (heroSynopsis) {
@@ -631,12 +618,19 @@ document.addEventListener("DOMContentLoaded", () => {
         heroGenres.appendChild(span);
       });
     }
-    // ... rest of hero update logic (buttons, etc.)
     if (heroWatchlist) {
       heroWatchlist.innerText = '+ Add to Watchlist';
       heroWatchlist.disabled = false;
       heroWatchlist.onclick = () => {
-        // ... watchlist logic
+        heroWatchlist.innerText = 'Adding...';
+        heroWatchlist.disabled = true;
+        fetch(`${API_BASE}/api/watchlist/add`, {
+          method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include",
+          body: JSON.stringify({ animeId: Number(anime.mal_id) })
+        }).then(res => {
+            heroWatchlist.innerText = res.ok ? '✓ Added!' : 'Error';
+            if (res.ok) heroWatchlist.classList.add('added');
+          }).catch(() => { heroWatchlist.innerText = 'Error'; heroWatchlist.disabled = false; });
       };
     }
     if (heroDetails) {
@@ -648,7 +642,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function goToHero(index) {
     if (!heroAnimes.length) return;
     currentHeroIndex = ((index % heroAnimes.length) + heroAnimes.length) % heroAnimes.length;
-    // Pass false because this is a user navigation, not initial load
+    // User navigation -> isInitial = false (do not replace BG)
     updateHero(heroAnimes[currentHeroIndex], false); 
     startHeroAutoplay();
   }
@@ -671,7 +665,6 @@ document.addEventListener("DOMContentLoaded", () => {
     showResults();
     appState.viewState = { mode: 'genre', currentQuery: genreId, currentPage: 1, isLoading: true, hasMore: true };
     
-    // Handle Header for Genre
     let searchHeader = document.getElementById("searchHeader");
     if (!searchHeader) {
       searchHeader = document.createElement("div");
@@ -734,7 +727,7 @@ document.addEventListener("DOMContentLoaded", () => {
         .then(data => {
           if (data && data.length) {
             heroAnimes = data;
-            // [FIX 1] Pass TRUE for initial load to set the image
+            // [FIX 1] Initial load = TRUE, allows setting LCP image
             updateHero(data[0], true); 
             startHeroAutoplay();
           }
@@ -788,9 +781,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ... (rest of renderCuratedList, loadHero, updateCarousel, loadSection, nav-btn handlers, resize listener, loadTopAnime, urlParams, event listeners same as before) ...
-  // Keeping the previous logic for brevity as it was already correct, just ensuring updateHero and showHome/showResults are updated.
-  
   function renderCuratedList(containerId, list) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -981,7 +971,6 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener('beforeunload', () => { stopHeroAutoplay(); cleanupObserver(); });
 });
 
-// ... (schedule and spinWheel same as before)
 async function loadSchedule(day) {
   const grid = getElement('scheduleGrid');
   const buttons = document.querySelectorAll('.day-btn');
