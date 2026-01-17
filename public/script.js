@@ -293,11 +293,12 @@ function createCard(anime, options = {}) {
   const year = anime.year || 'Unknown';
   const type = anime.type || 'TV';
   
+  // [FIX 3] Updated sizes attribute for sharper images on desktop
   div.innerHTML = `
     <div class="anime-card-poster">
       <img data-src="${defaultUrl}" 
            ${srcset ? `data-srcset="${srcset}"` : ''}
-           sizes="(max-width: 768px) 45vw, 220px"
+           sizes="(max-width: 768px) 45vw, (max-width: 1200px) 220px, 280px"
            width="300" height="420"
            loading="lazy"
            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 3 4'%3E%3C/svg%3E" 
@@ -582,16 +583,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Hero Functions
   let heroPreloaded = false;
+  // [FIX 1] New flag for LCP freeze logic
+  let heroHasPainted = false;
 
   function updateHero(anime, isInitial = false) {
     if (!anime) return;
     
-    // [FIX 1] LCP Freeze Logic
+    // Background Image Logic (Freeze on LCP, Update on Interaction)
+    const bgUrl = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || '';
+
     if (heroBg) {
-      // Only set source on initial load to preserve LCP
       if (isInitial) {
-        const bgUrl = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || '';
+        // LCP Frame: Set immediately
         heroBg.src = bgUrl;
+        heroHasPainted = true;
         
         if (!heroPreloaded) {
           heroBg.fetchPriority = "high";
@@ -599,8 +604,19 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
           heroBg.removeAttribute('fetchpriority');
         }
-        
-        // Remove the old preload logic here as it's no longer used
+      } else if (heroHasPainted) {
+        // Subsequent frames: Smooth transition
+        // Create temp image to ensure it is loaded before swapping
+        const img = new Image();
+        img.src = bgUrl;
+        img.onload = () => {
+          heroBg.style.opacity = '0'; // Fade out (optional depending on CSS)
+          // Small timeout to allow opacity transition if CSS exists, or just swap
+          requestAnimationFrame(() => {
+             heroBg.src = bgUrl;
+             heroBg.style.opacity = '1';
+          });
+        };
       }
     }
 
@@ -642,7 +658,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function goToHero(index) {
     if (!heroAnimes.length) return;
     currentHeroIndex = ((index % heroAnimes.length) + heroAnimes.length) % heroAnimes.length;
-    // User navigation -> isInitial = false (do not replace BG)
+    // User navigation -> isInitial = false (allow background update)
     updateHero(heroAnimes[currentHeroIndex], false); 
     startHeroAutoplay();
   }
@@ -727,7 +743,7 @@ document.addEventListener("DOMContentLoaded", () => {
         .then(data => {
           if (data && data.length) {
             heroAnimes = data;
-            // [FIX 1] Initial load = TRUE, allows setting LCP image
+            // [FIX 1] Initial load = TRUE, allow immediate paint
             updateHero(data[0], true); 
             startHeroAutoplay();
           }
