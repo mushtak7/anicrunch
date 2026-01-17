@@ -347,7 +347,6 @@ header input:focus {
   visibility: visible;
 }
 
-/* [FIX 3] Hide Hero without Display:None Layout Shift */
 .hero.hidden {
   visibility: hidden;
   position: absolute;
@@ -361,6 +360,8 @@ header input:focus {
   background-position: center top;
   transform: scale(1.05);
   filter: blur(2px);
+  /* Added transition for smooth opacity changes */
+  transition: opacity 0.5s ease-in-out;
 }
 
 .hero-overlay {
@@ -667,7 +668,6 @@ header input:focus {
   gap: 12px;
 }
 
-/* [FIX 2] Home Sections Visibility Fix */
 #homeSections {
   transition: opacity 0.3s ease;
 }
@@ -680,7 +680,6 @@ header input:focus {
   z-index: -1;
 }
 
-/* [FIX 3] Persist Search Header */
 #searchHeader {
   grid-column: 1 / -1;
   margin-bottom: 20px;
@@ -707,14 +706,13 @@ header input:focus {
 /* =====================
    ROW SCROLL - FIXED DISPLAY
 ===================== */
-/* Lock Height for Carousels (CLS FIX) */
 .row-scroll {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 20px;
   flex: 1;
   min-width: 0;
-  min-height: 460px; /* Lock height */
+  min-height: 460px; 
 }
 
 #seasonal, #trending, #recommendsPreview {
@@ -1453,6 +1451,7 @@ header input:focus {
   }
 }
 
+/* [FIX 2B] Mobile Hero Layout Adjustments */
 @media (max-width: 768px) {
   header {
     flex-wrap: wrap;
@@ -1476,7 +1475,20 @@ header input:focus {
   }
   
   .hero-content {
-    padding: 30px 20px;
+    padding: 24px; /* Reduced padding */
+  }
+  
+  .hero-actions {
+    flex-direction: column; /* Stack buttons */
+    gap: 10px;
+  }
+
+  .hero-nav {
+    bottom: 12px; /* Lower dots */
+  }
+
+  .hero-arrow {
+    display: none; /* Hide arrows on mobile */
   }
   
   .hero-content h1,
@@ -1495,6 +1507,8 @@ header input:focus {
   .hero-btn {
     padding: 12px 20px;
     font-size: 14px;
+    width: 100%; /* Full width buttons */
+    justify-content: center;
   }
 
   .toast {
@@ -1526,22 +1540,23 @@ header input:focus {
     display: none; /* Hide on mobile for space, or move to hamburger menu */
   }
 
+  /* [FIX 2A] Mobile Horizontal Scrolling Row */
   .row-scroll {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important; /* 3 columns */
-    grid-template-rows: repeat(2, auto) !important;   /* 2 rows */
-    gap: 15px !important;
-    min-height: calc(2 * (min(30vw, 180px) * 1.4 + 80px)); /* Approx height for 2 rows */
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 14px;
+    grid-template-columns: none; /* Reset grid */
+    min-height: auto; /* Allow height to adjust */
+    padding-bottom: 10px; /* Space for scrollbar if any */
   }
   
-  /* Ensure 6 cards per page on mobile */
-  .row-scroll .anime-card:nth-child(n+7) {
-    display: none !important;
-  }
-  
-  /* Adjust card size for mobile 3-column layout */
-  .anime-card {
-    min-height: auto !important;
+  /* Ensure ALL cards are visible for scrolling, overriding JS hidden class if needed via CSS specificity or structure */
+  .row-scroll .anime-card {
+    flex: 0 0 160px;
+    scroll-snap-align: start;
+    display: flex !important; /* Force display for flex scrolling */
+    min-height: auto;
     aspect-ratio: 2/3;
   }
   
@@ -1591,10 +1606,7 @@ header input:focus {
 }
 
 @media (max-width: 480px) {
-  .row-scroll {
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 10px !important;
-  }
+  /* Inherits .row-scroll settings from 768px block */
   
   .anime-card-content {
     padding: 12px !important;
