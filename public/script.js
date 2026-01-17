@@ -94,20 +94,23 @@ let requestQueue = Promise.resolve();
 function queuedFetch(url) {
   // Chain requests to ensure they run one by one
   requestQueue = requestQueue.then(async () => {
-    await delay(450); // 450ms delay prevents 429 Rate Limit
+    // [FIX] Increased delay to prevent 429
+    await delay(800); 
     return fetchWithRetry(url);
   });
   return requestQueue;
 }
 
-// Skeleton Generator
+// [FIX] Skeleton Generator matching CSS structure
 function createSkeletonCard() {
   const div = document.createElement("div");
-  div.className = "anime-card skeleton-card skeleton";
+  div.className = "anime-card skeleton-card";
   div.innerHTML = `
-    <div class="skeleton-title"></div>
-    <div class="skeleton-text"></div>
-    <div class="skeleton-text" style="width:60%"></div>
+    <div class="skeleton-poster"></div>
+    <div class="skeleton-body">
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line short"></div>
+    </div>
   `;
   return div;
 }
@@ -182,7 +185,7 @@ function renderLoadMoreButton(container, onClick) {
 }
 
 // =====================
-// FETCH (Smart Retry + Unwrapping Fix)
+// FETCH (Smart Retry)
 // =====================
 async function fetchWithRetry(url, retries = 3, backoff = 1000) {
   const cached = getCached(url);
@@ -192,7 +195,6 @@ async function fetchWithRetry(url, retries = 3, backoff = 1000) {
     try {
       const res = await fetch(url);
       if (res.status === 429) {
-        // Severe backoff if we hit rate limit despite queue
         await delay(backoff * Math.pow(2, i));
         continue;
       }
@@ -206,14 +208,11 @@ async function fetchWithRetry(url, retries = 3, backoff = 1000) {
         throw new Error('Invalid JSON response');
       }
       
-      // [CRITICAL FIX] Unwraps and caches data correctly
       if (Array.isArray(json.data)) {
-        // It's a list: return the array directly
         const data = json.data;
         if (data.length > 0) cacheResponse(url, data);
         return data;
       } else if (json.data) {
-        // It's a single item: cache ONLY the anime object
         cacheResponse(url, json.data);
         return json.data;
       }
@@ -230,7 +229,6 @@ async function fetchWithRetry(url, retries = 3, backoff = 1000) {
 // =====================
 // LAZY LOADING (Safe Guarded)
 // =====================
-// [CRITICAL FIX] Guard IntersectionObserver for older browsers
 const imageObserver = "IntersectionObserver" in window 
   ? new IntersectionObserver((entries, observer) => {
       entries.forEach(entry => {
@@ -261,7 +259,6 @@ function createCard(anime, options = {}) {
   div.setAttribute('role', 'button');
   div.setAttribute('aria-label', `View details for ${anime.title || 'Untitled'}`);
   
-  // [PERFORMANCE] Priority 2: Use smaller images for cards
   const imgUrl = anime.images?.jpg?.image_url || 
                  anime.images?.jpg?.large_image_url || 
                  "https://via.placeholder.com/300x420?text=No+Image";
@@ -273,7 +270,6 @@ function createCard(anime, options = {}) {
   
   div.style.cssText = `display: flex; flex-direction: column; overflow: hidden; position: relative; cursor: pointer;`;
 
-  // [FIX] Added explicit width/height to prevent Layout Shift (CLS)
   div.innerHTML = `
     <div style="position: relative; width: 100%; padding-top: 145%;">
       <img data-src="${imgUrl}" 
@@ -315,7 +311,6 @@ function createCard(anime, options = {}) {
     if (imageObserver && !options.disableLazy) {
       imageObserver.observe(img);
     } else {
-      // Fallback: load immediately if disabled or no observer
       img.src = img.dataset.src;
       img.removeAttribute('data-src');
       img.classList.add('loaded');
@@ -357,8 +352,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (heroBg) {
     heroBg.style.filter = "none";
-    heroBg.style.backdropFilter = "none";
-    heroBg.style.transform = "none"; 
   }
 
   let heroAnimes = [];
@@ -386,7 +379,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (searchBlock) searchBlock.style.display = "block";
   }
 
-  // Auth (Backend API - uses raw fetch)
+  // Auth
   fetch(`${API_BASE}/api/me`, { credentials: "include" })
     .then(r => r.ok ? r.json() : Promise.reject('Not authenticated'))
     .then(d => {
@@ -445,7 +438,6 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       let data = [];
       try {
-        // Backend Search
         const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(query)}`, {
           signal: currentSearchAbortController.signal,
           credentials: "include"
@@ -457,7 +449,6 @@ document.addEventListener("DOMContentLoaded", () => {
       } catch (_) {}
 
       if (!data.length) {
-        // [FIX] Jikan Fallback via queuedFetch
         const jikanData = await queuedFetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=24`);
         data = Array.isArray(jikanData) ? jikanData : [];
       }
@@ -513,21 +504,13 @@ document.addEventListener("DOMContentLoaded", () => {
   function updateHero(anime) {
     if (!anime) return;
     if (heroBg) {
-      const bgUrl = anime.images?.jpg?.large_image_url || '';
+      const bgUrl = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || '';
+      heroBg.src = bgUrl;
+      heroBg.fetchPriority = "high";
       
-      // [PERFORMANCE] Priority 1: Preload Hero Image with Caching
-      // Prevents re-fetching the same image when carousel loops
-      if (!appState.cache.has(bgUrl)) {
-          const img = new Image();
-          img.src = bgUrl;
-          appState.cache.set(bgUrl, true);
-      }
-      
-      heroBg.style.opacity = "0";
-      setTimeout(() => {
-        heroBg.style.backgroundImage = `url('${bgUrl}')`;
-        heroBg.style.opacity = "1";
-      }, 300);
+      // [FIX] Update LCP Preload
+      const preload = document.getElementById("heroPreload");
+      if (preload) preload.href = bgUrl;
     }
     if (heroTitle) heroTitle.textContent = anime.title || 'Unknown Title';
     if (heroMeta) heroMeta.innerHTML = `⭐ ${anime.score || "N/A"} • ${anime.episodes || "?"} eps`;
@@ -663,10 +646,20 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadAllData() {
     try {
       await loadHero(); 
-      // Sequential loading handled by Queue
-      loadSection("seasonal", "https://api.jikan.moe/v4/seasons/now?sfw=true&limit=25");
-      loadSection("trending", "https://api.jikan.moe/v4/top/anime?filter=airing&sfw=true&limit=25");
-      loadTopAnime();
+      
+      // [FIX] Stagger requests to prevent 429 rate limiting
+      setTimeout(() => {
+        loadSection("seasonal", "https://api.jikan.moe/v4/seasons/now?sfw=true&limit=25");
+      }, 800);
+
+      setTimeout(() => {
+        loadSection("trending", "https://api.jikan.moe/v4/top/anime?filter=airing&sfw=true&limit=25");
+      }, 1600);
+
+      setTimeout(() => {
+        loadTopAnime();
+      }, 2400);
+
     } catch (e) { console.error('Error loading data:', e); }
   }
 
@@ -687,7 +680,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // 2. Load Real Data via Queue
     recommendsPreviewList.forEach(async item => {
       try {
-        // [CRITICAL FIX] Use queuedFetch and expect unwrapped anime object
         const anime = await queuedFetch(`https://api.jikan.moe/v4/anime/${item.id}`);
         if (!anime || !anime.mal_id) return;
         
@@ -719,7 +711,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     list.forEach(async item => {
       try {
-        // [FIX] Use queuedFetch
         const anime = await queuedFetch(`https://api.jikan.moe/v4/anime/${item.id}`);
         
         const card = createCard(anime);
@@ -735,18 +726,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Execute render if elements exist
-  // [PERFORMANCE] Priority 3: Defer non-critical curated lists
+  // [PERFORMANCE] Defer non-critical curated lists
   setTimeout(() => {
     renderCuratedList("mustWatch", curatedLists.mustWatch);
     renderCuratedList("hiddenGems", curatedLists.hiddenGems);
     renderCuratedList("topTen", curatedLists.topTen);
-  }, 1000); // 1s delay to let LCP happen first
+  }, 1000); 
 
   async function loadHero() {
     try {
-      // [FIX] Use queuedFetch
-      const data = await queuedFetch("https://api.jikan.moe/v4/top/anime?filter=airing&sfw=true&limit=7");
+      // [FIX] Reduced limit to 5 to save bandwidth
+      const data = await queuedFetch("https://api.jikan.moe/v4/top/anime?filter=airing&sfw=true&limit=5");
       if (data && data.length) {
         heroAnimes = data;
         updateHero(data[0]);
@@ -760,7 +750,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!box) return;
     if (!carousels[id]) carousels[id] = { currentPage: 0, totalCards: 0 };
     try {
-      // [FIX] Use queuedFetch
       const data = await queuedFetch(url);
       box.innerHTML = "";
       carousels[id].totalCards = data.length;
@@ -816,7 +805,6 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadTopAnime() {
     if (!topBox) return;
     try {
-      // [FIX] Use queuedFetch
       const data = await queuedFetch("https://api.jikan.moe/v4/top/anime?sfw=true&limit=10");
       topBox.innerHTML = "";
       data.forEach((a, i) => {
@@ -873,7 +861,6 @@ async function loadSchedule(day) {
   grid.innerHTML = `<div class="loading">Fetching ${normalizedDay}'s anime...</div>`;
 
   try {
-    // [FIX] Use queuedFetch
     const data = await queuedFetch(`https://api.jikan.moe/v4/schedules?filter=${normalizedDay}&sfw=true`);
     grid.innerHTML = '';
     if (!data.length) { grid.innerHTML = '<div class="empty-state"><h3>No anime airing this day</h3></div>'; return; }
@@ -907,7 +894,6 @@ async function spinWheel() {
   overlay.classList.add('active');
   try {
     await new Promise(r => setTimeout(r, 1500));
-    // [FIX] Use queuedFetch and use unwrapped anime object
     const anime = await queuedFetch('https://api.jikan.moe/v4/random/anime?sfw=true');
     if (anime && anime.mal_id) location.href = `/anime.html?id=${anime.mal_id}`;
     else throw new Error("No data");
