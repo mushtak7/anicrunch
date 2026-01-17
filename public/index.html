@@ -39,34 +39,16 @@
     }
     
     body {
-      opacity: 0;
-      animation: fadeIn 0.3s ease-in forwards;
       background: radial-gradient(circle at top, #141428, #07070f);
       margin: 0;
       min-height: 100vh;
       font-family: "Poppins", sans-serif;
       color: #f1f1f1;
       overflow-x: hidden;
+      /* Removed opacity: 0 to fix LCP/Paint delay */
     }
     
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    
-    /* Hide content until JS loads */
-    #homeSections,
-    #genreFilterSection,
-    .hero-content {
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-    
-    body.js-loaded #homeSections,
-    body.js-loaded #genreFilterSection,
-    body.js-loaded .hero-content {
-      opacity: 1;
-    }
+    /* Removed opacity gating for sections to fix CLS and LCP */
     
     /* Critical touch targets */
     .hero-dot, .nav-btn, .hero-arrow {
@@ -81,12 +63,7 @@
       height: 100%;
       object-fit: cover;
       z-index: -1;
-      opacity: 0;
-      transition: opacity 0.3s ease-in-out; 
-    }
-    
-    .hero-bg.loaded {
-      opacity: 1;
+      /* Removed opacity: 0 transition to allow immediate paint */
     }
   </style>
 </head>
@@ -116,6 +93,7 @@
   <img 
     id="heroBg"
     class="hero-bg" 
+    src="https://cdn.myanimelist.net/images/anime/1015/138006l.jpg"
     alt="Featured Anime" 
     width="1200"
     height="675"
@@ -127,9 +105,9 @@
   
   <div class="hero-content">
     <span class="hero-badge" id="heroBadge">🔥 Featured</span>
-    <h1 id="heroTitle">Loading...</h1>
-    <p class="hero-meta" id="heroMeta"></p>
-    <p class="hero-synopsis" id="heroSynopsis"></p>
+    <h1 id="heroTitle">Frieren: Beyond Journey's End</h1>
+    <p class="hero-meta" id="heroMeta">⭐ 9.14 • 28 eps</p>
+    <p class="hero-synopsis" id="heroSynopsis">During their decade-long quest to defeat the Demon King, the members of the hero's party—Himmel himself, the priest Heiter, the dwarf warrior Eisen, and the elven mage Frieren—forge bonds through adventures and battles, creating unforgettable precious memories for most of them...</p>
     
     <div class="hero-genres" id="heroGenres"></div>
     
@@ -218,17 +196,5 @@
 </footer>
 
 <script src="script.js" defer></script>
-<script>
-  // Mark body as JS loaded
-  document.body.classList.add('js-loaded');
-  
-  // Preload critical images
-  window.addEventListener('load', () => {
-    const heroBg = document.getElementById('heroBg');
-    if (heroBg) {
-      heroBg.classList.add('loaded');
-    }
-  });
-</script>
 </body>
 </html>
