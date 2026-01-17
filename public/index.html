@@ -45,10 +45,39 @@
       overflow-x: hidden;
     }
     
-    /* Critical touch targets */
-    .hero-dot, .nav-btn, .hero-arrow {
-      min-width: 44px;
-      min-height: 44px;
+    /* Critical hero styles for LCP */
+    .hero {
+      position: relative;
+      height: 75vh;
+      min-height: 500px;
+      max-height: 700px;
+      overflow: hidden;
+      isolation: isolate;
+    }
+    
+    .hero-slides-container {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+    
+    .hero-slide {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.6s ease-in-out, visibility 0.6s ease-in-out;
+      z-index: 0;
+    }
+    
+    .hero-slide.active {
+      opacity: 1;
+      visibility: visible;
+      z-index: 1;
     }
     
     .hero-bg {
@@ -57,25 +86,62 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      z-index: -1;
+      z-index: 0;
+      filter: none;
+    }
+    
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: 
+        linear-gradient(to right, 
+          rgba(7, 7, 15, 0.85) 0%,
+          rgba(7, 7, 15, 0.55) 40%,
+          rgba(7, 7, 15, 0.25) 70%,
+          rgba(7, 7, 15, 0.15) 100%
+        ),
+        linear-gradient(to top,
+          rgba(7, 7, 15, 0.95) 0%,
+          rgba(7, 7, 15, 0.6) 35%,
+          transparent 65%
+        );
+      z-index: 1;
+      pointer-events: none;
+    }
+    
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px 80px;
+      max-width: 650px;
+    }
+    
+    /* Critical touch targets */
+    .hero-dot, .nav-btn, .hero-arrow {
+      min-width: 44px;
+      min-height: 44px;
     }
   </style>
 </head>
 <body>
 
 <header>
-  <div class="logo" onclick="location.href='/'" style="font-size: 1.5rem; font-weight: bold; cursor: pointer;">anicrunch</div>
+  <h1 class="logo" onclick="location.href='/'">anicrunch</h1>
   
   <div class="search-container">
     <input id="search" placeholder="Search anime..." autocomplete="off" aria-label="Search anime" />
     <button id="searchClear" class="search-clear" style="display: none;" aria-label="Clear search">✕</button>
   </div>
 
-  <div style="display:flex; gap:15px; align-items:center; margin: 0 20px;">
+  <nav class="nav-links">
     <a href="/blog/" class="nav-link">📖 Blog</a>
     <a href="/schedule.html" class="nav-link">📅 Schedule</a>
     <button onclick="spinWheel()" class="btn-random" aria-label="Spin the wheel for random anime">🎲 Random</button>
-  </div>
+  </nav>
 
   <div id="authArea">
     <a href="/login.html" class="auth-link">Login</a>
@@ -83,53 +149,183 @@
   </div>
 </header>
 
+<!-- =====================
+     HERO SECTION - Multiple Slides Structure
+===================== -->
 <section class="hero" id="hero">
-  <img 
-    id="heroBg"
-    class="hero-bg" 
-    src="https://cdn.myanimelist.net/images/anime/1015/138006l.jpg"
-    srcset="
-        https://cdn.myanimelist.net/images/anime/1015/138006.jpg 600w,
-        https://cdn.myanimelist.net/images/anime/1015/138006l.jpg 1200w
-    "
-    sizes="(max-width: 768px) 100vw, 1200px"
-    alt="Featured Anime" 
-    width="1200"
-    height="675"
-    fetchpriority="high" 
-    decoding="async"
-  />
-  <div class="hero-overlay"></div>
   
-  <div class="hero-content">
-    <span class="hero-badge" id="heroBadge">🔥 Featured</span>
-    <h1 id="heroTitle">Frieren: Beyond Journey's End</h1>
-    <p class="hero-meta" id="heroMeta">⭐ 9.14 • 28 eps</p>
-    <p class="hero-synopsis" id="heroSynopsis">During their decade-long quest to defeat the Demon King, the members of the hero's party—Himmel himself, the priest Heiter, the dwarf warrior Eisen, and the elven mage Frieren—forge bonds through adventures and battles, creating unforgettable precious memories for most of them...</p>
+  <!-- Container for all hero slides -->
+  <div class="hero-slides-container" id="heroSlidesContainer">
     
-    <div class="hero-genres" id="heroGenres"></div>
-    
-    <div class="hero-actions">
-      <button class="hero-btn primary" id="heroDetails" aria-label="View Details">
-        <span class="btn-icon">▶</span> View Details
-      </button>
-      <button class="hero-btn secondary" id="heroWatchlist" aria-label="Add to Watchlist">
-        <span class="btn-icon">+</span> Add to Watchlist
-      </button>
+    <!-- Slide 1 (Active by default) -->
+    <div class="hero-slide active" data-slide="0" data-mal-id="">
+      <img 
+        class="hero-bg" 
+        src="https://cdn.myanimelist.net/images/anime/1015/138006l.jpg"
+        srcset="
+          https://cdn.myanimelist.net/images/anime/1015/138006.jpg 600w,
+          https://cdn.myanimelist.net/images/anime/1015/138006l.jpg 1200w
+        "
+        sizes="(max-width: 768px) 100vw, 1200px"
+        alt="Frieren: Beyond Journey's End" 
+        width="1200"
+        height="675"
+        fetchpriority="high" 
+        decoding="async"
+        loading="eager"
+      />
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <span class="hero-badge">🔥 Featured</span>
+        <h2 class="hero-title">Frieren: Beyond Journey's End</h2>
+        <p class="hero-meta">⭐ 9.14 • 28 eps</p>
+        <p class="hero-synopsis">During their decade-long quest to defeat the Demon King, the members of the hero's party—Himmel himself, the priest Heiter, the dwarf warrior Eisen, and the elven mage Frieren—forge bonds through adventures and battles...</p>
+        <div class="hero-genres"></div>
+        <div class="hero-actions">
+          <button class="hero-btn primary" aria-label="View Details">
+            <span class="btn-icon">▶</span> View Details
+          </button>
+          <button class="hero-btn secondary" aria-label="Add to Watchlist">
+            <span class="btn-icon">+</span> Add to Watchlist
+          </button>
+        </div>
+      </div>
     </div>
+    
+    <!-- Slide 2 -->
+    <div class="hero-slide" data-slide="1" data-mal-id="">
+      <img 
+        class="hero-bg" 
+        src=""
+        alt="Featured Anime 2" 
+        width="1200"
+        height="675"
+        decoding="async"
+        loading="lazy"
+      />
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <span class="hero-badge">🔥 Featured</span>
+        <h2 class="hero-title">Loading...</h2>
+        <p class="hero-meta"></p>
+        <p class="hero-synopsis"></p>
+        <div class="hero-genres"></div>
+        <div class="hero-actions">
+          <button class="hero-btn primary" aria-label="View Details">
+            <span class="btn-icon">▶</span> View Details
+          </button>
+          <button class="hero-btn secondary" aria-label="Add to Watchlist">
+            <span class="btn-icon">+</span> Add to Watchlist
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Slide 3 -->
+    <div class="hero-slide" data-slide="2" data-mal-id="">
+      <img 
+        class="hero-bg" 
+        src=""
+        alt="Featured Anime 3" 
+        width="1200"
+        height="675"
+        decoding="async"
+        loading="lazy"
+      />
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <span class="hero-badge">🔥 Featured</span>
+        <h2 class="hero-title">Loading...</h2>
+        <p class="hero-meta"></p>
+        <p class="hero-synopsis"></p>
+        <div class="hero-genres"></div>
+        <div class="hero-actions">
+          <button class="hero-btn primary" aria-label="View Details">
+            <span class="btn-icon">▶</span> View Details
+          </button>
+          <button class="hero-btn secondary" aria-label="Add to Watchlist">
+            <span class="btn-icon">+</span> Add to Watchlist
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Slide 4 -->
+    <div class="hero-slide" data-slide="3" data-mal-id="">
+      <img 
+        class="hero-bg" 
+        src=""
+        alt="Featured Anime 4" 
+        width="1200"
+        height="675"
+        decoding="async"
+        loading="lazy"
+      />
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <span class="hero-badge">🔥 Featured</span>
+        <h2 class="hero-title">Loading...</h2>
+        <p class="hero-meta"></p>
+        <p class="hero-synopsis"></p>
+        <div class="hero-genres"></div>
+        <div class="hero-actions">
+          <button class="hero-btn primary" aria-label="View Details">
+            <span class="btn-icon">▶</span> View Details
+          </button>
+          <button class="hero-btn secondary" aria-label="Add to Watchlist">
+            <span class="btn-icon">+</span> Add to Watchlist
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Slide 5 -->
+    <div class="hero-slide" data-slide="4" data-mal-id="">
+      <img 
+        class="hero-bg" 
+        src=""
+        alt="Featured Anime 5" 
+        width="1200"
+        height="675"
+        decoding="async"
+        loading="lazy"
+      />
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <span class="hero-badge">🔥 Featured</span>
+        <h2 class="hero-title">Loading...</h2>
+        <p class="hero-meta"></p>
+        <p class="hero-synopsis"></p>
+        <div class="hero-genres"></div>
+        <div class="hero-actions">
+          <button class="hero-btn primary" aria-label="View Details">
+            <span class="btn-icon">▶</span> View Details
+          </button>
+          <button class="hero-btn secondary" aria-label="Add to Watchlist">
+            <span class="btn-icon">+</span> Add to Watchlist
+          </button>
+        </div>
+      </div>
+    </div>
+    
   </div>
+  <!-- End Hero Slides Container -->
   
-  <div class="hero-nav">
-    <button class="hero-dot active" data-index="0" aria-label="Go to featured anime 1"></button>
+  <!-- Hero Navigation Dots -->
+  <nav class="hero-nav" aria-label="Hero slide navigation">
+    <button class="hero-dot active" data-index="0" aria-label="Go to featured anime 1" aria-current="true"></button>
     <button class="hero-dot" data-index="1" aria-label="Go to featured anime 2"></button>
     <button class="hero-dot" data-index="2" aria-label="Go to featured anime 3"></button>
     <button class="hero-dot" data-index="3" aria-label="Go to featured anime 4"></button>
     <button class="hero-dot" data-index="4" aria-label="Go to featured anime 5"></button>
-  </div>
+  </nav>
   
+  <!-- Hero Arrow Navigation -->
   <button class="hero-arrow left" id="heroPrev" aria-label="Previous featured anime">‹</button>
   <button class="hero-arrow right" id="heroNext" aria-label="Next featured anime">›</button>
+  
 </section>
+<!-- End Hero Section -->
 
 <section class="genre-filter-section" id="genreFilterSection">
   <div class="genre-filter-content">
@@ -164,7 +360,7 @@
       
       <div class="block">
         <h2>⭐ AniCrunch Recommends</h2>
-        <p class="section-subtitle" style="color: var(--muted); font-size: 14px; margin-bottom: 20px;">
+        <p class="editor-note">
           Hand-picked anime we believe everyone should experience at least once.
         </p>
 
@@ -176,6 +372,7 @@
       </div>
 
     </div>
+    
     <div class="block" id="searchBlock" style="display:none">
       <div id="animeContainer"></div>
     </div>
@@ -193,6 +390,21 @@
   <p>Made with ❤️ by anicrunch · Powered by <a href="https://jikan.moe" target="_blank" rel="noopener">Jikan API</a></p>
 </footer>
 
+<!-- Spin Overlay for Random Feature -->
+<div class="spin-overlay" id="spinOverlay">
+  <div class="spinner-content">
+    <div class="big-spinner">🎲</div>
+    <p>Finding your next anime...</p>
+  </div>
+</div>
+
+<!-- Toast Notification Container -->
+<div id="toast" class="toast" role="alert" aria-live="polite">
+  <span class="toast-icon"></span>
+  <span class="toast-message"></span>
+</div>
+
 <script src="script.js" defer></script>
+
 </body>
 </html>
