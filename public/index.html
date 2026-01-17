@@ -21,8 +21,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <link rel="preload" href="style.css" as="style" onload="this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="style.css"></noscript>
+  <link rel="stylesheet" href="style.css">
   
   <style>
     /* Critical CSS - Loads immediately */
@@ -45,7 +44,6 @@
       overflow-x: hidden;
     }
     
-    /* Critical hero styles for LCP */
     .hero {
       position: relative;
       height: 75vh;
@@ -87,7 +85,7 @@
       height: 100%;
       object-fit: cover;
       z-index: 0;
-      filter: none;
+      filter: none !important;
     }
     
     .hero-overlay {
@@ -110,20 +108,31 @@
     }
     
     .hero-content {
-      position: relative;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
       z-index: 2;
-      height: 100%;
       display: flex;
       flex-direction: column;
-      justify-content: center;
+      justify-content: flex-end;
       padding: 60px 80px;
       max-width: 650px;
+      height: 100%;
     }
     
-    /* Critical touch targets */
-    .hero-dot, .nav-btn, .hero-arrow {
-      min-width: 44px;
-      min-height: 44px;
+    @media (max-width: 768px) {
+      .hero {
+        height: auto;
+        min-height: 520px;
+        max-height: none;
+      }
+      .hero-content {
+        bottom: 60px;
+        padding: 20px;
+        max-width: 100%;
+        height: auto;
+      }
     }
   </style>
 </head>
@@ -132,32 +141,31 @@
 <header>
   <h1 class="logo" onclick="location.href='/'">anicrunch</h1>
   
-  <div class="search-container">
-    <input id="search" placeholder="Search anime..." autocomplete="off" aria-label="Search anime" />
-    <button id="searchClear" class="search-clear" style="display: none;" aria-label="Clear search">✕</button>
-  </div>
-
   <nav class="nav-links">
-    <a href="/blog/" class="nav-link">📖 Blog</a>
-    <a href="/schedule.html" class="nav-link">📅 Schedule</a>
-    <button onclick="spinWheel()" class="btn-random" aria-label="Spin the wheel for random anime">🎲 Random</button>
+    <a href="/blog/" class="nav-link"><span>📖</span> <span>Blog</span></a>
+    <a href="/schedule.html" class="nav-link"><span>📅</span> <span>Schedule</span></a>
+    <button onclick="spinWheel()" class="btn-random" aria-label="Random anime">
+      <span>🎲</span> <span>Random</span>
+    </button>
   </nav>
 
   <div id="authArea">
     <a href="/login.html" class="auth-link">Login</a>
     <a href="/signup.html" class="auth-link">Sign Up</a>
   </div>
+  
+  <div class="search-container">
+    <input id="search" placeholder="Search anime..." autocomplete="off" aria-label="Search anime" />
+    <button id="searchClear" class="search-clear" aria-label="Clear search">✕</button>
+  </div>
 </header>
 
-<!-- =====================
-     HERO SECTION - Multiple Slides Structure
-===================== -->
+<!-- HERO SECTION -->
 <section class="hero" id="hero">
   
-  <!-- Container for all hero slides -->
   <div class="hero-slides-container" id="heroSlidesContainer">
     
-    <!-- Slide 1 (Active by default) -->
+    <!-- Slide 1 -->
     <div class="hero-slide active" data-slide="0" data-mal-id="">
       <img 
         class="hero-bg" 
@@ -179,14 +187,14 @@
         <span class="hero-badge">🔥 Featured</span>
         <h2 class="hero-title">Frieren: Beyond Journey's End</h2>
         <p class="hero-meta">⭐ 9.14 • 28 eps</p>
-        <p class="hero-synopsis">During their decade-long quest to defeat the Demon King, the members of the hero's party—Himmel himself, the priest Heiter, the dwarf warrior Eisen, and the elven mage Frieren—forge bonds through adventures and battles...</p>
+        <p class="hero-synopsis">During their decade-long quest to defeat the Demon King, the members of the hero's party forge bonds through adventures and battles...</p>
         <div class="hero-genres"></div>
         <div class="hero-actions">
           <button class="hero-btn primary" aria-label="View Details">
             <span class="btn-icon">▶</span> View Details
           </button>
           <button class="hero-btn secondary" aria-label="Add to Watchlist">
-            <span class="btn-icon">+</span> Add to Watchlist
+            <span class="btn-icon">+</span> Watchlist
           </button>
         </div>
       </div>
@@ -194,15 +202,7 @@
     
     <!-- Slide 2 -->
     <div class="hero-slide" data-slide="1" data-mal-id="">
-      <img 
-        class="hero-bg" 
-        src=""
-        alt="Featured Anime 2" 
-        width="1200"
-        height="675"
-        decoding="async"
-        loading="lazy"
-      />
+      <img class="hero-bg" src="" alt="Featured Anime 2" width="1200" height="675" decoding="async" loading="lazy" />
       <div class="hero-overlay"></div>
       <div class="hero-content">
         <span class="hero-badge">🔥 Featured</span>
@@ -215,7 +215,7 @@
             <span class="btn-icon">▶</span> View Details
           </button>
           <button class="hero-btn secondary" aria-label="Add to Watchlist">
-            <span class="btn-icon">+</span> Add to Watchlist
+            <span class="btn-icon">+</span> Watchlist
           </button>
         </div>
       </div>
@@ -223,15 +223,7 @@
     
     <!-- Slide 3 -->
     <div class="hero-slide" data-slide="2" data-mal-id="">
-      <img 
-        class="hero-bg" 
-        src=""
-        alt="Featured Anime 3" 
-        width="1200"
-        height="675"
-        decoding="async"
-        loading="lazy"
-      />
+      <img class="hero-bg" src="" alt="Featured Anime 3" width="1200" height="675" decoding="async" loading="lazy" />
       <div class="hero-overlay"></div>
       <div class="hero-content">
         <span class="hero-badge">🔥 Featured</span>
@@ -244,7 +236,7 @@
             <span class="btn-icon">▶</span> View Details
           </button>
           <button class="hero-btn secondary" aria-label="Add to Watchlist">
-            <span class="btn-icon">+</span> Add to Watchlist
+            <span class="btn-icon">+</span> Watchlist
           </button>
         </div>
       </div>
@@ -252,15 +244,7 @@
     
     <!-- Slide 4 -->
     <div class="hero-slide" data-slide="3" data-mal-id="">
-      <img 
-        class="hero-bg" 
-        src=""
-        alt="Featured Anime 4" 
-        width="1200"
-        height="675"
-        decoding="async"
-        loading="lazy"
-      />
+      <img class="hero-bg" src="" alt="Featured Anime 4" width="1200" height="675" decoding="async" loading="lazy" />
       <div class="hero-overlay"></div>
       <div class="hero-content">
         <span class="hero-badge">🔥 Featured</span>
@@ -273,7 +257,7 @@
             <span class="btn-icon">▶</span> View Details
           </button>
           <button class="hero-btn secondary" aria-label="Add to Watchlist">
-            <span class="btn-icon">+</span> Add to Watchlist
+            <span class="btn-icon">+</span> Watchlist
           </button>
         </div>
       </div>
@@ -281,15 +265,7 @@
     
     <!-- Slide 5 -->
     <div class="hero-slide" data-slide="4" data-mal-id="">
-      <img 
-        class="hero-bg" 
-        src=""
-        alt="Featured Anime 5" 
-        width="1200"
-        height="675"
-        decoding="async"
-        loading="lazy"
-      />
+      <img class="hero-bg" src="" alt="Featured Anime 5" width="1200" height="675" decoding="async" loading="lazy" />
       <div class="hero-overlay"></div>
       <div class="hero-content">
         <span class="hero-badge">🔥 Featured</span>
@@ -302,30 +278,26 @@
             <span class="btn-icon">▶</span> View Details
           </button>
           <button class="hero-btn secondary" aria-label="Add to Watchlist">
-            <span class="btn-icon">+</span> Add to Watchlist
+            <span class="btn-icon">+</span> Watchlist
           </button>
         </div>
       </div>
     </div>
     
   </div>
-  <!-- End Hero Slides Container -->
   
-  <!-- Hero Navigation Dots -->
   <nav class="hero-nav" aria-label="Hero slide navigation">
-    <button class="hero-dot active" data-index="0" aria-label="Go to featured anime 1" aria-current="true"></button>
-    <button class="hero-dot" data-index="1" aria-label="Go to featured anime 2"></button>
-    <button class="hero-dot" data-index="2" aria-label="Go to featured anime 3"></button>
-    <button class="hero-dot" data-index="3" aria-label="Go to featured anime 4"></button>
-    <button class="hero-dot" data-index="4" aria-label="Go to featured anime 5"></button>
+    <button class="hero-dot active" data-index="0" aria-label="Go to slide 1" aria-current="true"></button>
+    <button class="hero-dot" data-index="1" aria-label="Go to slide 2"></button>
+    <button class="hero-dot" data-index="2" aria-label="Go to slide 3"></button>
+    <button class="hero-dot" data-index="3" aria-label="Go to slide 4"></button>
+    <button class="hero-dot" data-index="4" aria-label="Go to slide 5"></button>
   </nav>
   
-  <!-- Hero Arrow Navigation -->
-  <button class="hero-arrow left" id="heroPrev" aria-label="Previous featured anime">‹</button>
-  <button class="hero-arrow right" id="heroNext" aria-label="Next featured anime">›</button>
+  <button class="hero-arrow left" id="heroPrev" aria-label="Previous slide">‹</button>
+  <button class="hero-arrow right" id="heroNext" aria-label="Next slide">›</button>
   
 </section>
-<!-- End Hero Section -->
 
 <section class="genre-filter-section" id="genreFilterSection">
   <div class="genre-filter-content">
@@ -343,18 +315,18 @@
       <div class="block">
         <h2>🌸 Seasonal</h2>
         <div class="row-wrapper">
-          <button class="nav-btn left" data-target="seasonal" aria-label="Scroll seasonal anime left">‹</button>
+          <button class="nav-btn left" data-target="seasonal" aria-label="Previous">‹</button>
           <div id="seasonal" class="row-scroll"></div>
-          <button class="nav-btn right" data-target="seasonal" aria-label="Scroll seasonal anime right">›</button>
+          <button class="nav-btn right" data-target="seasonal" aria-label="Next">›</button>
         </div>
       </div>
 
       <div class="block">
         <h2>🔥 Trending</h2>
         <div class="row-wrapper">
-          <button class="nav-btn left" data-target="trending" aria-label="Scroll trending anime left">‹</button>
+          <button class="nav-btn left" data-target="trending" aria-label="Previous">‹</button>
           <div id="trending" class="row-scroll"></div>
-          <button class="nav-btn right" data-target="trending" aria-label="Scroll trending anime right">›</button>
+          <button class="nav-btn right" data-target="trending" aria-label="Next">›</button>
         </div>
       </div>
       
@@ -363,9 +335,7 @@
         <p class="editor-note">
           Hand-picked anime we believe everyone should experience at least once.
         </p>
-
         <div id="recommendsPreview" class="row-scroll"></div>
-
         <a href="/recommendations.html" class="view-all-link">
           View all recommendations →
         </a>
@@ -390,15 +360,13 @@
   <p>Made with ❤️ by anicrunch · Powered by <a href="https://jikan.moe" target="_blank" rel="noopener">Jikan API</a></p>
 </footer>
 
-<!-- Spin Overlay for Random Feature -->
 <div class="spin-overlay" id="spinOverlay">
   <div class="spinner-content">
     <div class="big-spinner">🎲</div>
-    <p>Finding your next anime...</p>
+    <p style="color: white;">Finding your next anime...</p>
   </div>
 </div>
 
-<!-- Toast Notification Container -->
 <div id="toast" class="toast" role="alert" aria-live="polite">
   <span class="toast-icon"></span>
   <span class="toast-message"></span>
