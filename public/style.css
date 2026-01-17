@@ -1,4 +1,4 @@
-/* [FIX 4] Removed @import to fix Render Blocking. Fonts loaded in HTML */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
 
 /* =====================
    THEME VARIABLES
@@ -140,11 +140,10 @@ body {
   border-radius: 16px;
 }
 
-/* [FIX 2C] CLS Fix for Skeleton */
 .skeleton-card {
   aspect-ratio: 3/4;
   width: 100%;
-  min-height: 420px; /* Lock height to prevent collapse */
+  min-height: 420px;
 }
 
 .skeleton-text {
@@ -345,6 +344,14 @@ header input:focus {
   max-height: 700px;
   overflow: hidden;
   margin-bottom: 20px;
+  visibility: visible;
+}
+
+/* [FIX 3] Hide Hero without Display:None Layout Shift */
+.hero.hidden {
+  visibility: hidden;
+  position: absolute;
+  pointer-events: none;
 }
 
 .hero-bg {
@@ -352,7 +359,6 @@ header input:focus {
   inset: 0;
   background-size: cover;
   background-position: center top;
-  /* [FIX 1] REMOVED opacity:0 transition to fix LCP delay */
   transform: scale(1.05);
   filter: blur(2px);
 }
@@ -424,7 +430,6 @@ header input:focus {
   -webkit-text-fill-color: transparent;
 }
 
-/* [FIX 2B] Lock Layout Height to Prevent CLS */
 .hero-content h1 {
   min-height: 110px;
 }
@@ -454,10 +459,6 @@ header input:focus {
   line-height: 1.7;
   color: var(--muted);
   margin: 0 0 20px 0;
-}
-
-/* [FIX 2B] Lock Layout Height */
-.hero-synopsis {
   min-height: 90px;
 }
 
@@ -666,6 +667,25 @@ header input:focus {
   gap: 12px;
 }
 
+/* [FIX 2] Home Sections Visibility Fix */
+#homeSections {
+  transition: opacity 0.3s ease;
+}
+
+#homeSections.hidden {
+  visibility: hidden;
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* [FIX 3] Persist Search Header */
+#searchHeader {
+  grid-column: 1 / -1;
+  margin-bottom: 20px;
+}
+
 /* =====================
    ROW WRAPPER
 ===================== */
@@ -687,12 +707,18 @@ header input:focus {
 /* =====================
    ROW SCROLL - FIXED DISPLAY
 ===================== */
+/* Lock Height for Carousels (CLS FIX) */
 .row-scroll {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 20px;
   flex: 1;
   min-width: 0;
+  min-height: 460px; /* Lock height */
+}
+
+#seasonal, #trending, #recommendsPreview {
+  min-height: 460px;
 }
 
 /* =====================
@@ -731,7 +757,7 @@ header input:focus {
 }
 
 /* =====================
-   ENHANCED ANIME CARDS (NO PLAY BUTTON)
+   ENHANCED ANIME CARDS
 ===================== */
 .anime-card {
   position: relative;
