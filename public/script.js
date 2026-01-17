@@ -10,7 +10,7 @@ const appState = {
   cache: new Map(),
   recentSearches: [],
   preferences: {
-    cardsPerPage: 6 // Updated to 6 per request
+    cardsPerPage: 6
   },
   viewState: {
     mode: 'home', 
@@ -76,7 +76,6 @@ function debounce(func, wait) {
 }
 
 function cacheResponse(key, data, ttl = 300000) {
-  // [FIX] Limit cache size to prevent memory leaks
   if (appState.cache.size > 100) {
     appState.cache.clear();
   }
@@ -94,14 +93,12 @@ function getElement(id) {
   return document.getElementById(id);
 }
 
-// [FIX] Global Rate Limiter for Jikan API with Split Queues
+// Global Rate Limiter for Jikan API
 let criticalQueue = Promise.resolve();
 let backgroundQueue = Promise.resolve();
 
 function queuedFetch(url, priority = 'background') {
   const queue = priority === 'critical' ? criticalQueue : backgroundQueue;
-  // Critical requests (Hero/Search) get faster execution (200ms delay)
-  // Background requests (Rows/Lists) respect standard Jikan limit (800ms)
   const delayTime = priority === 'critical' ? 200 : 800;
 
   const next = queue.then(async () => {
@@ -115,7 +112,7 @@ function queuedFetch(url, priority = 'background') {
   return next;
 }
 
-// [FIX #3] Skeleton Generator matching CSS structure
+// Skeleton Generator
 function createSkeletonCard() {
   const div = document.createElement("div");
   div.className = "anime-card skeleton-card";
@@ -150,7 +147,6 @@ function renderAnimeGrid(container, animeList, append = false) {
   if (!grid) {
     grid = document.createElement('div');
     grid.className = 'responsive-grid';
-    // [FIX] Moved style.cssText to CSS class would be better, but kept for grid setup logic
     grid.style.cssText = `
       display: grid !important;
       grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)) !important;
@@ -163,7 +159,6 @@ function renderAnimeGrid(container, animeList, append = false) {
     grid.innerHTML = '';
   }
 
-  // [FIX #7] Use DocumentFragment to batch DOM insertions
   const fragment = document.createDocumentFragment();
   animeList.forEach(anime => {
     const card = createCard(anime);
@@ -245,7 +240,7 @@ async function fetchWithRetry(url, retries = 3, backoff = 1000) {
 }
 
 // =====================
-// LAZY LOADING (Safe Guarded)
+// LAZY LOADING
 // =====================
 const imageObserver = "IntersectionObserver" in window 
   ? new IntersectionObserver((entries, observer) => {
@@ -286,7 +281,6 @@ function createCard(anime, options = {}) {
   const year = anime.year || 'Unknown';
   const type = anime.type || 'TV';
   
-  // Enhanced card structure with overlay and play button
   div.innerHTML = `
     <div class="anime-card-poster">
       <img data-src="${imgUrl}" 
@@ -782,18 +776,27 @@ document.addEventListener("DOMContentLoaded", () => {
     // Logic moved to loadAllData for better control
   }
 
-  // Enhanced updateCarousel function with page indicator
+  // Enhanced updateCarousel function with page indicator and Mobile Support
   function updateCarousel(id) {
     const container = getElement(id);
     const state = carousels[id];
     if (!container || !state) return;
     
     const cards = container.querySelectorAll(".anime-card");
-    const totalPages = Math.ceil(state.totalCards / CARDS_PER_PAGE);
+    const totalCards = state.totalCards;
+    
+    // Calculate cards per page based on screen width
+    let cardsPerPage = CARDS_PER_PAGE; // Default 6 for desktop
+    if (window.innerWidth <= 768) {
+      // For mobile: 2 rows × 3 columns = 6 cards per page
+      cardsPerPage = 6;
+    }
+    
+    const totalPages = Math.ceil(totalCards / cardsPerPage);
     
     cards.forEach((card, index) => {
-      const start = state.currentPage * CARDS_PER_PAGE;
-      const end = start + CARDS_PER_PAGE;
+      const start = state.currentPage * cardsPerPage;
+      const end = start + cardsPerPage;
       
       if (index >= start && index < end) {
         card.classList.remove("hidden");
@@ -861,7 +864,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Enhanced nav button click handlers
+  // Enhanced nav button click handlers with recalculation for mobile
   document.querySelectorAll(".nav-btn").forEach(btn => {
     btn.onclick = () => {
       const id = btn.dataset.target;
@@ -869,7 +872,14 @@ document.addEventListener("DOMContentLoaded", () => {
       
       const state = carousels[id];
       const dir = btn.classList.contains("left") ? -1 : 1;
-      const totalPages = Math.ceil(state.totalCards / CARDS_PER_PAGE);
+      
+      // Recalculate cards per page based on current screen size
+      let cardsPerPage = CARDS_PER_PAGE;
+      if (window.innerWidth <= 768) {
+        cardsPerPage = 6; // 2 rows × 3 columns
+      }
+      
+      const totalPages = Math.ceil(state.totalCards / cardsPerPage);
       const newPage = state.currentPage + dir;
       
       if (newPage < 0 || newPage >= totalPages) return;
@@ -887,6 +897,13 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     };
   });
+
+  // Add resize listener to adjust carousel on window resize
+  window.addEventListener('resize', debounce(() => {
+    Object.keys(carousels).forEach(id => {
+      updateCarousel(id);
+    });
+  }, 250));
 
   async function loadTopAnime() {
     if (!topBox) return;
