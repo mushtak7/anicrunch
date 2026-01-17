@@ -353,35 +353,39 @@ header input:focus {
   pointer-events: none;
 }
 
-/* [FIX A] Hero Image Visibility - Removed Blur */
+/* [FIX 1] Real Hero Image Visibility Fix */
 .hero-bg {
   position: absolute;
   inset: 0;
-  background-size: cover;
-  background-position: center top;
-  transform: scale(1.02); /* Keep subtle depth */
-  filter: none; /* ❌ REMOVE blur */
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+
+  /* FIX: Remove blur and scale, force opacity */
+  filter: none;
+  transform: none;
   opacity: 1;
+
+  z-index: -1;
   transition: opacity 0.5s ease-in-out;
 }
 
+/* [FIX 1] Adjusted Overlay for visibility */
 .hero-overlay {
   position: absolute;
   inset: 0;
   background: 
     linear-gradient(to right, 
-      rgba(7, 7, 15, 0.95) 0%,
-      rgba(7, 7, 15, 0.8) 30%,
-      rgba(7, 7, 15, 0.4) 60%,
-      rgba(7, 7, 15, 0.2) 100%
+      rgba(7, 7, 15, 0.85) 0%,
+      rgba(7, 7, 15, 0.55) 40%,
+      rgba(7, 7, 15, 0.25) 70%,
+      rgba(7, 7, 15, 0.15) 100%
     ),
     linear-gradient(to top,
-      rgba(7, 7, 15, 1) 0%,
-      rgba(7, 7, 15, 0.6) 30%,
-      transparent 60%
+      rgba(7, 7, 15, 0.95) 0%,
+      rgba(7, 7, 15, 0.6) 35%,
+      transparent 65%
     );
-  /* [FIX A] Optional: Move blur to overlay */
-  backdrop-filter: blur(6px);
 }
 
 .hero-content {
@@ -565,29 +569,31 @@ header input:focus {
   border-radius: 20px;
 }
 
+/* [FIX 2] Smaller Hero Dots */
 .hero-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
+  margin: 0 3px;
   border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
   border: none;
-  background: rgba(255, 255, 255, 0.3);
+  padding: 0;
   cursor: pointer;
   transition: all 0.3s ease;
-  padding: 0;
-  margin: 0 4px;
 }
 
 .hero-dot:hover,
 .hero-dot:focus-visible {
   background: rgba(255, 255, 255, 0.5);
-  transform: scale(1.3);
+  /* Removed scale to prevent big jumps */
 }
 
 .hero-dot.active {
+  width: 12px; /* Smaller active state */
+  height: 6px;
+  border-radius: 6px;
   background: var(--gradient);
-  width: 20px;
-  border-radius: 4px;
-  transform: scale(1.1);
+  transform: none; /* Remove scaling */
 }
 
 .hero-arrow {
@@ -709,9 +715,11 @@ header input:focus {
 /* =====================
    ROW SCROLL - FIXED DISPLAY
 ===================== */
+/* [FIX 3] 3 Columns x 2 Rows Grid Layout (Global) */
 .row-scroll {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(3, 1fr); /* 3 columns */
+  grid-auto-rows: auto;
   gap: 20px;
   flex: 1;
   min-width: 0;
@@ -720,6 +728,11 @@ header input:focus {
 
 #seasonal, #trending, #recommendsPreview {
   min-height: 460px;
+}
+
+/* Ensure hidden cards are truly hidden to maintain layout */
+.anime-card.hidden {
+  display: none !important;
 }
 
 /* =====================
@@ -906,11 +919,6 @@ header input:focus {
   font-weight: 600;
   color: #fbbf24;
   z-index: 3;
-}
-
-/* Hide cards beyond current page */
-.anime-card.hidden {
-  display: none !important;
 }
 
 /* =====================
@@ -1385,14 +1393,13 @@ header input:focus {
    RESPONSIVE
 ===================== */
 @media (max-width: 1400px) {
-  .row-scroll {
-    grid-template-columns: repeat(5, 1fr);
-  }
+  /* No changes needed here, 3 col layout is base */
 }
 
 @media (max-width: 1200px) {
+  /* Override existing column counts to enforce 3 cols */
   .row-scroll {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr) !important;
   }
   
   .anime-card {
@@ -1442,7 +1449,7 @@ header input:focus {
 
 @media (max-width: 900px) {
   .row-scroll {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, 1fr) !important;
   }
   
   .anime-card {
@@ -1454,7 +1461,6 @@ header input:focus {
   }
 }
 
-/* [FIX B & C] Mobile Layout Adjustments */
 @media (max-width: 768px) {
   header {
     flex-wrap: wrap;
@@ -1472,7 +1478,7 @@ header input:focus {
     margin-left: auto;
   }
 
-  /* [FIX B] Mobile Hero Layout */
+  /* [FIX 2B] Mobile Hero Layout Adjustments */
   .hero {
     height: auto;
     min-height: 640px; /* Increased height */
@@ -1544,22 +1550,12 @@ header input:focus {
     display: none; /* Hide on mobile for space, or move to hamburger menu */
   }
 
-  /* [FIX C] Force GRID on Mobile (2 cols, 3 rows = 6 items) */
+  /* [FIX 3] Mobile Grid - 3 cols x 2 rows = 6 items per view */
   .row-scroll {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 14px; /* Tighter spacing for mobile */
     min-height: 460px;
-  }
-  
-  .row-wrapper {
-    gap: 10px;
-  }
-
-  /* Ensure cards visible */
-  .row-scroll .anime-card {
-    min-height: auto;
-    aspect-ratio: 2/3;
   }
   
   .anime-card-poster {
@@ -1570,15 +1566,10 @@ header input:focus {
     font-size: 14px !important;
     min-height: 40px;
   }
-  
-  .nav-btn {
-    width: 40px;
-    height: 40px;
-    font-size: 18px;
-  }
 }
 
 @media (max-width: 600px) {
+  /* Still enforcing 3 cols, just smaller text/buttons if needed */
   .nav-btn {
     width: 40px;
     height: 40px;
@@ -1612,8 +1603,6 @@ header input:focus {
 }
 
 @media (max-width: 480px) {
-  /* Inherits .row-scroll settings from 768px block */
-  
   .anime-card-content {
     padding: 12px !important;
   }
