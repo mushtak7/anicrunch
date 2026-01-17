@@ -113,13 +113,13 @@ function queuedFetch(url, priority = 'background') {
   return next;
 }
 
-// Skeleton Generator matching CSS structure
+// [FIX #3] Skeleton Generator matching CSS structure
 function createSkeletonCard() {
   const div = document.createElement("div");
   div.className = "anime-card skeleton-card";
   div.innerHTML = `
-    <div class="skeleton-poster"></div>
-    <div class="skeleton-body">
+    <div style="position: relative; width: 100%; padding-top: 145%; background: #1f1f1f;"></div>
+    <div style="padding: 10px;">
       <div class="skeleton-line"></div>
       <div class="skeleton-line short"></div>
     </div>
@@ -161,7 +161,7 @@ function renderAnimeGrid(container, animeList, append = false) {
     grid.innerHTML = '';
   }
 
-  // [FIX] Use DocumentFragment to batch DOM insertions
+  // [FIX #7] Use DocumentFragment to batch DOM insertions
   const fragment = document.createDocumentFragment();
   animeList.forEach(anime => {
     const card = createCard(anime);
@@ -276,6 +276,7 @@ function createCard(anime, options = {}) {
   div.setAttribute('role', 'button');
   div.setAttribute('aria-label', `View details for ${anime.title || 'Untitled'}`);
   
+  // [FIX #6] Use smaller image variant first for performance
   const imgUrl = anime.images?.jpg?.image_url || 
                  anime.images?.jpg?.large_image_url || 
                  "https://via.placeholder.com/300x420?text=No+Image";
@@ -524,6 +525,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function updateHero(anime) {
     if (!anime) return;
     if (heroBg) {
+      // [FIX #6] Keep large_image_url for Hero
       const bgUrl = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || '';
       heroBg.src = bgUrl;
       
@@ -723,10 +725,13 @@ document.addEventListener("DOMContentLoaded", () => {
           if (contentDiv) contentDiv.appendChild(note);
         }
 
-        const skeletons = recommendsPreview.querySelectorAll(".skeleton-card");
-        if (skeletons.length) skeletons.forEach(s => s.remove());
-
-        recommendsPreview.appendChild(card);
+        // [FIX #4] Correct logic: Remove ONE skeleton per card
+        const skeleton = recommendsPreview.querySelector(".skeleton-card");
+        if (skeleton) {
+          skeleton.replaceWith(card);
+        } else {
+          recommendsPreview.appendChild(card);
+        }
       } catch (e) { console.error("Failed to load recommended anime", e); }
     });
   }
@@ -775,16 +780,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!carousels[id]) carousels[id] = { currentPage: 0, totalCards: 0 };
     try {
       const data = await queuedFetch(url);
-      box.innerHTML = "";
-      carousels[id].totalCards = data.length;
       
-      // [FIX] Use DocumentFragment
+      // [FIX #7] Batch DOM Insert
+      carousels[id].totalCards = data.length;
       const fragment = document.createDocumentFragment();
       data.forEach(a => {
         const div = createCard(a);
         div.style.width = '100%'; div.style.height = '100%';
         fragment.appendChild(div);
       });
+      box.innerHTML = "";
       box.appendChild(fragment);
       
       updateCarousel(id);
@@ -802,7 +807,14 @@ document.addEventListener("DOMContentLoaded", () => {
     cards.forEach((card, index) => {
       const start = state.currentPage * CARDS_PER_PAGE;
       const end = start + CARDS_PER_PAGE;
-      card.style.display = (index >= start && index < end) ? "flex" : "none";
+      // [FIX #5] Toggle hidden class instead of display:none
+      card.classList.toggle("hidden", !(index >= start && index < end));
+      if (index >= start && index < end) {
+          card.style.display = "flex";
+      } else {
+          // Remove inline display style so class handles it, or explicit set to match behavior
+          card.style.removeProperty("display"); 
+      }
     });
     const wrapper = container.closest(".row-wrapper");
     if (wrapper) {
@@ -836,7 +848,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const data = await queuedFetch("https://api.jikan.moe/v4/top/anime?sfw=true&limit=10");
       topBox.innerHTML = "";
-      // [FIX] Use DocumentFragment
+      // [FIX #7] Use DocumentFragment
       const fragment = document.createDocumentFragment();
       data.forEach((a, i) => {
         const div = document.createElement("div");
@@ -844,9 +856,11 @@ document.addEventListener("DOMContentLoaded", () => {
         div.setAttribute('tabindex', '0');
         div.setAttribute('role', 'button');
         div.onclick = () => { if (a.mal_id) location.href = `/anime.html?id=${a.mal_id}`; };
+        // [FIX #6] Use smaller image variant
+        const imgUrl = a.images?.jpg?.image_url || a.images?.jpg?.large_image_url || '';
         div.innerHTML = `
           <span class="rank">#${i + 1}</span>
-          <img src="${a.images?.jpg?.image_url || ''}" alt="${a.title}" style="width: 50px; height: 70px; object-fit: cover; border-radius: 4px;">
+          <img src="${imgUrl}" alt="${a.title}" style="width: 50px; height: 70px; object-fit: cover; border-radius: 4px;">
           <div class="top-item-info" style="margin-left: 10px;">
             <span class="top-title" style="display: block; font-weight: bold;">${a.title || 'Unknown'}</span>
             <span class="top-score">⭐ ${a.score || "N/A"}</span>
@@ -905,14 +919,16 @@ async function loadSchedule(day) {
     grid.innerHTML = '';
     if (!data.length) { grid.innerHTML = '<div class="empty-state"><h3>No anime airing this day</h3></div>'; return; }
     
-    // [FIX] Use DocumentFragment
+    // [FIX #7] Use DocumentFragment
     const fragment = document.createDocumentFragment();
     data.forEach(anime => {
       const div = document.createElement('div');
       div.className = 'schedule-card';
       div.onclick = () => { if (anime.mal_id) location.href = `/anime.html?id=${anime.mal_id}`; };
+      // [FIX #6] Use smaller image variant
+      const imgUrl = anime.images?.jpg?.image_url || anime.images?.jpg?.large_image_url || '';
       div.innerHTML = `
-        <img src="${anime.images?.jpg?.image_url || ''}" class="schedule-img" alt="${anime.title}" loading="lazy">
+        <img src="${imgUrl}" class="schedule-img" alt="${anime.title}" loading="lazy">
         <div class="schedule-info">
           <div class="time-badge">⏰ ${anime.broadcast?.time || 'TBA'} JST</div>
           <div class="schedule-title">${anime.title || 'Unknown'}</div>
