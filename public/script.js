@@ -137,23 +137,15 @@ function normalizeSingleAnimeResponse(json) {
   return null;
 }
 
-// [NEW] Skeleton Generator
+// [FIX OPTION A] Updated Skeleton Generator to match existing CSS
 function createSkeletonCard() {
   const div = document.createElement("div");
-  div.className = "anime-card skeleton-card";
-  div.style.cssText = `
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    min-width: 200px;
-  `;
+  div.className = "anime-card skeleton-card skeleton";
 
   div.innerHTML = `
-    <div class="skeleton-poster"></div>
-    <div class="skeleton-body">
-      <div class="skeleton-line short"></div>
-      <div class="skeleton-line"></div>
-    </div>
+    <div class="skeleton-title"></div>
+    <div class="skeleton-text"></div>
+    <div class="skeleton-text" style="width:60%"></div>
   `;
 
   return div;
@@ -829,7 +821,7 @@ document.addEventListener("DOMContentLoaded", () => {
     { id: 5114, note: "A complete story with strong themes and unforgettable characters." } // FMAB
   ];
 
-  // [NEW] Added Skeletons to Recommends Preview logic
+  // Recommends Preview Logic with Skeletons
   if (recommendsPreview) {
     // --- SHOW SKELETONS FIRST ---
     recommendsPreview.innerHTML = "";
