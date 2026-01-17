@@ -1,4 +1,4 @@
-/* [FIX #6] Removed @import. Fonts are loaded in HTML <head> */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
 
 /* =====================
    THEME VARIABLES
@@ -52,20 +52,24 @@
   50% { transform: translateY(-10px); }
 }
 
-@keyframes bounceSpin {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  50% { transform: translateY(-20px) rotate(180deg); }
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translate3d(0, 30px, 0); /* Use 3d for GPU */
+    transform: translateY(30px);
   }
   to {
     opacity: 1;
-    transform: translate3d(0, 0, 0);
+    transform: translateY(0);
   }
+}
+
+@keyframes bounceSpin {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-20px) rotate(180deg); }
 }
 
 /* =====================
@@ -137,9 +141,8 @@ body {
 }
 
 .skeleton-card {
-  width: 100%;
   aspect-ratio: 3/4;
-  border-radius: 16px;
+  width: 100%;
 }
 
 .skeleton-text {
@@ -176,12 +179,6 @@ header {
   border-bottom: 1px solid var(--border);
 }
 
-@supports not (backdrop-filter: blur(20px)) {
-  header {
-    background: rgba(20, 20, 40, 0.95);
-  }
-}
-
 header h1 {
   font-size: 26px;
   font-weight: 700;
@@ -192,13 +189,14 @@ header h1 {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   margin: 0;
-  transition: opacity 0.3s ease;
+  transition: transform 0.3s ease;
 }
 
 header h1:hover {
-  opacity: 0.8;
+  transform: scale(1.05);
 }
 
+/* Search Container for UX */
 .search-container {
   position: relative;
   flex: 1;
@@ -215,7 +213,7 @@ header input {
   color: var(--text);
   outline: none;
   font-size: 14px;
-  transition: background-color 0.3s ease, border-color 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 header input::placeholder {
@@ -224,9 +222,11 @@ header input::placeholder {
 
 header input:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(255,60,172,0.2);
   background: rgba(255,255,255,0.1);
 }
 
+/* Clear Button */
 .search-clear {
   position: absolute;
   right: 10px;
@@ -242,10 +242,11 @@ header input:focus {
   display: none;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s;
+  transition: all 0.2s;
 }
 
 .search-clear:hover {
+  background: rgba(255,255,255,0.1);
   color: var(--text);
 }
 
@@ -275,7 +276,7 @@ header input:focus {
   background: var(--gradient);
   border-color: transparent;
   color: white;
-  transform: translate3d(0, -2px, 0);
+  transform: translateY(-2px);
 }
 
 .user-name {
@@ -283,6 +284,9 @@ header input:focus {
   color: var(--muted);
 }
 
+/* =====================
+   HEADER NAV LINKS
+===================== */
 .nav-links {
   display: flex;
   align-items: center;
@@ -326,7 +330,7 @@ header input:focus {
 .btn-random:hover {
   background: var(--gradient);
   border-color: transparent;
-  transform: translate3d(0, -2px, 0);
+  transform: translateY(-2px);
 }
 
 /* =====================
@@ -334,9 +338,8 @@ header input:focus {
 ===================== */
 .hero {
   position: relative;
-  /* [FIX #1] HARD-FIX CLS */
-  aspect-ratio: 16 / 9;
-  min-height: 520px;
+  height: 75vh;
+  min-height: 500px;
   max-height: 700px;
   overflow: hidden;
   margin-bottom: 20px;
@@ -345,12 +348,11 @@ header input:focus {
 .hero-bg {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  z-index: -1;
-  transition: opacity 0.3s ease-in-out;
-  transform: scale(1.02);
+  background-size: cover;
+  background-position: center top;
+  transition: opacity 0.5s ease;
+  transform: scale(1.05);
+  filter: blur(2px);
 }
 
 .hero-overlay {
@@ -467,7 +469,7 @@ header input:focus {
 
 .hero-genres span:hover {
   background: rgba(255, 255, 255, 0.15);
-  transform: translate3d(0, -2px, 0);
+  transform: translateY(-2px);
 }
 
 .hero-actions {
@@ -477,7 +479,6 @@ header input:focus {
 }
 
 .hero-btn {
-  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -486,27 +487,13 @@ header input:focus {
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.3s ease;
+  transition: all 0.3s ease;
   border: none;
   font-family: inherit;
-  overflow: hidden;
-  will-change: transform;
-}
-
-.hero-btn::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  opacity: 0;
-  transition: opacity 0.25s ease;
-  pointer-events: none;
 }
 
 .hero-btn .btn-icon {
   font-size: 14px;
-  position: relative;
-  z-index: 1;
 }
 
 .hero-btn.primary {
@@ -514,37 +501,24 @@ header input:focus {
   color: white;
 }
 
-.hero-btn.primary::after {
-  box-shadow: 0 15px 40px rgba(255, 60, 172, 0.4);
-}
-
 .hero-btn.primary:hover,
 .hero-btn.primary:focus-visible {
-  transform: translate3d(0, -3px, 0);
-}
-
-.hero-btn.primary:hover::after {
-  opacity: 1;
+  transform: translateY(-3px);
+  box-shadow: 0 15px 40px rgba(255, 60, 172, 0.4);
 }
 
 .hero-btn.secondary {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid var(--border);
   color: var(--text);
-  background: rgba(255, 255, 255, 0.15); 
-}
-
-.hero-btn.secondary::after {
-  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .hero-btn.secondary:hover,
 .hero-btn.secondary:focus-visible {
-  transform: translate3d(0, -3px, 0);
-}
-
-.hero-btn.secondary:hover::after {
-  opacity: 1;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-3px);
 }
 
 .hero-btn.secondary.added {
@@ -570,19 +544,14 @@ header input:focus {
   z-index: 5;
 }
 
-.hero-dot, .nav-btn, .hero-arrow {
-  min-width: 44px;
-  min-height: 44px;
-}
-
 .hero-dot {
   width: 10px;
   height: 10px;
-  border-radius: 5px;
+  border-radius: 50%;
   border: none;
   background: rgba(255, 255, 255, 0.3);
   cursor: pointer;
-  transition: transform 0.3s ease, background-color 0.3s;
+  transition: all 0.3s ease;
   padding: 0;
 }
 
@@ -594,7 +563,8 @@ header input:focus {
 
 .hero-dot.active {
   background: var(--gradient);
-  transform: scaleX(3);
+  width: 30px;
+  border-radius: 5px;
 }
 
 .hero-arrow {
@@ -605,11 +575,13 @@ header input:focus {
   height: 50px;
   border-radius: 50%;
   border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.6); 
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   color: white;
   font-size: 24px;
   cursor: pointer;
-  transition: transform 0.3s ease, background-color 0.3s;
+  transition: all 0.3s ease;
   z-index: 5;
   display: flex;
   align-items: center;
@@ -661,7 +633,7 @@ header input:focus {
 }
 
 /* =====================
-   BLOCKS
+   BLOCKS & HEADERS
 ===================== */
 .block {
   min-width: 0;
@@ -676,12 +648,8 @@ header input:focus {
   gap: 12px;
 }
 
-#recommendsPreview {
-  min-height: 320px;
-}
-
 /* =====================
-   ROW WRAPPER - Enhanced
+   ROW WRAPPER
 ===================== */
 .row-wrapper {
   display: flex;
@@ -745,7 +713,7 @@ header input:focus {
 }
 
 /* =====================
-   ENHANCED ANIME CARDS
+   ENHANCED ANIME CARDS (NO PLAY BUTTON)
 ===================== */
 .anime-card {
   position: relative;
@@ -758,11 +726,6 @@ header input:focus {
   min-height: 420px;
   display: flex;
   flex-direction: column;
-}
-
-/* Hide cards beyond current page */
-.anime-card.hidden {
-  display: none !important;
 }
 
 .anime-card::before {
@@ -806,7 +769,6 @@ header input:focus {
   height: 100%;
   object-fit: cover;
   transition: transform 0.6s ease;
-  background: rgba(255,255,255,0.05);
 }
 
 .anime-card:hover .anime-card-poster img,
@@ -814,20 +776,11 @@ header input:focus {
   transform: scale(1.1);
 }
 
-@media (hover: none) {
-  .anime-card:hover img {
-    transform: none;
-  }
-}
-
-/* Card Overlay with Play Button */
+/* Card Overlay (Simplified - No Play Button) */
 .anime-card-overlay {
   position: absolute;
   inset: 0;
   background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   opacity: 0;
   transition: opacity 0.3s ease;
   z-index: 2;
@@ -836,32 +789,6 @@ header input:focus {
 .anime-card:hover .anime-card-overlay,
 .anime-card:focus-visible .anime-card-overlay {
   opacity: 1;
-}
-
-.anime-card-play-btn {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #ff3cac, #784ba0);
-  border: none;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transform: scale(0.8);
-  transition: transform 0.3s ease;
-  padding-left: 4px;
-}
-
-.anime-card:hover .anime-card-play-btn,
-.anime-card:focus-visible .anime-card-play-btn {
-  transform: scale(1);
-}
-
-.anime-card-play-btn::before {
-  content: '▶';
-  font-size: 24px;
 }
 
 /* Card Content */
@@ -936,6 +863,11 @@ header input:focus {
   z-index: 3;
 }
 
+/* Hide cards beyond current page */
+.anime-card.hidden {
+  display: none !important;
+}
+
 /* =====================
    TOP ANIME SIDEBAR
 ===================== */
@@ -954,13 +886,13 @@ header input:focus {
   background: var(--glass);
   border: 1px solid var(--border);
   cursor: pointer;
-  transition: transform 0.25s ease, background 0.25s;
+  transition: all 0.25s ease;
 }
 
 .top-item:hover,
 .top-item:focus-visible {
   background: rgba(255,255,255,0.12);
-  transform: translate3d(4px, 0, 0);
+  transform: translateX(4px);
   border-color: rgba(255, 60, 172, 0.3);
 }
 
@@ -1022,10 +954,6 @@ header input:focus {
   padding: 40px;
   font-size: 15px;
   grid-column: 1 / -1;
-  animation: none;
-}
-
-.loading.active {
   animation: pulse 1.5s infinite;
 }
 
@@ -1078,12 +1006,6 @@ header input:focus {
   font-size: 56px;
   margin-bottom: 16px;
   display: block;
-  animation: float 3s ease-in-out infinite;
-  animation-play-state: paused;
-}
-
-.empty-state.active .empty-icon {
-  animation-play-state: running;
 }
 
 .empty-state h3 {
@@ -1130,6 +1052,8 @@ header input:focus {
   right: 30px;
   padding: 16px 24px;
   background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border);
   border-radius: 12px;
   color: white;
@@ -1214,7 +1138,7 @@ header input:focus {
 
 .genre-chip:hover:not(.active) {
   background: rgba(255, 255, 255, 0.12);
-  transform: translate3d(0, -2px, 0);
+  transform: translateY(-2px);
   border-color: rgba(255, 60, 172, 0.3);
 }
 
@@ -1256,18 +1180,12 @@ header input:focus {
 }
 
 .genre-results-grid .anime-card {
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   animation: fadeInUp 0.5s ease-out both;
 }
 
-@media (max-width: 768px) {
-  .genre-results-grid .anime-card {
-    animation: none !important;
-  }
-}
-
 .genre-results-grid .anime-card:hover {
-  transform: translate3d(0, -12px, 0) scale(1.02);
+  transform: translateY(-12px) scale(1.03);
   z-index: 10;
 }
 
@@ -1293,6 +1211,8 @@ header input:focus {
   opacity: 0;
   visibility: hidden;
   transition: all 0.3s;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .spin-overlay.active {
@@ -1308,11 +1228,6 @@ header input:focus {
   font-size: 80px;
   margin-bottom: 20px;
   animation: bounceSpin 1s infinite;
-  animation-play-state: paused;
-}
-
-.spin-overlay.active .big-spinner {
-  animation-play-state: running;
 }
 
 /* =====================
@@ -1326,13 +1241,13 @@ header input:focus {
   border: 1px solid var(--border);
   border-radius: 12px;
   cursor: pointer;
-  transition: transform 0.25s ease, background 0.25s;
+  transition: all 0.25s ease;
 }
 
 .schedule-card:hover,
 .schedule-card:focus-visible {
   background: rgba(255, 255, 255, 0.12);
-  transform: translate3d(0, -4px, 0);
+  transform: translateY(-4px);
   border-color: rgba(255, 60, 172, 0.3);
 }
 
@@ -1438,7 +1353,7 @@ header input:focus {
   .anime-card {
     min-height: 380px;
   }
-  
+
   .hero-content h1,
   .hero-content h2 {
     font-size: 40px;
@@ -1510,7 +1425,7 @@ header input:focus {
   #authArea {
     margin-left: auto;
   }
-  
+
   .hero {
     height: auto;
     min-height: 450px;
