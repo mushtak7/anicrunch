@@ -45,10 +45,8 @@
       font-family: "Poppins", sans-serif;
       color: #f1f1f1;
       overflow-x: hidden;
-      /* Removed opacity: 0 to fix LCP/Paint delay */
+      /* Removed opacity transition for LCP speed */
     }
-    
-    /* Removed opacity gating for sections to fix CLS and LCP */
     
     /* Critical touch targets */
     .hero-dot, .nav-btn, .hero-arrow {
@@ -63,7 +61,6 @@
       height: 100%;
       object-fit: cover;
       z-index: -1;
-      /* Removed opacity: 0 transition to allow immediate paint */
     }
   </style>
 </head>
@@ -94,12 +91,16 @@
     id="heroBg"
     class="hero-bg" 
     src="https://cdn.myanimelist.net/images/anime/1015/138006l.jpg"
+    srcset="
+        https://cdn.myanimelist.net/images/anime/1015/138006.jpg 600w,
+        https://cdn.myanimelist.net/images/anime/1015/138006l.jpg 1200w
+    "
+    sizes="(max-width: 768px) 100vw, 1200px"
     alt="Featured Anime" 
     width="1200"
     height="675"
     fetchpriority="high" 
     decoding="async"
-    sizes="(max-width: 768px) 100vw, 1200px" 
   />
   <div class="hero-overlay"></div>
   
