@@ -353,14 +353,15 @@ header input:focus {
   pointer-events: none;
 }
 
+/* [FIX A] Hero Image Visibility - Removed Blur */
 .hero-bg {
   position: absolute;
   inset: 0;
   background-size: cover;
   background-position: center top;
-  transform: scale(1.05);
-  filter: blur(2px);
-  /* Added transition for smooth opacity changes */
+  transform: scale(1.02); /* Keep subtle depth */
+  filter: none; /* ❌ REMOVE blur */
+  opacity: 1;
   transition: opacity 0.5s ease-in-out;
 }
 
@@ -379,6 +380,8 @@ header input:focus {
       rgba(7, 7, 15, 0.6) 30%,
       transparent 60%
     );
+  /* [FIX A] Optional: Move blur to overlay */
+  backdrop-filter: blur(6px);
 }
 
 .hero-content {
@@ -1451,7 +1454,7 @@ header input:focus {
   }
 }
 
-/* [FIX 2B] Mobile Hero Layout Adjustments */
+/* [FIX B & C] Mobile Layout Adjustments */
 @media (max-width: 768px) {
   header {
     flex-wrap: wrap;
@@ -1469,22 +1472,23 @@ header input:focus {
     margin-left: auto;
   }
 
+  /* [FIX B] Mobile Hero Layout */
   .hero {
     height: auto;
-    min-height: 450px;
+    min-height: 640px; /* Increased height */
   }
   
   .hero-content {
-    padding: 24px; /* Reduced padding */
+    padding: 28px 20px 140px; /* Space for dots */
   }
   
   .hero-actions {
     flex-direction: column; /* Stack buttons */
-    gap: 10px;
+    gap: 12px;
   }
 
   .hero-nav {
-    bottom: 12px; /* Lower dots */
+    bottom: 24px; /* Move dots lower */
   }
 
   .hero-arrow {
@@ -1540,22 +1544,20 @@ header input:focus {
     display: none; /* Hide on mobile for space, or move to hamburger menu */
   }
 
-  /* [FIX 2A] Mobile Horizontal Scrolling Row */
+  /* [FIX C] Force GRID on Mobile (2 cols, 3 rows = 6 items) */
   .row-scroll {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    gap: 14px;
-    grid-template-columns: none; /* Reset grid */
-    min-height: auto; /* Allow height to adjust */
-    padding-bottom: 10px; /* Space for scrollbar if any */
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    min-height: 460px;
   }
   
-  /* Ensure ALL cards are visible for scrolling, overriding JS hidden class if needed via CSS specificity or structure */
+  .row-wrapper {
+    gap: 10px;
+  }
+
+  /* Ensure cards visible */
   .row-scroll .anime-card {
-    flex: 0 0 160px;
-    scroll-snap-align: start;
-    display: flex !important; /* Force display for flex scrolling */
     min-height: auto;
     aspect-ratio: 2/3;
   }
@@ -1568,11 +1570,15 @@ header input:focus {
     font-size: 14px !important;
     min-height: 40px;
   }
+  
+  .nav-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
 }
 
 @media (max-width: 600px) {
-  /* This rule is partially overridden by the 768px block above for row-scroll, 
-     keeping nav-btn size adjustment */
   .nav-btn {
     width: 40px;
     height: 40px;
