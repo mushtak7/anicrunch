@@ -536,35 +536,41 @@ header input:focus {
 /* Hero Navigation */
 .hero-nav {
   position: absolute;
-  bottom: 30px;
+  bottom: 25px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 10px;
+  gap: 6px;
   z-index: 5;
+  padding: 5px 10px;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(5px);
+  border-radius: 20px;
 }
 
 .hero-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   border: none;
   background: rgba(255, 255, 255, 0.3);
   cursor: pointer;
   transition: all 0.3s ease;
   padding: 0;
+  margin: 0 4px;
 }
 
 .hero-dot:hover,
 .hero-dot:focus-visible {
   background: rgba(255, 255, 255, 0.5);
-  transform: scale(1.2);
+  transform: scale(1.3);
 }
 
 .hero-dot.active {
   background: var(--gradient);
-  width: 30px;
-  border-radius: 5px;
+  width: 20px;
+  border-radius: 4px;
+  transform: scale(1.1);
 }
 
 .hero-arrow {
@@ -1481,22 +1487,39 @@ header input:focus {
   .nav-links {
     display: none; /* Hide on mobile for space, or move to hamburger menu */
   }
-}
 
-@media (max-width: 600px) {
   .row-scroll {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important; /* 3 columns */
+    grid-template-rows: repeat(2, auto) !important;   /* 2 rows */
+    gap: 15px !important;
+    min-height: calc(2 * (min(30vw, 180px) * 1.4 + 80px)); /* Approx height for 2 rows */
   }
   
+  /* Ensure 6 cards per page on mobile */
+  .row-scroll .anime-card:nth-child(n+7) {
+    display: none !important;
+  }
+  
+  /* Adjust card size for mobile 3-column layout */
   .anime-card {
-    min-height: 320px;
+    min-height: auto !important;
+    aspect-ratio: 2/3;
+  }
+  
+  .anime-card-poster {
+    padding-top: 140%;
   }
   
   .anime-card-content h3 {
-    font-size: 15px;
+    font-size: 14px !important;
+    min-height: 40px;
   }
-  
+}
+
+@media (max-width: 600px) {
+  /* This rule is partially overridden by the 768px block above for row-scroll, 
+     keeping nav-btn size adjustment */
   .nav-btn {
     width: 40px;
     height: 40px;
@@ -1526,6 +1549,27 @@ header input:focus {
   .genre-results-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .row-scroll {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 10px !important;
+  }
+  
+  .anime-card-content {
+    padding: 12px !important;
+  }
+  
+  .anime-card-content h3 {
+    font-size: 12px !important;
+    min-height: 36px;
+  }
+  
+  .anime-card-genre-tag {
+    font-size: 9px !important;
+    padding: 3px 8px !important;
   }
 }
 
