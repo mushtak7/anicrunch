@@ -4,22 +4,30 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>anicrunch</title>
+  <meta name="description" content="AniCrunch – Discover anime with curated recommendations, reviews, schedules, and hidden gems. Built for anime fans by anime fans.">
   <link rel="stylesheet" href="style.css" />
+  
+  <style>
+    .hero-dot, .nav-btn, .hero-arrow {
+      min-width: 44px;
+      min-height: 44px;
+    }
+  </style>
 </head>
 <body>
 
 <header>
-  <h1 onclick="location.href='/'">anicrunch</h1>
+  <div class="logo" onclick="location.href='/'" style="font-size: 1.5rem; font-weight: bold; cursor: pointer;">anicrunch</div>
   
   <div class="search-container">
-    <input id="search" placeholder="Search anime..." autocomplete="off" />
-    <button id="searchClear" class="search-clear" style="display: none;">✕</button>
+    <input id="search" placeholder="Search anime..." autocomplete="off" aria-label="Search anime" />
+    <button id="searchClear" class="search-clear" style="display: none;" aria-label="Clear search">✕</button>
   </div>
 
   <div style="display:flex; gap:15px; align-items:center; margin: 0 20px;">
     <a href="/blog/" style="text-decoration:none; color:var(--muted); font-size:14px; font-weight:500;">📖 Blog</a>
     <a href="/schedule.html" style="text-decoration:none; color:var(--muted); font-size:14px; font-weight:500;">📅 Schedule</a>
-    <button onclick="spinWheel()" style="background:none; border:1px solid rgba(255,255,255,0.2); padding:6px 12px; border-radius:8px; color:white; cursor:pointer;">🎲 Random</button>
+    <button onclick="spinWheel()" style="background:none; border:1px solid rgba(255,255,255,0.2); padding:6px 12px; border-radius:8px; color:white; cursor:pointer;" aria-label="Spin the wheel for random anime">🎲 Random</button>
   </div>
 
   <div id="authArea">
@@ -41,25 +49,25 @@
     <div class="hero-genres" id="heroGenres"></div>
     
     <div class="hero-actions">
-      <button class="hero-btn primary" id="heroDetails">
+      <button class="hero-btn primary" id="heroDetails" aria-label="View Details">
         <span class="btn-icon">▶</span> View Details
       </button>
-      <button class="hero-btn secondary" id="heroWatchlist">
+      <button class="hero-btn secondary" id="heroWatchlist" aria-label="Add to Watchlist">
         <span class="btn-icon">+</span> Add to Watchlist
       </button>
     </div>
   </div>
   
   <div class="hero-nav">
-    <button class="hero-dot active" data-index="0"></button>
-    <button class="hero-dot" data-index="1"></button>
-    <button class="hero-dot" data-index="2"></button>
-    <button class="hero-dot" data-index="3"></button>
-    <button class="hero-dot" data-index="4"></button>
+    <button class="hero-dot active" data-index="0" aria-label="Go to featured anime 1"></button>
+    <button class="hero-dot" data-index="1" aria-label="Go to featured anime 2"></button>
+    <button class="hero-dot" data-index="2" aria-label="Go to featured anime 3"></button>
+    <button class="hero-dot" data-index="3" aria-label="Go to featured anime 4"></button>
+    <button class="hero-dot" data-index="4" aria-label="Go to featured anime 5"></button>
   </div>
   
-  <button class="hero-arrow left" id="heroPrev">‹</button>
-  <button class="hero-arrow right" id="heroNext">›</button>
+  <button class="hero-arrow left" id="heroPrev" aria-label="Previous featured anime">‹</button>
+  <button class="hero-arrow right" id="heroNext" aria-label="Next featured anime">›</button>
 </section>
 
 <section class="genre-filter-section" id="genreFilterSection">
@@ -78,18 +86,18 @@
       <div class="block">
         <h2>🌸 Seasonal</h2>
         <div class="row-wrapper">
-          <button class="nav-btn left" data-target="seasonal">‹</button>
+          <button class="nav-btn left" data-target="seasonal" aria-label="Scroll seasonal anime left">‹</button>
           <div id="seasonal" class="row-scroll"></div>
-          <button class="nav-btn right" data-target="seasonal">›</button>
+          <button class="nav-btn right" data-target="seasonal" aria-label="Scroll seasonal anime right">›</button>
         </div>
       </div>
 
       <div class="block">
         <h2>🔥 Trending</h2>
         <div class="row-wrapper">
-          <button class="nav-btn left" data-target="trending">‹</button>
+          <button class="nav-btn left" data-target="trending" aria-label="Scroll trending anime left">‹</button>
           <div id="trending" class="row-scroll"></div>
-          <button class="nav-btn right" data-target="trending">›</button>
+          <button class="nav-btn right" data-target="trending" aria-label="Scroll trending anime right">›</button>
         </div>
       </div>
       
@@ -124,6 +132,6 @@
   <p>Made with ❤️ by anicrunch · Powered by <a href="https://jikan.moe" target="_blank">Jikan API</a></p>
 </footer>
 
-<script src="script.js"></script>
+<script src="script.js" defer></script>
 </body>
 </html>
