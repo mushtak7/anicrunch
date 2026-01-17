@@ -334,8 +334,9 @@ header input:focus {
 ===================== */
 .hero {
   position: relative;
-  height: 75vh;
-  min-height: 500px;
+  /* [FIX #1] HARD-FIX CLS */
+  aspect-ratio: 16 / 9;
+  min-height: 520px;
   max-height: 700px;
   overflow: hidden;
   margin-bottom: 20px;
@@ -741,12 +742,19 @@ header input:focus {
   overflow: hidden;
   cursor: pointer;
   transition: transform 0.3s cubic-bezier(.2,.8,.2,1);
+  /* [FIX #2] CONFIRM CLS FIX */
   aspect-ratio: 3/4;
   width: 100%;
   will-change: transform;
   /* [FIX #3] Move inline JS styles to CSS class */
   display: flex;
   flex-direction: column;
+}
+
+/* [FIX #5] Better Visibility Toggling */
+.anime-card.hidden {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .anime-card::before {
