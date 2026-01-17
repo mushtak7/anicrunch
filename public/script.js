@@ -249,7 +249,10 @@ const imageObserver = "IntersectionObserver" in window
           const img = entry.target;
           if (img.dataset.src) {
             img.src = img.dataset.src;
+            // [FIX 5] Move to srcset if available
+            if (img.dataset.srcset) img.srcset = img.dataset.srcset;
             img.removeAttribute('data-src');
+            img.removeAttribute('data-srcset');
             img.classList.add('loaded');
             observer.unobserve(img);
           }
@@ -272,9 +275,16 @@ function createCard(anime, options = {}) {
   div.setAttribute('role', 'button');
   div.setAttribute('aria-label', `View details for ${anime.title || 'Untitled'}`);
   
-  const imgUrl = anime.images?.jpg?.large_image_url || 
-                 anime.images?.jpg?.image_url || 
-                 "https://via.placeholder.com/300x420?text=No+Image";
+  // [FIX 5] Image Optimization: Use smaller variants and srcset
+  const img = anime.images?.jpg || {};
+  const defaultUrl = img.large_image_url || img.image_url || "https://via.placeholder.com/300x420?text=No+Image";
+  
+  // Construct srcset if available
+  let srcset = "";
+  if (img.small_image_url) srcset += `${img.small_image_url} 300w, `;
+  if (img.image_url) srcset += `${img.image_url} 600w, `;
+  if (img.large_image_url) srcset += `${img.large_image_url} 900w`;
+  srcset = srcset.replace(/,\s*$/, ""); // Remove trailing comma
 
   const title = anime.title || "Untitled";
   const score = anime.score || 'N/A';
@@ -283,7 +293,9 @@ function createCard(anime, options = {}) {
   
   div.innerHTML = `
     <div class="anime-card-poster">
-      <img data-src="${imgUrl}" 
+      <img data-src="${defaultUrl}" 
+           ${srcset ? `data-srcset="${srcset}"` : ''}
+           sizes="(max-width: 768px) 45vw, 220px"
            width="300" height="420"
            loading="lazy"
            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 3 4'%3E%3C/svg%3E" 
@@ -327,14 +339,16 @@ function createCard(anime, options = {}) {
     }
   };
   
-  const img = div.querySelector('img');
-  if (img) {
+  const imageEl = div.querySelector('img');
+  if (imageEl) {
     if (imageObserver && !options.disableLazy) {
-      imageObserver.observe(img);
+      imageObserver.observe(imageEl);
     } else {
-      img.src = img.dataset.src;
-      img.removeAttribute('data-src');
-      img.classList.add('loaded');
+      imageEl.src = imageEl.dataset.src;
+      if (imageEl.dataset.srcset) imageEl.srcset = imageEl.dataset.srcset;
+      imageEl.removeAttribute('data-src');
+      imageEl.removeAttribute('data-srcset');
+      imageEl.classList.add('loaded');
     }
   }
   
@@ -527,7 +541,6 @@ document.addEventListener("DOMContentLoaded", () => {
   function updateHero(anime) {
     if (!anime) return;
     if (heroBg) {
-      // [FIX #6] Keep large_image_url for Hero
       const bgUrl = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || '';
       heroBg.src = bgUrl;
       
@@ -675,8 +688,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // Load All Data
   async function loadAllData() {
     try {
-      // [FIX] Critical priority for Hero
-      await queuedFetch("https://api.jikan.moe/v4/top/anime?filter=airing&sfw=true&limit=5", 'critical')
+      // [FIX 3] Split Critical vs Idle Execution
+      // Critical: Load Hero immediately
+      queuedFetch("https://api.jikan.moe/v4/top/anime?filter=airing&sfw=true&limit=5", 'critical')
         .then(data => {
           if (data && data.length) {
             heroAnimes = data;
@@ -685,7 +699,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         });
 
-      // [FIX] Use requestIdleCallback pattern to break waterfall
+      // Non-critical: Defer everything else
       const idleCallback = window.requestIdleCallback || (cb => setTimeout(cb, 1));
 
       idleCallback(() => loadSection("seasonal", "https://api.jikan.moe/v4/seasons/now?sfw=true&limit=25"));
@@ -727,7 +741,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if (contentDiv) contentDiv.appendChild(note);
         }
 
-        // [FIX #4] Correct logic: Remove ONE skeleton per card
+        // Correct logic: Remove ONE skeleton per card
         const skeleton = recommendsPreview.querySelector(".skeleton-card");
         if (skeleton) {
           skeleton.replaceWith(card);
@@ -745,8 +759,6 @@ document.addEventListener("DOMContentLoaded", () => {
     container.className = "responsive-grid";
     container.style.cssText = `display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px;`;
 
-    // [FIX] Batch insert skeletons or handle rendering logic efficiently
-    // For simplicity with existing structure, we process async but could batch if needed
     list.forEach(async item => {
       try {
         const anime = await queuedFetch(`https://api.jikan.moe/v4/anime/${item.id}`);
@@ -845,6 +857,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await queuedFetch(url);
       
       carousels[id].totalCards = data.length;
+      
+      // [FIX 6] Batch DOM Writes using replaceChildren
       const fragment = document.createDocumentFragment();
       
       data.forEach(a => {
@@ -854,8 +868,8 @@ document.addEventListener("DOMContentLoaded", () => {
         fragment.appendChild(card);
       });
       
-      box.innerHTML = "";
-      box.appendChild(fragment);
+      // replaceChildren is more efficient than innerHTML = ""
+      box.replaceChildren(fragment);
       
       updateCarousel(id);
     } catch(e) { 
@@ -910,7 +924,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const data = await queuedFetch("https://api.jikan.moe/v4/top/anime?sfw=true&limit=10");
       topBox.innerHTML = "";
-      // [FIX #7] Use DocumentFragment
+      // [FIX 6] Use DocumentFragment
       const fragment = document.createDocumentFragment();
       data.forEach((a, i) => {
         const div = document.createElement("div");
@@ -918,7 +932,7 @@ document.addEventListener("DOMContentLoaded", () => {
         div.setAttribute('tabindex', '0');
         div.setAttribute('role', 'button');
         div.onclick = () => { if (a.mal_id) location.href = `/anime.html?id=${a.mal_id}`; };
-        // [FIX #6] Use smaller image variant
+        // Use smaller image variant
         const imgUrl = a.images?.jpg?.image_url || a.images?.jpg?.large_image_url || '';
         div.innerHTML = `
           <span class="rank">#${i + 1}</span>
@@ -930,7 +944,7 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
         fragment.appendChild(div);
       });
-      topBox.appendChild(fragment);
+      topBox.replaceChildren(fragment);
     } catch(e) { console.error('Top anime load error:', e); topBox.innerHTML = '<div class="error-state">Failed to load</div>'; }
   }
 
@@ -981,13 +995,13 @@ async function loadSchedule(day) {
     grid.innerHTML = '';
     if (!data.length) { grid.innerHTML = '<div class="empty-state"><h3>No anime airing this day</h3></div>'; return; }
     
-    // [FIX #7] Use DocumentFragment
+    // [FIX 6] Use DocumentFragment
     const fragment = document.createDocumentFragment();
     data.forEach(anime => {
       const div = document.createElement('div');
       div.className = 'schedule-card';
       div.onclick = () => { if (anime.mal_id) location.href = `/anime.html?id=${anime.mal_id}`; };
-      // [FIX #6] Use smaller image variant
+      // Use smaller image variant
       const imgUrl = anime.images?.jpg?.image_url || anime.images?.jpg?.large_image_url || '';
       div.innerHTML = `
         <img src="${imgUrl}" class="schedule-img" alt="${anime.title}" loading="lazy">
@@ -999,7 +1013,7 @@ async function loadSchedule(day) {
       `;
       fragment.appendChild(div);
     });
-    grid.appendChild(fragment);
+    grid.replaceChildren(fragment);
   } catch (e) { console.error('Schedule error:', e); grid.innerHTML = '<div class="error-state">Failed to load schedule</div>'; }
 }
 window.loadSchedule = loadSchedule; 
