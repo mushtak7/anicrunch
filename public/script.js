@@ -261,8 +261,9 @@ function createCard(anime, options = {}) {
   div.setAttribute('role', 'button');
   div.setAttribute('aria-label', `View details for ${anime.title || 'Untitled'}`);
   
-  const imgUrl = anime.images?.jpg?.large_image_url || 
-                 anime.images?.jpg?.image_url || 
+  // [PERFORMANCE] Priority 2: Use smaller images for cards
+  const imgUrl = anime.images?.jpg?.image_url || 
+                 anime.images?.jpg?.large_image_url || 
                  "https://via.placeholder.com/300x420?text=No+Image";
 
   const title = anime.title || "Untitled";
@@ -272,9 +273,11 @@ function createCard(anime, options = {}) {
   
   div.style.cssText = `display: flex; flex-direction: column; overflow: hidden; position: relative; cursor: pointer;`;
 
+  // [FIX] Added explicit width/height to prevent Layout Shift (CLS)
   div.innerHTML = `
     <div style="position: relative; width: 100%; padding-top: 145%;">
       <img data-src="${imgUrl}" 
+           width="300" height="420"
            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 3 4'%3E%3C/svg%3E" 
            alt="${title}" 
            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;"
@@ -510,9 +513,19 @@ document.addEventListener("DOMContentLoaded", () => {
   function updateHero(anime) {
     if (!anime) return;
     if (heroBg) {
+      const bgUrl = anime.images?.jpg?.large_image_url || '';
+      
+      // [PERFORMANCE] Priority 1: Preload Hero Image with Caching
+      // Prevents re-fetching the same image when carousel loops
+      if (!appState.cache.has(bgUrl)) {
+          const img = new Image();
+          img.src = bgUrl;
+          appState.cache.set(bgUrl, true);
+      }
+      
       heroBg.style.opacity = "0";
       setTimeout(() => {
-        heroBg.style.backgroundImage = `url('${anime.images?.jpg?.large_image_url || ''}')`;
+        heroBg.style.backgroundImage = `url('${bgUrl}')`;
         heroBg.style.opacity = "1";
       }, 300);
     }
@@ -722,9 +735,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  renderCuratedList("mustWatch", curatedLists.mustWatch);
-  renderCuratedList("hiddenGems", curatedLists.hiddenGems);
-  renderCuratedList("topTen", curatedLists.topTen);
+  // Execute render if elements exist
+  // [PERFORMANCE] Priority 3: Defer non-critical curated lists
+  setTimeout(() => {
+    renderCuratedList("mustWatch", curatedLists.mustWatch);
+    renderCuratedList("hiddenGems", curatedLists.hiddenGems);
+    renderCuratedList("topTen", curatedLists.topTen);
+  }, 1000); // 1s delay to let LCP happen first
 
   async function loadHero() {
     try {
