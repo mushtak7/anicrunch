@@ -7,10 +7,21 @@
   <meta name="description" content="AniCrunch – Discover anime with curated recommendations, reviews, schedules, and hidden gems. Built for anime fans by anime fans.">
   <link rel="stylesheet" href="style.css" />
   
+  <link rel="preload" as="image" href="" id="heroPreload" />
+
   <style>
     .hero-dot, .nav-btn, .hero-arrow {
       min-width: 44px;
       min-height: 44px;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -1;
+      transition: opacity 0.3s ease-in-out; 
     }
   </style>
 </head>
@@ -37,7 +48,7 @@
 </header>
 
 <section class="hero" id="hero">
-  <div class="hero-bg" id="heroBg"></div>
+  <img class="hero-bg" id="heroBg" alt="Featured Anime" decoding="async" />
   <div class="hero-overlay"></div>
   
   <div class="hero-content">
