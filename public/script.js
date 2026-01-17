@@ -256,9 +256,9 @@ function cleanupObserver() {
 }
 
 // =====================
-// CARD CREATOR
+// CARD CREATOR (UPDATED)
 // =====================
-function createCard(anime) {
+function createCard(anime, options = {}) { // <--- Added options
   const div = document.createElement("div");
   div.className = "anime-card";
   div.setAttribute('tabindex', '0');
@@ -308,8 +308,20 @@ function createCard(anime) {
     }
   };
   
+  // --- FIX START: Handle Lazy vs Direct Loading ---
   const img = div.querySelector('img');
-  if (img) imageObserver.observe(img);
+  if (img) {
+    if (options.disableLazy) {
+      // Force immediate load for preview cards
+      img.src = img.dataset.src;
+      img.removeAttribute('data-src');
+      img.classList.add('loaded');
+    } else {
+      // Default lazy load behavior
+      imageObserver.observe(img);
+    }
+  }
+  // --- FIX END ---
   
   return div;
 }
@@ -797,7 +809,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const res = await fetchWithRetry(`https://api.jikan.moe/v4/anime/${item.id}`);
         const anime = res.length ? res[0] : res; // Handle if cached array
 
-        const card = createCard(anime);
+        // --- FIX: Add { disableLazy: true } here ---
+        const card = createCard(anime, { disableLazy: true });
+        
         // Force width in preview grid
         card.style.minWidth = "200px";
 
@@ -833,11 +847,6 @@ document.addEventListener("DOMContentLoaded", () => {
     list.forEach(async item => {
       try {
         const res = await fetchWithRetry(`https://api.jikan.moe/v4/anime/${item.id}`);
-        // Jikan API by ID returns single object in 'data', fetchWithRetry usually returns array if search, 
-        // but here we might need to adjust fetchWithRetry or just use standard fetch for single ID if fetchWithRetry is optimized for lists.
-        // Actually fetchWithRetry returns cached array. 
-        // Let's use direct fetch for specific ID to be safe, or cache properly. 
-        // Jikan ID endpoint returns {data: {...}}.
         
         let anime;
         if (Array.isArray(res)) anime = res[0];
