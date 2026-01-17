@@ -10,7 +10,7 @@ const appState = {
   cache: new Map(),
   recentSearches: [],
   preferences: {
-    cardsPerPage: 6
+    cardsPerPage: 6 // Updated to 6 per request
   },
   viewState: {
     mode: 'home', 
@@ -23,6 +23,8 @@ const appState = {
     hero: null
   }
 };
+
+const CARDS_PER_PAGE = 6;
 
 // =====================
 // CURATED LISTS DATA
@@ -266,19 +268,17 @@ function cleanupObserver() {
 }
 
 // =====================
-// CARD CREATOR
+// CARD CREATOR (Enhanced)
 // =====================
 function createCard(anime, options = {}) { 
   const div = document.createElement("div");
-  // [FIX] Moved inline styles to CSS class "anime-card"
   div.className = "anime-card";
   div.setAttribute('tabindex', '0');
   div.setAttribute('role', 'button');
   div.setAttribute('aria-label', `View details for ${anime.title || 'Untitled'}`);
   
-  // [FIX #6] Use smaller image variant first for performance
-  const imgUrl = anime.images?.jpg?.image_url || 
-                 anime.images?.jpg?.large_image_url || 
+  const imgUrl = anime.images?.jpg?.large_image_url || 
+                 anime.images?.jpg?.image_url || 
                  "https://via.placeholder.com/300x420?text=No+Image";
 
   const title = anime.title || "Untitled";
@@ -286,7 +286,7 @@ function createCard(anime, options = {}) {
   const year = anime.year || 'Unknown';
   const type = anime.type || 'TV';
   
-  // [FIX] Use CSS classes instead of inline styles for inner content
+  // Enhanced card structure with overlay and play button
   div.innerHTML = `
     <div class="anime-card-poster">
       <img data-src="${imgUrl}" 
@@ -294,19 +294,28 @@ function createCard(anime, options = {}) {
            loading="lazy"
            src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 3 4'%3E%3C/svg%3E" 
            alt="${title}" 
-           style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;"
            class="lazy-img">
-      <div style="position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.7); color: #fbbf24; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: bold;">
+      <div class="anime-card-overlay">
+        <button class="anime-card-play-btn" aria-label="Play"></button>
+      </div>
+      <div class="anime-card-rating">
         ⭐ ${score}
       </div>
     </div>
     <div class="anime-card-content">
-      <h3 style="font-size: 0.9rem; margin: 0; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: #fff;">
-        ${title}
-      </h3>
-      <div style="margin-top: auto; padding-top: 6px; font-size: 0.75rem; color: #aaa;">
-        ${year} • ${type}
+      <h3>${title}</h3>
+      <div class="anime-card-meta">
+        <span>${year}</span>
+        <span>•</span>
+        <span>${type}</span>
       </div>
+      ${anime.genres && anime.genres.length > 0 ? `
+        <div class="anime-card-genres">
+          ${anime.genres.slice(0, 2).map(g => `
+            <span class="anime-card-genre-tag">${g.name}</span>
+          `).join('')}
+        </div>
+      ` : ''}
     </div>
   `;
   
@@ -380,7 +389,6 @@ document.addEventListener("DOMContentLoaded", () => {
     seasonal: { currentPage: 0, totalCards: 0 },
     trending: { currentPage: 0, totalCards: 0 }
   };
-  const CARDS_PER_PAGE = appState.preferences.cardsPerPage;
 
   function showHome() {
     appState.viewState.mode = 'home';
@@ -774,21 +782,75 @@ document.addEventListener("DOMContentLoaded", () => {
     // Logic moved to loadAllData for better control
   }
 
+  // Enhanced updateCarousel function with page indicator
+  function updateCarousel(id) {
+    const container = getElement(id);
+    const state = carousels[id];
+    if (!container || !state) return;
+    
+    const cards = container.querySelectorAll(".anime-card");
+    const totalPages = Math.ceil(state.totalCards / CARDS_PER_PAGE);
+    
+    cards.forEach((card, index) => {
+      const start = state.currentPage * CARDS_PER_PAGE;
+      const end = start + CARDS_PER_PAGE;
+      
+      if (index >= start && index < end) {
+        card.classList.remove("hidden");
+      } else {
+        card.classList.add("hidden");
+      }
+    });
+    
+    const wrapper = container.closest(".row-wrapper");
+    if (wrapper) {
+      const leftBtn = wrapper.querySelector(".nav-btn.left");
+      const rightBtn = wrapper.querySelector(".nav-btn.right");
+      
+      // Update button states
+      if (leftBtn) { 
+        leftBtn.disabled = state.currentPage <= 0; 
+        leftBtn.style.opacity = leftBtn.disabled ? '0.25' : '1'; 
+      }
+      if (rightBtn) { 
+        rightBtn.disabled = state.currentPage >= totalPages - 1; 
+        rightBtn.style.opacity = rightBtn.disabled ? '0.25' : '1'; 
+      }
+      
+      // Add/update page indicator
+      let indicator = wrapper.querySelector('.page-indicator');
+      if (!indicator) {
+        indicator = document.createElement('span');
+        indicator.className = 'page-indicator';
+        
+        // Insert between left and right buttons
+        if (leftBtn && rightBtn) {
+          leftBtn.after(indicator);
+        }
+      }
+      indicator.textContent = `${state.currentPage + 1} / ${totalPages}`;
+    }
+  }
+
+  // Update the section rendering to use exactly 6 cards display
   async function loadSection(id, url) {
     const box = getElement(id);
     if (!box) return;
     if (!carousels[id]) carousels[id] = { currentPage: 0, totalCards: 0 };
+    
     try {
       const data = await queuedFetch(url);
       
-      // [FIX #7] Batch DOM Insert
       carousels[id].totalCards = data.length;
       const fragment = document.createDocumentFragment();
+      
       data.forEach(a => {
-        const div = createCard(a);
-        div.style.width = '100%'; div.style.height = '100%';
-        fragment.appendChild(div);
+        const card = createCard(a);
+        card.style.width = '100%';
+        card.style.height = '100%';
+        fragment.appendChild(card);
       });
+      
       box.innerHTML = "";
       box.appendChild(fragment);
       
@@ -799,47 +861,30 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function updateCarousel(id) {
-    const container = getElement(id);
-    const state = carousels[id];
-    if (!container || !state) return;
-    const cards = container.querySelectorAll(".anime-card");
-    cards.forEach((card, index) => {
-      const start = state.currentPage * CARDS_PER_PAGE;
-      const end = start + CARDS_PER_PAGE;
-      // [FIX #5] Toggle hidden class instead of display:none
-      card.classList.toggle("hidden", !(index >= start && index < end));
-      if (index >= start && index < end) {
-          card.style.display = "flex";
-      } else {
-          // Remove inline display style so class handles it, or explicit set to match behavior
-          card.style.removeProperty("display"); 
-      }
-    });
-    const wrapper = container.closest(".row-wrapper");
-    if (wrapper) {
-      const leftBtn = wrapper.querySelector(".nav-btn.left");
-      const rightBtn = wrapper.querySelector(".nav-btn.right");
-      if (leftBtn) { leftBtn.disabled = state.currentPage <= 0; leftBtn.style.opacity = leftBtn.disabled ? '0.3' : '1'; }
-      if (rightBtn) { 
-        const totalPages = Math.ceil(state.totalCards / CARDS_PER_PAGE);
-        rightBtn.disabled = state.currentPage >= totalPages - 1; 
-        rightBtn.style.opacity = rightBtn.disabled ? '0.3' : '1'; 
-      }
-    }
-  }
-
+  // Enhanced nav button click handlers
   document.querySelectorAll(".nav-btn").forEach(btn => {
     btn.onclick = () => {
       const id = btn.dataset.target;
       if (!id || !carousels[id]) return;
+      
       const state = carousels[id];
       const dir = btn.classList.contains("left") ? -1 : 1;
       const totalPages = Math.ceil(state.totalCards / CARDS_PER_PAGE);
       const newPage = state.currentPage + dir;
+      
       if (newPage < 0 || newPage >= totalPages) return;
+      
       state.currentPage = newPage;
       updateCarousel(id);
+      
+      // Smooth scroll to top of section
+      const container = getElement(id);
+      if (container) {
+        const block = container.closest('.block');
+        if (block) {
+          block.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
     };
   });
 
