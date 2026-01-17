@@ -58,7 +58,7 @@ const curatedLists = {
 };
 
 // =====================
-// EDITORIAL REVIEWS (NEW)
+// EDITORIAL REVIEWS
 // =====================
 const editorialTakes = {
   21: `One Piece is less about catching up and more about settling in.
@@ -256,9 +256,9 @@ function cleanupObserver() {
 }
 
 // =====================
-// CARD CREATOR (UPDATED)
+// CARD CREATOR (FIXED)
 // =====================
-function createCard(anime, options = {}) { // <--- Added options
+function createCard(anime, options = {}) { 
   const div = document.createElement("div");
   div.className = "anime-card";
   div.setAttribute('tabindex', '0');
@@ -308,20 +308,17 @@ function createCard(anime, options = {}) { // <--- Added options
     }
   };
   
-  // --- FIX START: Handle Lazy vs Direct Loading ---
+  // FIX: Handle Lazy vs Direct Loading
   const img = div.querySelector('img');
   if (img) {
     if (options.disableLazy) {
-      // Force immediate load for preview cards
       img.src = img.dataset.src;
       img.removeAttribute('data-src');
       img.classList.add('loaded');
     } else {
-      // Default lazy load behavior
       imageObserver.observe(img);
     }
   }
-  // --- FIX END ---
   
   return div;
 }
@@ -344,6 +341,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // NEW: Recommends Preview
   const recommendsPreview = getElement("recommendsPreview");
+  // [FIX] Get the wrapper for home sections
+  const homeSections = getElement("homeSections");
 
   // Hero Elements
   const heroBg = getElement("heroBg");
@@ -373,6 +372,24 @@ document.addEventListener("DOMContentLoaded", () => {
     trending: { currentPage: 0, totalCards: 0 }
   };
   const CARDS_PER_PAGE = appState.preferences.cardsPerPage;
+
+  // --- VIEW HELPERS (The Core Logic Fix) ---
+  function showHome() {
+    appState.viewState.mode = 'home';
+    if (homeSections) homeSections.style.display = "block";
+    if (hero) hero.style.display = "flex";
+    if (searchBlock) searchBlock.style.display = "none";
+    if (resultsBox) resultsBox.innerHTML = "";
+    if (searchClear) searchClear.style.display = "none";
+  }
+
+  function showResults() {
+    // Hide home sections (Hero, Trending, Seasonal, Recommends)
+    if (homeSections) homeSections.style.display = "none";
+    if (hero) hero.style.display = "none";
+    // Show results block
+    if (searchBlock) searchBlock.style.display = "block";
+  }
 
   // --- AUTH ---
   fetch(`${API_BASE}/api/me`, {
@@ -416,6 +433,9 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    // [FIX] Hide home, show results block immediately
+    showResults();
+
     if (currentSearchAbortController) {
       currentSearchAbortController.abort();
     }
@@ -423,13 +443,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.querySelectorAll('.genre-chip').forEach(c => c.classList.remove('active'));
     appState.viewState = { mode: 'search', currentQuery: query, currentPage: 1, isLoading: true, hasMore: true };
-
-    if (hero) hero.style.display = 'none';
-    if (searchBlock) searchBlock.style.display = "block";
-    if (seasonalBox) seasonalBox.parentElement.style.display = "none";
-    if (trendingBox) trendingBox.parentElement.style.display = "none";
-    // Hide Recommends Preview during search
-    if (recommendsPreview) recommendsPreview.parentElement.style.display = "none";
 
     resultsBox.innerHTML = `
       <div class="filter-header" style="margin-bottom: 20px;">
@@ -507,28 +520,16 @@ document.addEventListener("DOMContentLoaded", () => {
   function resetToHome() {
     appState.viewState = { mode: 'home', currentQuery: '', currentPage: 1, isLoading: false, hasMore: true };
     
+    // Reset active genre chips
     document.querySelectorAll('.genre-chip').forEach(c => c.classList.remove('active'));
     const allChip = document.querySelector('.genre-chip');
     if (allChip) allChip.classList.add('active'); 
     
-    if (hero) hero.style.display = 'flex';
-    if (leftCol) {
-      Array.from(leftCol.children).forEach(b => {
-        if (b.id === 'searchBlock') {
-          b.style.display = 'none';
-        } else {
-          b.style.display = 'block';
-        }
-      });
-    }
-    
-    if (resultsBox) {
-      resultsBox.innerHTML = ''; 
-      resultsBox.style.cssText = ''; 
-    }
-    
+    // Clear Search Input
     if (searchInput) searchInput.value = '';
-    if (searchClear) searchClear.style.display = 'none';
+    
+    // [FIX] Use explicit Show Home Logic
+    showHome();
     
     if (window.history.replaceState) {
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -541,7 +542,8 @@ document.addEventListener("DOMContentLoaded", () => {
     searchInput.onkeydown = (e) => { 
       if (e.key === 'Escape') {
         e.preventDefault();
-        resetToHome();
+        // [FIX] Esc key triggers reset
+        searchClear.click();
       }
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -554,12 +556,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (searchClear) {
+    // [FIX] Clear button restores home AND reloads data
     searchClear.onclick = () => {
       if (searchInput) {
         searchInput.value = '';
         searchInput.focus();
       }
       resetToHome();
+      loadAllData(); // Reloads Trending/Seasonal content
     };
   }
 
@@ -709,20 +713,10 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll('.genre-chip').forEach(c => c.classList.remove('active'));
     if (clickedChip) clickedChip.classList.add('active');
 
-    appState.viewState = { mode: 'genre', currentQuery: genreId, currentPage: 1, isLoading: true, hasMore: true };
+    // [FIX] Hide home, show results mode for genre
+    showResults();
 
-    if (hero) hero.style.display = 'none';
-    if (leftCol) {
-      Array.from(leftCol.children).forEach(b => {
-        if (b.id === 'searchBlock') {
-          b.style.display = 'block';
-        } else {
-          b.style.display = 'none';
-        }
-      });
-    }
-    
-    if (searchBlock) searchBlock.style.display = 'block';
+    appState.viewState = { mode: 'genre', currentQuery: genreId, currentPage: 1, isLoading: true, hasMore: true };
 
     if (resultsBox) {
       resultsBox.innerHTML = `
@@ -807,9 +801,9 @@ document.addEventListener("DOMContentLoaded", () => {
     recommendsPreviewList.forEach(async item => {
       try {
         const res = await fetchWithRetry(`https://api.jikan.moe/v4/anime/${item.id}`);
-        const anime = res.length ? res[0] : res; // Handle if cached array
+        const anime = res.length ? res[0] : res; 
 
-        // --- FIX: Add { disableLazy: true } here ---
+        // FIX: Disable lazy loading for homepage previews
         const card = createCard(anime, { disableLazy: true });
         
         // Force width in preview grid
@@ -819,7 +813,6 @@ document.addEventListener("DOMContentLoaded", () => {
           const note = document.createElement("p");
           note.className = "editor-note";
           note.textContent = item.note;
-          // Add note inside card text content area
           const contentDiv = card.querySelector('div:last-child');
           if (contentDiv) contentDiv.appendChild(note);
         }
@@ -836,7 +829,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    // Use a grid for these sections
     container.className = "responsive-grid";
     container.style.cssText = `
       display: grid;
@@ -850,9 +842,8 @@ document.addEventListener("DOMContentLoaded", () => {
         
         let anime;
         if (Array.isArray(res)) anime = res[0];
-        else anime = res; // If fetchWithRetry returned object
+        else anime = res; 
 
-        // Fallback if fetchWithRetry isn't suited for single ID
         if (!anime) {
            const r = await fetch(`https://api.jikan.moe/v4/anime/${item.id}`);
            const json = await r.json();
@@ -1010,7 +1001,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // --- URL PARAMS & INITIAL LOAD [FIX 1: GUARANTEE HERO LOADS] ---
+  // --- URL PARAMS & INITIAL LOAD ---
   const urlParams = new URLSearchParams(window.location.search);
   const searchParam = urlParams.get('search');
   
@@ -1195,7 +1186,6 @@ function showToast(message, type = 'info') {
   }, 4000);
 }
 
-// [FIX 3: Global Button Safety]
-// Ensure global access for inline HTML handlers
+// Global Button Safety
 window.spinWheel = spinWheel;
 window.loadSchedule = loadSchedule;
