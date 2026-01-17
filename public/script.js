@@ -129,6 +129,14 @@ function getElement(id) {
   return document.getElementById(id);
 }
 
+// [FIX] Helper to normalize single anime response
+function normalizeSingleAnimeResponse(json) {
+  if (json && json.data && json.data.mal_id) {
+    return json.data;
+  }
+  return null;
+}
+
 // =====================
 // UI HELPERS
 // =====================
@@ -265,7 +273,11 @@ function createCard(anime, options = {}) {
   div.setAttribute('role', 'button');
   div.setAttribute('aria-label', `View details for ${anime.title || 'Untitled'}`);
   
-  const imgUrl = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || '';
+  // [FIX] Added image fallback safety
+  const imgUrl = anime.images?.jpg?.large_image_url || 
+                 anime.images?.jpg?.image_url || 
+                 "https://via.placeholder.com/300x420?text=No+Image";
+
   const title = anime.title || "Untitled";
   const score = anime.score || 'N/A';
   const year = anime.year || 'Unknown';
@@ -797,22 +809,28 @@ document.addEventListener("DOMContentLoaded", () => {
     { id: 5114, note: "A complete story with strong themes and unforgettable characters." } // FMAB
   ];
 
+  // [FIX] Completely updated Recommends Preview logic to use Direct Fetch
   if (recommendsPreview) {
     recommendsPreviewList.forEach(async item => {
       try {
-        const res = await fetchWithRetry(`https://api.jikan.moe/v4/anime/${item.id}`);
-        const anime = res.length ? res[0] : res; 
+        // Direct fetch to handle single object response correctly
+        const res = await fetch(`https://api.jikan.moe/v4/anime/${item.id}`);
+        if (!res.ok) throw new Error("Failed to fetch anime");
 
-        // FIX: Disable lazy loading for homepage previews
-        const card = createCard(anime, { disableLazy: true });
+        const json = await res.json();
+        const anime = normalizeSingleAnimeResponse(json);
         
-        // Force width in preview grid
+        if (!anime) return;
+
+        // Create card with proper anime object
+        const card = createCard(anime, { disableLazy: true });
         card.style.minWidth = "200px";
 
         if (item.note) {
           const note = document.createElement("p");
           note.className = "editor-note";
           note.textContent = item.note;
+          
           const contentDiv = card.querySelector('div:last-child');
           if (contentDiv) contentDiv.appendChild(note);
         }
