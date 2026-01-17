@@ -5,11 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>anicrunch</title>
   <meta name="description" content="AniCrunch – Discover anime with curated recommendations, reviews, schedules, and hidden gems. Built for anime fans by anime fans.">
-  <link rel="stylesheet" href="style.css" />
   
-  <link rel="preload" as="image" href="" id="heroPreload" />
+  <link 
+    rel="preload" 
+    as="image" 
+    href="https://cdn.myanimelist.net/images/anime/5/73199.jpg" 
+    id="heroPreload" 
+    fetchpriority="high" 
+  />
 
+  <link rel="preload" href="style.css" as="style" onload="this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="style.css"></noscript>
+  
   <style>
+    /* Critical CSS for layout stability & touch targets */
     .hero-dot, .nav-btn, .hero-arrow {
       min-width: 44px;
       min-height: 44px;
@@ -48,7 +57,14 @@
 </header>
 
 <section class="hero" id="hero">
-  <img class="hero-bg" id="heroBg" alt="Featured Anime" decoding="async" />
+  <img 
+    id="heroBg"
+    class="hero-bg" 
+    alt="Featured Anime" 
+    fetchpriority="high" 
+    decoding="async"
+    sizes="(max-width: 768px) 100vw, 1200px" 
+  />
   <div class="hero-overlay"></div>
   
   <div class="hero-content">
@@ -140,7 +156,7 @@
 </main>
 
 <footer class="site-footer">
-  <p>Made with ❤️ by anicrunch · Powered by <a href="https://jikan.moe" target="_blank">Jikan API</a></p>
+  <p>Made with ❤️ by anicrunch · Powered by <a href="https://jikan.moe" target="_blank" rel="noopener">Jikan API</a></p>
 </footer>
 
 <script src="script.js" defer></script>
