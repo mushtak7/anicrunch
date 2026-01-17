@@ -58,47 +58,6 @@ const curatedLists = {
 };
 
 // =====================
-// EDITORIAL REVIEWS
-// =====================
-const editorialTakes = {
-  21: `One Piece is less about catching up and more about settling in.
-Its length can be intimidating, but the emotional payoff and world-building
-reward patience in a way very few long-running series manage to achieve.`,
-
-  20: `Naruto is deeply flawed, especially in its pacing, but its impact on
-modern anime is undeniable. At its best, it captures themes of loneliness,
-growth, and perseverance that still resonate years later.`,
-
-  16498: `Attack on Titan redefined expectations for anime storytelling.
-Its willingness to embrace moral ambiguity and long-term consequences
-pushed the medium toward more mature narratives.`,
-
-  38000: `Demon Slayer thrives on presentation. While its story is fairly
-straightforward, the emotional sincerity and exceptional animation
-make it easy to understand its massive popularity.`,
-
-  40748: `Jujutsu Kaisen blends style and chaos extremely well.
-Its strength lies more in momentum and atmosphere than deep character work,
-which makes it consistently engaging.`,
-
-  9253: `Steins;Gate rewards patience more than almost any other series.
-What begins slowly evolves into an emotionally heavy and carefully structured
-story that benefits immensely from hindsight.`,
-
-  52991: `Frieren approaches fantasy from a reflective angle.
-Instead of spectacle, it focuses on memory, time, and emotional distance,
-making it quietly powerful rather than dramatic.`,
-
-  44511: `Chainsaw Man embraces messiness by design.
-Its raw emotion and unpredictability stand out more than traditional structure,
-especially when viewed alongside its manga arcs.`,
-
-  31964: `My Hero Academia starts with a strong thematic foundation,
-but struggles later under its own popularity.
-At its best, it still captures what makes hero stories inspiring.`
-};
-
-// =====================
 // UTILITIES
 // =====================
 function delay(ms) {
@@ -129,7 +88,7 @@ function getElement(id) {
   return document.getElementById(id);
 }
 
-// Helper to normalize single anime response
+// [FIX] Helper to normalize single anime response (Fixes "Untitled" bug)
 function normalizeSingleAnimeResponse(json) {
   if (json && json.data && json.data.mal_id) {
     return json.data;
@@ -137,17 +96,16 @@ function normalizeSingleAnimeResponse(json) {
   return null;
 }
 
-// [FIX OPTION A] Updated Skeleton Generator to match existing CSS
+// [FIX] Skeleton Generator matching your CSS (.skeleton class)
 function createSkeletonCard() {
   const div = document.createElement("div");
   div.className = "anime-card skeleton-card skeleton";
-
+  // Matches your site's existing shimmer CSS structure
   div.innerHTML = `
     <div class="skeleton-title"></div>
     <div class="skeleton-text"></div>
     <div class="skeleton-text" style="width:60%"></div>
   `;
-
   return div;
 }
 
@@ -287,7 +245,7 @@ function createCard(anime, options = {}) {
   div.setAttribute('role', 'button');
   div.setAttribute('aria-label', `View details for ${anime.title || 'Untitled'}`);
   
-  // Image fallback safety
+  // [FIX] Added image fallback safety
   const imgUrl = anime.images?.jpg?.large_image_url || 
                  anime.images?.jpg?.image_url || 
                  "https://via.placeholder.com/300x420?text=No+Image";
@@ -334,7 +292,7 @@ function createCard(anime, options = {}) {
     }
   };
   
-  // Handle Lazy vs Direct Loading
+  // FIX: Handle Lazy vs Direct Loading
   const img = div.querySelector('img');
   if (img) {
     if (options.disableLazy) {
@@ -363,10 +321,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const authArea = getElement("authArea");
   const hero = getElement("hero");
   const genreChips = getElement("genreChips");
-  const leftCol = document.querySelector(".left");
+  // const leftCol = document.querySelector(".left"); // Not critical
 
-  // Recommends Preview
+  // NEW: Recommends Preview
   const recommendsPreview = getElement("recommendsPreview");
+  // [FIX] Get the wrapper for home sections
   const homeSections = getElement("homeSections");
 
   // Hero Elements
@@ -458,7 +417,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Hide home, show results block immediately
+    // [FIX] Hide home, show results block immediately
     showResults();
 
     if (currentSearchAbortController) {
@@ -553,7 +512,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Clear Search Input
     if (searchInput) searchInput.value = '';
     
-    // Use explicit Show Home Logic
+    // [FIX] Use explicit Show Home Logic
     showHome();
     
     if (window.history.replaceState) {
@@ -567,6 +526,7 @@ document.addEventListener("DOMContentLoaded", () => {
     searchInput.onkeydown = (e) => { 
       if (e.key === 'Escape') {
         e.preventDefault();
+        // [FIX] Esc key triggers reset
         searchClear.click();
       }
       if (e.key === 'Enter') {
@@ -580,7 +540,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (searchClear) {
-    // Clear button restores home AND reloads data
+    // [FIX] Clear button restores home AND reloads data
     searchClear.onclick = () => {
       if (searchInput) {
         searchInput.value = '';
@@ -737,7 +697,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll('.genre-chip').forEach(c => c.classList.remove('active'));
     if (clickedChip) clickedChip.classList.add('active');
 
-    // Hide home, show results mode for genre
+    // [FIX] Hide home, show results mode for genre
     showResults();
 
     appState.viewState = { mode: 'genre', currentQuery: genreId, currentPage: 1, isLoading: true, hasMore: true };
@@ -812,7 +772,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Recommends Preview
+  // NEW: Recommends Preview
   const recommendsPreviewList = [
     { id: 9253, note: "A rare time-travel story that rewards patience and attention." }, // Steins;Gate
     { id: 16498, note: "A series that redefined how dark and ambitious anime could be." }, // AoT
@@ -821,9 +781,9 @@ document.addEventListener("DOMContentLoaded", () => {
     { id: 5114, note: "A complete story with strong themes and unforgettable characters." } // FMAB
   ];
 
-  // Recommends Preview Logic with Skeletons
+  // [FIX] Completely updated Recommends Preview logic (Direct Fetch + Skeletons)
   if (recommendsPreview) {
-    // --- SHOW SKELETONS FIRST ---
+    // 1. Show Skeletons First
     recommendsPreview.innerHTML = "";
     const SKELETON_COUNT = recommendsPreviewList.length;
 
@@ -831,7 +791,7 @@ document.addEventListener("DOMContentLoaded", () => {
       recommendsPreview.appendChild(createSkeletonCard());
     }
 
-    // --- LOAD REAL DATA ---
+    // 2. Load Real Data
     recommendsPreviewList.forEach(async item => {
       try {
         // Direct fetch to handle single object response correctly
@@ -856,7 +816,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if (contentDiv) contentDiv.appendChild(note);
         }
 
-        // Remove skeletons only once before adding the first real card
+        // 3. Remove skeletons when data arrives (ensures layout stability)
         const skeletons = recommendsPreview.querySelectorAll(".skeleton-card");
         if (skeletons.length) {
           skeletons.forEach(s => s.remove());
@@ -869,7 +829,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Render Curated Lists on recommendations.html
+  // NEW: Render Curated Lists on recommendations.html
   function renderCuratedList(containerId, list) {
     const container = document.getElementById(containerId);
     if (!container) return;
