@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://anicrunch.vercel.app/sitemap.xml
