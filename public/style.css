@@ -1649,11 +1649,13 @@ header input:focus {
     display: none; /* Hide "Random" text, keep emoji */
   }
   
-  /* Auth Area */
+  /* Auth Area - FIX: Show username on mobile */
   #authArea {
     grid-column: 3;
     grid-row: 1;
     gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
   
   .auth-link {
@@ -1661,11 +1663,19 @@ header input:focus {
     font-size: 12px;
   }
   
+  /* FIX 2: Show username on mobile - truncated */
   .user-name {
-    font-size: 11px;
-    max-width: 80px;
+    display: block;
+    font-size: 10px;
+    max-width: 70px;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--accent);
+    background: rgba(255, 60, 172, 0.15);
+    padding: 4px 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 60, 172, 0.3);
   }
   
   /* Search Container - Full width on second row */
@@ -1803,25 +1813,23 @@ header input:focus {
     gap: 16px;
   }
 
-  /* FIX 2: Row Scroll Mobile Grid - 3x2 for Seasonal & Trending */
+  /* FIX 1: Row Scroll Mobile Grid - 3 columns */
+  /* REMOVED nth-child hiding - let JavaScript handle pagination */
   .row-scroll {
     grid-template-columns: repeat(3, 1fr);
     gap: 14px;
     min-height: auto;
   }
   
-  /* Specific targeting for seasonal and trending sections - 3 columns, 2 rows */
+  /* Specific targeting for seasonal and trending sections - 3 columns */
   #seasonal,
   #trending {
     grid-template-columns: repeat(3, 1fr);
     min-height: auto;
   }
   
-  /* Show only first 6 cards (3x2 layout) */
-  #seasonal .anime-card:nth-child(n+7),
-  #trending .anime-card:nth-child(n+7) {
-    display: none;
-  }
+  /* DO NOT hide cards with CSS - JavaScript handles pagination */
+  /* Removed: #seasonal .anime-card:nth-child(n+7), #trending .anime-card:nth-child(n+7) { display: none; } */
   
   .anime-card {
     min-height: 240px;
@@ -1913,9 +1921,19 @@ header input:focus {
     font-size: 11px;
   }
   
-  /* Hide username on small screens */
+  /* FIX 2: Show username on small screens - more compact */
   .user-name {
-    display: none;
+    display: block;
+    font-size: 9px;
+    max-width: 55px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--accent);
+    background: rgba(255, 60, 172, 0.15);
+    padding: 3px 6px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 60, 172, 0.3);
   }
   
   .hero {
@@ -1943,7 +1961,7 @@ header input:focus {
     font-size: 12px;
   }
   
-  /* FIX 2: Keep 3 columns for seasonal & trending on small mobile */
+  /* FIX 1: Keep 3 columns for seasonal & trending on small mobile */
   .row-scroll {
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
@@ -1955,11 +1973,7 @@ header input:focus {
     grid-template-columns: repeat(3, 1fr);
   }
   
-  /* Ensure only 6 cards visible (3x2) */
-  #seasonal .anime-card:nth-child(n+7),
-  #trending .anime-card:nth-child(n+7) {
-    display: none;
-  }
+  /* DO NOT hide with CSS - JavaScript handles it */
   
   .anime-card {
     min-height: 200px;
@@ -2013,7 +2027,7 @@ header input:focus {
     width: 100%;
   }
   
-  /* FIX 2: Maintain 3 columns even on very small screens for seasonal/trending */
+  /* FIX 1: Maintain 3 columns even on very small screens for seasonal/trending */
   #seasonal,
   #trending {
     grid-template-columns: repeat(3, 1fr);
@@ -2056,6 +2070,13 @@ header input:focus {
   .genre-results-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
+  }
+  
+  /* FIX 2: Username on very small screens */
+  .user-name {
+    font-size: 8px;
+    max-width: 45px;
+    padding: 2px 5px;
   }
 }
 
