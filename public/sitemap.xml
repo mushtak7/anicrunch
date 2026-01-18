@@ -1,37 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset
-  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
-  <!-- Homepage -->
   <url>
     <loc>https://anicrunch.vercel.app/</loc>
-    <lastmod>2026-01-17</lastmod>
+    <lastmod>2026-01-18</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
 
-  <!-- Blog -->
   <url>
     <loc>https://anicrunch.vercel.app/blog/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
-  <!-- Schedule -->
   <url>
     <loc>https://anicrunch.vercel.app/schedule.html</loc>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
 
-  <!-- Recommendations -->
   <url>
     <loc>https://anicrunch.vercel.app/recommendations.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
 
-  <!-- Auth Pages (low priority) -->
   <url>
     <loc>https://anicrunch.vercel.app/login.html</loc>
     <changefreq>monthly</changefreq>
