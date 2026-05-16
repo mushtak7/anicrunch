@@ -94,6 +94,16 @@ async function initDB() {
 }
 initDB();
 
+// Temporary health check to debug production DB issues
+app.get("/api/health", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT 1 as ok");
+    res.json({ db: "connected", hasDBUrl: !!process.env.DATABASE_URL, hasSecret: !!process.env.SESSION_SECRET });
+  } catch (err) {
+    res.json({ db: "error", error: err.message, hasDBUrl: !!process.env.DATABASE_URL, hasSecret: !!process.env.SESSION_SECRET });
+  }
+});
+
 /* =====================
    AUTH GUARD
 ===================== */
