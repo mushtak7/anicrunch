@@ -290,6 +290,14 @@
       <div class="scroll-container" id="recList"></div>
     </div>
 
+    <div id="episodesSection" style="display:none">
+      <h2 class="section-title">📋 Episode History</h2>
+      <div class="episode-history-list" id="episodeList"></div>
+      <div class="load-more-episodes" id="loadMoreEpisodesContainer" style="display:none">
+        <button id="loadMoreEpisodesBtn">Load More Episodes</button>
+      </div>
+    </div>
+
   </main>
 
 </div>
@@ -301,7 +309,7 @@
 
 <script>
 // 🔥 Logic - GLOBAL API BASE DEFINITION
-const API_BASE = "https://anicrunch-backend.onrender.com";
+const API_BASE = location.hostname === "localhost" ? "" : "https://anicrunch-backend.onrender.com";
 const animeId = new URLSearchParams(location.search).get('id');
 let trailerId = null;
 
@@ -354,20 +362,22 @@ async function load() {
     const { data } = await res.json();
     render(data);
     loadExtras();
+    checkWatchlistStatus();
   } catch (e) {
     document.querySelector('.details-container').innerHTML = `<h2 style="text-align:center">Error loading anime.</h2>`;
   }
 }
 
 function render(data) {
-  document.title = data.title;
+  const displayTitle = data.title_english || data.title;
+  document.title = displayTitle;
   
   // Background & Poster
   document.getElementById('bg').style.backgroundImage = `url('${data.images.jpg.large_image_url}')`;
   document.getElementById('poster').src = data.images.jpg.large_image_url;
 
   // Header
-  document.getElementById('title').innerText = data.title;
+  document.getElementById('title').innerText = displayTitle;
   document.getElementById('subtitle').innerText = data.title_japanese || '';
   document.getElementById('score').innerText = data.score || 'N/A';
   
@@ -427,7 +437,25 @@ function render(data) {
     tBtn.style.display = 'inline-flex';
     tBtn.innerText = '🔍 Search Trailer';
     tBtn.className = 'btn btn-search'; // Darker style
-    tBtn.onclick = () => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(data.title + ' trailer')}`, '_blank');
+    tBtn.onclick = () => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(displayTitle + ' anime trailer')}`, '_blank');
+  }
+}
+
+async function checkWatchlistStatus() {
+  try {
+    const res = await fetch(`${API_BASE}/api/watchlist`, { credentials: 'include' });
+    if (res.ok) {
+      const items = await res.json();
+      const item = items.find(i => i.anime_id == animeId);
+      if (item) {
+        const btn = document.getElementById('watchlistBtn');
+        btn.innerText = '✓ In Watchlist';
+        btn.style.background = '#00e676';
+        btn.disabled = true;
+      }
+    }
+  } catch (err) {
+    console.error("Watchlist check failed:", err);
   }
 }
 
@@ -447,10 +475,6 @@ document.getElementById('watchlistBtn').onclick = async function() {
     if (res.ok) {
       this.innerText = '✓ Added!';
       this.style.background = '#00e676';
-      // Save status
-      const map = JSON.parse(localStorage.getItem('anime_statuses')) || {};
-      map[animeId] = 'plan';
-      localStorage.setItem('anime_statuses', JSON.stringify(map));
     } else {
       // Improved error handling
       this.innerText = 'Login Required';
@@ -507,6 +531,63 @@ async function loadExtras() {
     sData.data.forEach(s => {
       list.innerHTML += `<a href="${s.url}" target="_blank" class="stream-btn">▶ ${s.name}</a>`;
     });
+  }
+
+  // Episodes History
+  loadEpisodeHistory(1);
+}
+
+let episodePage = 1;
+async function loadEpisodeHistory(page) {
+  try {
+    const epRes = await fetch(`https://api.jikan.moe/v4/anime/${animeId}/episodes?page=${page}`);
+    const epData = await epRes.json();
+    if (epData.data?.length) {
+      document.getElementById('episodesSection').style.display = 'block';
+      const list = document.getElementById('episodeList');
+      const hasNext = epData.pagination?.has_next_page || false;
+
+      epData.data.forEach(ep => {
+        const item = document.createElement('div');
+        item.className = 'episode-history-item';
+
+        let tags = '';
+        if (ep.filler) tags += '<span class="ep-tag filler">Filler</span>';
+        if (ep.recap) tags += '<span class="ep-tag recap">Recap</span>';
+
+        const airedDate = ep.aired ? new Date(ep.aired).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '';
+
+        item.innerHTML = `
+          <span class="ep-number">EP ${ep.mal_id}</span>
+          <div class="ep-info">
+            <div class="ep-title">${ep.title || 'Episode ' + ep.mal_id}</div>
+            ${ep.title_japanese ? `<div class="ep-title-jp">${ep.title_japanese}</div>` : ''}
+          </div>
+          ${airedDate ? `<span class="ep-aired">📅 ${airedDate}</span>` : ''}
+          ${tags}
+        `;
+        list.appendChild(item);
+      });
+
+      // Show/hide load more button
+      const loadMoreContainer = document.getElementById('loadMoreEpisodesContainer');
+      const loadMoreBtn = document.getElementById('loadMoreEpisodesBtn');
+      if (hasNext && loadMoreContainer && loadMoreBtn) {
+        loadMoreContainer.style.display = 'flex';
+        loadMoreBtn.innerText = 'Load More Episodes';
+        loadMoreBtn.disabled = false;
+        loadMoreBtn.onclick = () => {
+          loadMoreBtn.innerText = 'Loading...';
+          loadMoreBtn.disabled = true;
+          episodePage++;
+          loadEpisodeHistory(episodePage);
+        };
+      } else if (loadMoreContainer) {
+        loadMoreContainer.style.display = 'none';
+      }
+    }
+  } catch (e) {
+    console.error('Episode history load error:', e);
   }
 }
 

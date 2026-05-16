@@ -146,6 +146,7 @@
   
   <nav class="nav-links">
     <a href="/blog/" class="nav-link"><span>📖</span> <span>Blog</span></a>
+    <a href="/recent-episodes.html" class="nav-link"><span>🆕</span> <span>New Episodes</span></a>
     <a href="/schedule.html" class="nav-link"><span>📅</span> <span>Schedule</span></a>
     <button onclick="spinWheel()" class="btn-random" aria-label="Random anime">
       <span>🎲</span> <span>Random</span>
@@ -170,27 +171,13 @@
     
     <!-- Slide 1 -->
     <div class="hero-slide active" data-slide="0" data-mal-id="">
-      <img 
-        class="hero-bg" 
-        src="https://cdn.myanimelist.net/images/anime/1015/138006l.jpg"
-        srcset="
-          https://cdn.myanimelist.net/images/anime/1015/138006.jpg 600w,
-          https://cdn.myanimelist.net/images/anime/1015/138006l.jpg 1200w
-        "
-        sizes="(max-width: 768px) 100vw, 1200px"
-        alt="Frieren: Beyond Journey's End" 
-        width="1200"
-        height="675"
-        fetchpriority="high" 
-        decoding="async"
-        loading="eager"
-      />
+      <img class="hero-bg" src="" alt="Featured Anime 1" width="1200" height="675" fetchpriority="high" decoding="async" loading="eager" />
       <div class="hero-overlay"></div>
       <div class="hero-content">
         <span class="hero-badge">🔥 Featured</span>
-        <h2 class="hero-title">Frieren: Beyond Journey's End</h2>
-        <p class="hero-meta">⭐ 9.14 • 28 eps</p>
-        <p class="hero-synopsis">During their decade-long quest to defeat the Demon King, the members of the hero's party forge bonds through adventures and battles...</p>
+        <h2 class="hero-title">Loading...</h2>
+        <p class="hero-meta"></p>
+        <p class="hero-synopsis"></p>
         <div class="hero-genres"></div>
         <div class="hero-actions">
           <button class="hero-btn primary" aria-label="View Details">
@@ -333,6 +320,21 @@
         </div>
       </div>
       
+      <div class="block">
+        <h2>📺 Airing Today</h2>
+        <p class="editor-note">
+          Popular anime episodes airing today.
+        </p>
+        <div class="row-wrapper">
+          <button class="nav-btn left" data-target="recentEpisodes" aria-label="Previous">‹</button>
+          <div id="recentEpisodes" class="row-scroll"></div>
+          <button class="nav-btn right" data-target="recentEpisodes" aria-label="Next">›</button>
+        </div>
+        <a href="/recent-episodes.html" class="view-all-link" style="margin-top: 15px; display: inline-block;">
+          View full airing schedule →
+        </a>
+      </div>
+
       <div class="block">
         <h2>⭐ AniCrunch Recommends</h2>
         <p class="editor-note">

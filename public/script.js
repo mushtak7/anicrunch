@@ -1,7 +1,7 @@
 // =====================
 // API CONFIGURATION
 // =====================
-const API_BASE = "https://anicrunch-backend.onrender.com";
+const API_BASE = location.hostname === "localhost" ? "" : "https://anicrunch-backend.onrender.com";
 
 // =====================
 // GLOBAL STATE
@@ -282,6 +282,13 @@ function cleanupObserver() {
 }
 
 // =====================
+// TITLE HELPER — prefer English title
+// =====================
+function getTitle(anime) {
+  return anime.title_english || anime.title || 'Untitled';
+}
+
+// =====================
 // CARD CREATOR (Enhanced)
 // =====================
 function createCard(anime, options = {}) { 
@@ -289,7 +296,7 @@ function createCard(anime, options = {}) {
   div.className = "anime-card";
   div.setAttribute('tabindex', '0');
   div.setAttribute('role', 'button');
-  div.setAttribute('aria-label', `View details for ${anime.title || 'Untitled'}`);
+  div.setAttribute('aria-label', `View details for ${getTitle(anime)}`);
   
   const img = anime.images?.jpg || {};
   const defaultUrl = img.large_image_url || img.image_url || "https://via.placeholder.com/300x420?text=No+Image";
@@ -300,7 +307,7 @@ function createCard(anime, options = {}) {
   if (img.large_image_url) srcset += `${img.large_image_url} 900w`;
   srcset = srcset.replace(/,\s*$/, ""); 
 
-  const title = anime.title || "Untitled";
+  const title = getTitle(anime);
   const score = anime.score || 'N/A';
   const year = anime.year || 'Unknown';
   const type = anime.type || 'TV';
@@ -366,6 +373,42 @@ function createCard(anime, options = {}) {
     }
   }
   
+  return div;
+}
+// =====================
+// EPISODE CARD CREATOR
+// =====================
+function createEpisodeCard(entry, episode) {
+  const div = document.createElement('div');
+  div.className = 'episode-card';
+  div.setAttribute('tabindex', '0');
+  div.setAttribute('role', 'button');
+  const displayTitle = entry.title_english || entry.title || 'Unknown';
+  div.setAttribute('aria-label', `View ${displayTitle} - ${episode.title}`);
+
+  const img = entry.images?.jpg || {};
+  const imgUrl = img.large_image_url || img.image_url || 'https://via.placeholder.com/300x420?text=No+Image';
+  const isEp1 = episode.mal_id === 1;
+
+  div.innerHTML = `
+    <div class="episode-card-poster">
+      <img src="${imgUrl}" alt="${displayTitle}" loading="lazy" width="300" height="420">
+      <span class="episode-badge ${isEp1 ? 'new' : ''}">EP ${episode.mal_id}</span>
+    </div>
+    <div class="episode-card-content">
+      <h3>${displayTitle}</h3>
+      <span class="episode-title">${episode.title || 'Episode ' + episode.mal_id}</span>
+    </div>
+  `;
+
+  const navigate = () => {
+    if (entry.mal_id) location.href = `/anime.html?id=${entry.mal_id}`;
+  };
+  div.onclick = navigate;
+  div.onkeydown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(); }
+  };
+
   return div;
 }
 
@@ -466,6 +509,10 @@ const HeroCarousel = {
       if (img) {
         const imageUrl = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || '';
         
+        // Clear any hardcoded srcset/sizes to prevent stale images
+        img.removeAttribute('srcset');
+        img.removeAttribute('sizes');
+        
         // For first slide, load immediately (LCP optimization)
         if (index === 0) {
           img.src = imageUrl;
@@ -477,14 +524,14 @@ const HeroCarousel = {
           img.src = imageUrl;
         }
         
-        img.alt = anime.title || 'Featured Anime';
+        img.alt = getTitle(anime);
         img.style.filter = 'none'; // Ensure no blur
       }
 
       // Title
       const title = slide.querySelector('.hero-title');
       if (title) {
-        title.textContent = anime.title || 'Unknown Title';
+        title.textContent = getTitle(anime);
       }
 
       // Meta info
@@ -582,7 +629,7 @@ const HeroCarousel = {
       if (res.ok) {
         btn.innerHTML = '<span class="btn-icon">✓</span> Added!';
         btn.classList.add('added');
-        showToast(`${anime.title} added to watchlist!`, 'success');
+        showToast(`${getTitle(anime)} added to watchlist!`, 'success');
       } else if (res.status === 401) {
         btn.innerHTML = '<span class="btn-icon">+</span> Add to Watchlist';
         btn.disabled = false;
@@ -689,7 +736,8 @@ document.addEventListener("DOMContentLoaded", () => {
   
   const carousels = {
     seasonal: { currentPage: 0, totalCards: 0 },
-    trending: { currentPage: 0, totalCards: 0 }
+    trending: { currentPage: 0, totalCards: 0 },
+    recentEpisodes: { currentPage: 0, totalCards: 0 }
   };
 
   // Initialize Hero Carousel
@@ -724,8 +772,8 @@ document.addEventListener("DOMContentLoaded", () => {
       .then(d => {
         if (d.user && authArea) {
           authArea.innerHTML = `
+            <a href="/profile.html" class="auth-link" style="color: var(--accent); font-weight: bold;">👤 My Profile</a>
             <a href="/watchlist.html" class="auth-link">📚 Watchlist</a>
-            <span class="user-name">👤 ${d.user.username}</span>
             <button class="auth-link" onclick="logout()">Logout</button>
           `;
         }
@@ -943,6 +991,7 @@ document.addEventListener("DOMContentLoaded", () => {
       idleCallback(() => loadSection("seasonal", "https://api.jikan.moe/v4/seasons/now?sfw=true&limit=25"));
       idleCallback(() => loadSection("trending", "https://api.jikan.moe/v4/top/anime?filter=airing&sfw=true&limit=25"));
       idleCallback(() => loadTopAnime());
+      idleCallback(() => loadRecentEpisodesPreview());
 
     } catch (e) { console.error('Error loading data:', e); }
   }
@@ -1023,7 +1072,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const state = carousels[id];
     if (!container || !state) return;
     
-    const cards = container.querySelectorAll(".anime-card");
+    const cards = container.querySelectorAll(".anime-card, .episode-card");
     const totalCards = state.totalCards;
     
     let cardsPerPage = CARDS_PER_PAGE;
@@ -1145,9 +1194,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const imgUrl = a.images?.jpg?.image_url || a.images?.jpg?.large_image_url || '';
         div.innerHTML = `
           <span class="rank">#${i + 1}</span>
-          <img src="${imgUrl}" alt="${a.title}" loading="lazy">
+          <img src="${imgUrl}" alt="${getTitle(a)}" loading="lazy">
           <div class="top-item-info">
-            <span class="top-title">${a.title || 'Unknown'}</span>
+            <span class="top-title">${getTitle(a)}</span>
             <span class="top-score">⭐ ${a.score || "N/A"}</span>
           </div>
         `;
@@ -1179,6 +1228,66 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
   }
+
+  // =====================
+  // RECENT EPISODES (Homepage Preview)
+  // =====================
+  async function loadRecentEpisodesPreview() {
+    const box = getElement('recentEpisodes');
+    if (!box) return;
+
+    try {
+      // Get today's day name for accurate schedule
+      const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const today = days[new Date().getDay()];
+
+      const res = await fetch(`https://api.jikan.moe/v4/schedules?filter=${today}&sfw=true&limit=25`);
+      const json = await res.json();
+      let items = json.data || [];
+
+      // Filter: only show anime with a score or decent popularity (skip obscure kids shows)
+      items = items.filter(a => (a.score && a.score > 0) || a.members > 5000);
+
+      // Sort by score descending, then popularity
+      items.sort((a, b) => (b.score || 0) - (a.score || 0) || (a.popularity || 99999) - (b.popularity || 99999));
+
+      // Show up to 18 cards (3 pages of 6)
+      const limited = items.slice(0, 18);
+
+      if (!limited.length) {
+        box.innerHTML = '<div class="empty-state"><p>No popular anime airing today</p></div>';
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+      limited.forEach(anime => {
+        const entry = {
+          mal_id: anime.mal_id,
+          title: getTitle(anime),
+          images: anime.images
+        };
+        const episode = {
+          mal_id: anime.episodes || '?',
+          title: anime.broadcast?.time ? `Airs at ${anime.broadcast.time} JST` : 'Airing Today'
+        };
+        const card = createEpisodeCard(entry, episode);
+        card.style.width = '100%';
+        card.style.height = '100%';
+        fragment.appendChild(card);
+      });
+      box.replaceChildren(fragment);
+
+      // Update carousel state
+      if (carousels.recentEpisodes) {
+        carousels.recentEpisodes.totalCards = limited.length;
+        updateCarousel('recentEpisodes');
+      }
+    } catch (e) {
+      console.error('Recent episodes load error:', e);
+      box.innerHTML = '<div class="error-state">Failed to load recent episodes</div>';
+    }
+  }
+  window.loadRecentEpisodesPreview = loadRecentEpisodesPreview;
 
   // Cleanup on page unload
   window.addEventListener('beforeunload', () => { 
@@ -1232,10 +1341,10 @@ async function loadSchedule(day) {
       };
       const imgUrl = anime.images?.jpg?.image_url || anime.images?.jpg?.large_image_url || '';
       div.innerHTML = `
-        <img src="${imgUrl}" class="schedule-img" alt="${anime.title}" loading="lazy">
+        <img src="${imgUrl}" class="schedule-img" alt="${getTitle(anime)}" loading="lazy">
         <div class="schedule-info">
           <div class="time-badge">⏰ ${anime.broadcast?.time || 'TBA'} JST</div>
-          <div class="schedule-title">${anime.title || 'Unknown'}</div>
+          <div class="schedule-title">${getTitle(anime)}</div>
           <div class="schedule-meta">${(anime.genres || []).slice(0, 2).map(g => g.name).join(', ') || 'N/A'}</div>
         </div>
       `;
@@ -1248,6 +1357,103 @@ async function loadSchedule(day) {
   }
 }
 window.loadSchedule = loadSchedule; 
+
+
+// =====================
+// RECENT EPISODES (Full Page)
+// =====================
+let recentEpisodesPage = 1;
+let recentEpisodesLoading = false;
+
+async function loadAllRecentEpisodes(page = 1, append = false) {
+  const grid = getElement('recentEpisodesGrid');
+  if (!grid) return;
+  if (recentEpisodesLoading) return;
+  recentEpisodesLoading = true;
+
+  // Get today's day name
+  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const today = days[new Date().getDay()];
+
+  // Update the hero subtitle with today's day
+  const heroSubtitle = document.querySelector('.recent-hero p');
+  if (heroSubtitle) {
+    const dayCapitalized = today.charAt(0).toUpperCase() + today.slice(1);
+    heroSubtitle.textContent = `Anime episodes airing on ${dayCapitalized} – stay up to date!`;
+  }
+
+  if (!append) {
+    grid.innerHTML = '<div class="loading active">Loading today\'s anime...</div>';
+  }
+
+  try {
+    const res = await fetch(`https://api.jikan.moe/v4/schedules?filter=${today}&sfw=true&page=${page}&limit=25`);
+    const json = await res.json();
+    let items = json.data || [];
+    const hasNext = json.pagination?.has_next_page || false;
+
+    // Filter out very obscure entries
+    items = items.filter(a => (a.score && a.score > 0) || a.members > 1000);
+
+    // Sort by score descending
+    items.sort((a, b) => (b.score || 0) - (a.score || 0));
+
+    if (!append) grid.innerHTML = '';
+
+    // Remove existing load more button
+    const existingBtn = document.getElementById('loadMoreRecentBtn');
+    if (existingBtn) existingBtn.remove();
+
+    if (!items.length && !append) {
+      grid.innerHTML = '<div class="empty-state"><div class="empty-icon">📺</div><h3>No popular anime airing today</h3><p>Check back on another day!</p></div>';
+      recentEpisodesLoading = false;
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    items.forEach(anime => {
+      const entry = {
+        mal_id: anime.mal_id,
+        title: getTitle(anime),
+        images: anime.images
+      };
+      const episode = {
+        mal_id: anime.episodes || '?',
+        title: anime.broadcast?.time ? `Airs at ${anime.broadcast.time} JST` : 'Airing Today'
+      };
+      const card = createEpisodeCard(entry, episode);
+      fragment.appendChild(card);
+    });
+    grid.appendChild(fragment);
+
+    // Add load more button if more pages exist
+    if (hasNext) {
+      const btnContainer = document.createElement('div');
+      btnContainer.id = 'loadMoreRecentBtn';
+      btnContainer.style.cssText = 'grid-column: 1 / -1; display: flex; justify-content: center; padding: 30px 0;';
+      const btn = document.createElement('button');
+      btn.innerText = '⬇ Load More';
+      btn.style.cssText = 'padding: 12px 30px; background: linear-gradient(135deg, #00e676, #00c853); color: #0a0a0a; border: none; border-radius: 50px; cursor: pointer; font-weight: 700; font-size: 14px; font-family: inherit; transition: transform 0.2s; box-shadow: 0 4px 15px rgba(0, 230, 118, 0.4);';
+      btn.onmouseover = () => { btn.style.transform = 'scale(1.05)'; };
+      btn.onmouseout = () => { btn.style.transform = 'scale(1)'; };
+      btn.onclick = () => {
+        btn.innerText = '⏳ Loading...';
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+        recentEpisodesPage++;
+        loadAllRecentEpisodes(recentEpisodesPage, true);
+      };
+      btnContainer.appendChild(btn);
+      grid.appendChild(btnContainer);
+    }
+  } catch (e) {
+    console.error('All recent episodes load error:', e);
+    if (!append) grid.innerHTML = '<div class="error-state"><p>Failed to load</p><button class="retry-btn" onclick="loadAllRecentEpisodes(1)">Retry</button></div>';
+  } finally {
+    recentEpisodesLoading = false;
+  }
+}
+window.loadAllRecentEpisodes = loadAllRecentEpisodes;
 
 // =====================
 // RANDOM ANIME (SPIN WHEEL)

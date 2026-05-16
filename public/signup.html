@@ -659,7 +659,7 @@
 </div>
 
 <script>
-  const API_BASE = "https://anicrunch-backend.onrender.com";
+  const API_BASE = location.hostname === "localhost" ? "" : "https://anicrunch-backend.onrender.com";
   let isPasswordVisible = false;
 
   function togglePassword() {

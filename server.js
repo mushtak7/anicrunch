@@ -69,6 +69,32 @@ const pool = new Pool({
 });
 
 /* =====================
+   DATABASE INIT (AUTO-MIGRATION)
+===================== */
+async function initDB() {
+  try {
+    // Add missing columns to watchlists table
+    await pool.query(`
+      ALTER TABLE watchlists 
+      ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'plan',
+      ADD COLUMN IF NOT EXISTS progress INTEGER DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS score INTEGER DEFAULT NULL;
+    `);
+    
+    // Add missing columns to users table
+    await pool.query(`
+      ALTER TABLE users 
+      ADD COLUMN IF NOT EXISTS avatar_url TEXT DEFAULT '',
+      ADD COLUMN IF NOT EXISTS bio TEXT DEFAULT '';
+    `);
+    console.log("✅ Database schema verified/updated");
+  } catch (err) {
+    console.error("Database migration error:", err);
+  }
+}
+initDB();
+
+/* =====================
    AUTH GUARD
 ===================== */
 function requireAuth(req, res, next) {
@@ -158,11 +184,10 @@ app.get("/api/me", (req, res) => {
 app.get("/api/watchlist", requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT anime_id FROM watchlists WHERE user_id=$1",
+      "SELECT anime_id, status, progress, score FROM watchlists WHERE user_id=$1",
       [req.session.user.id]
     );
-
-    res.json(result.rows.map(r => r.anime_id));
+    res.json(result.rows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error fetching watchlist" });
@@ -173,14 +198,35 @@ app.post("/api/watchlist/add", requireAuth, async (req, res) => {
   const { animeId } = req.body;
 
   try {
+    // If it exists, we don't overwrite. 
+    // Wait, let's explicitly specify conflict target if we can, but DO NOTHING is safe.
     await pool.query(
-      "INSERT INTO watchlists (user_id, anime_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+      "INSERT INTO watchlists (user_id, anime_id, status, progress) VALUES ($1, $2, 'plan', 0) ON CONFLICT DO NOTHING",
       [req.session.user.id, animeId]
     );
     res.json({ success: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error adding to watchlist" });
+  }
+});
+
+app.post("/api/watchlist/update", requireAuth, async (req, res) => {
+  const { animeId, status, progress, score } = req.body;
+
+  try {
+    await pool.query(
+      `UPDATE watchlists 
+       SET status = COALESCE($3, status), 
+           progress = COALESCE($4, progress),
+           score = COALESCE($5, score)
+       WHERE user_id=$1 AND anime_id=$2`,
+      [req.session.user.id, animeId, status, progress, score]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error updating watchlist" });
   }
 });
 
@@ -196,6 +242,49 @@ app.post("/api/watchlist/remove", requireAuth, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error removing from watchlist" });
+  }
+});
+
+/* =====================
+   PROFILE ROUTES
+===================== */
+app.get("/api/profile", requireAuth, async (req, res) => {
+  try {
+    const userRes = await pool.query(
+      "SELECT username, avatar_url, bio FROM users WHERE id=$1",
+      [req.session.user.id]
+    );
+    if (userRes.rows.length === 0) return res.status(404).json({ message: "User not found" });
+    
+    // Get total anime watched count
+    const statsRes = await pool.query(
+      "SELECT COUNT(*) FROM watchlists WHERE user_id=$1 AND status='completed'",
+      [req.session.user.id]
+    );
+    
+    res.json({
+      user: userRes.rows[0],
+      stats: {
+        totalWatched: parseInt(statsRes.rows[0].count, 10)
+      }
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error fetching profile" });
+  }
+});
+
+app.post("/api/profile/update", requireAuth, async (req, res) => {
+  const { avatarUrl, bio } = req.body;
+  try {
+    await pool.query(
+      "UPDATE users SET avatar_url=$1, bio=$2 WHERE id=$3",
+      [avatarUrl || '', bio || '', req.session.user.id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error updating profile" });
   }
 });
 

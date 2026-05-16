@@ -312,7 +312,7 @@
 // =====================
 // API CONFIGURATION (FIXED)
 // =====================
-const API_BASE = "https://anicrunch-backend.onrender.com";
+const API_BASE = location.hostname === "localhost" ? "" : "https://anicrunch-backend.onrender.com";
 
 // =====================
 // STATE MANAGEMENT
@@ -320,26 +320,8 @@ const API_BASE = "https://anicrunch-backend.onrender.com";
 let allAnime = [];
 let currentFilter = 'all';
 
-// --- Local Storage Helpers ---
-const getStorage = (key) => JSON.parse(localStorage.getItem(key)) || {};
-const setStorage = (key, data) => localStorage.setItem(key, JSON.stringify(data));
-
-// Status Management
-const getStatus = (id) => getStorage('anime_statuses')[id] || 'plan';
-const saveStatus = (id, status) => {
-  const map = getStorage('anime_statuses');
-  map[id] = status;
-  setStorage('anime_statuses', map);
-  updateStats();
-};
-
-// Progress Management
-const getProgress = (id) => getStorage('anime_progress')[id] || 0;
-const saveProgress = (id, ep) => {
-  const map = getStorage('anime_progress');
-  map[id] = ep;
-  setStorage('anime_progress', map);
-};
+// --- Backend Data Map ---
+let userAnimeData = {}; // Maps anime_id to { status, progress, score }
 
 document.addEventListener("DOMContentLoaded", () => {
   const authArea = document.getElementById("authArea");
@@ -376,18 +358,19 @@ async function loadWatchlist() {
     
     if (res.status === 401) { showLoginState(); return; }
     
-    const ids = await res.json();
-    if (!ids || !ids.length) { showEmptyState(); return; }
-
-    // Initialize defaults if needed
-    const statusMap = getStorage('anime_statuses');
-    ids.forEach(id => { if(!statusMap[id]) saveStatus(id, 'plan'); });
+    const items = await res.json();
+    if (!items || !items.length) { showEmptyState(); return; }
 
     document.getElementById("watchlistGrid").innerHTML = "";
 
     // Load Cards
-    for (const id of ids) {
-      await fetchAndRenderCard(id);
+    for (const item of items) {
+      userAnimeData[item.anime_id] = { 
+        status: item.status || 'plan', 
+        progress: item.progress || 0, 
+        score: item.score 
+      };
+      await fetchAndRenderCard(item.anime_id);
     }
     
     updateStats();
@@ -405,8 +388,8 @@ async function fetchAndRenderCard(id) {
     const data = await res.json();
     const anime = data.data;
 
-    anime.userStatus = getStatus(id);
-    anime.progress = getProgress(id);
+    anime.userStatus = userAnimeData[id]?.status || 'plan';
+    anime.progress = userAnimeData[id]?.progress || 0;
     allAnime.push(anime);
 
     const card = document.createElement("div");
@@ -474,12 +457,24 @@ window.changeProgress = function(id, amount) {
   // Auto-update status if finished
   if (anime.episodes && newEp === anime.episodes && anime.userStatus !== 'completed') {
     anime.userStatus = 'completed';
-    saveStatus(id, 'completed');
+    userAnimeData[id].status = 'completed';
   }
 
   // Save & Render
   anime.progress = newEp;
-  saveProgress(id, newEp);
+  userAnimeData[id].progress = newEp;
+  
+  // Sync to Backend
+  fetch(`${API_BASE}/api/watchlist/update`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ 
+      animeId: id, 
+      progress: newEp, 
+      status: anime.userStatus 
+    })
+  }).catch(e => console.error("Sync error:", e));
   
   const card = document.querySelector(`.watchlist-card[data-id="${id}"]`);
   if(card) renderCardContent(card, anime);
@@ -490,13 +485,22 @@ window.changeProgress = function(id, amount) {
 };
 
 window.updateAnimeStatus = function(id, newStatus) {
-  saveStatus(id, newStatus);
+  if (userAnimeData[id]) userAnimeData[id].status = newStatus;
+  
   const anime = allAnime.find(a => a.mal_id === id);
   if (anime) {
     anime.userStatus = newStatus;
     const card = document.querySelector(`.watchlist-card[data-id="${id}"]`);
     if(card) renderCardContent(card, anime);
   }
+  
+  // Sync to Backend
+  fetch(`${API_BASE}/api/watchlist/update`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ animeId: id, status: newStatus })
+  }).catch(e => console.error("Sync error:", e));
   updateStats();
   applyFilter(currentFilter, document.getElementById('searchInput').value);
 };
@@ -515,9 +519,8 @@ window.removeAnime = async function(id) {
     allAnime = allAnime.filter(a => a.mal_id !== id);
     document.querySelector(`.watchlist-card[data-id="${id}"]`)?.remove();
     
-    // Clean LocalStorage
-    const sMap = getStorage('anime_statuses'); delete sMap[id]; setStorage('anime_statuses', sMap);
-    const pMap = getStorage('anime_progress'); delete pMap[id]; setStorage('anime_progress', pMap);
+    // Clean up local reference
+    delete userAnimeData[id];
     
     updateStats();
     if(allAnime.length === 0) showEmptyState();

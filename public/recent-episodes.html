@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5700333343796793"
+         crossorigin="anonymous"></script>
+    <meta name="google-adsense-account" content="ca-pub-5700333343796793">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>anicrunch · Airing Today</title>
+  <meta name="description" content="See the latest anime episodes that just aired. Stay up to date with all new releases on AniCrunch.">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .recent-hero {
+      text-align: center;
+      padding: 50px 20px 30px;
+    }
+    .recent-hero h1 {
+      font-size: 36px;
+      font-weight: 800;
+      margin: 0 0 10px 0;
+      background: linear-gradient(135deg, #00e676, #00c853);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .recent-hero p {
+      color: var(--muted);
+      font-size: 16px;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1 onclick="location.href='/'" style="cursor:pointer">anicrunch</h1>
+  <div style="flex:1"></div>
+  <div class="nav-links">
+    <a href="/" class="nav-link">🏠 Home</a>
+    <a href="/schedule.html" class="nav-link">📅 Schedule</a>
+    <button onclick="spinWheel()" class="nav-link btn-random">🎲 Random</button>
+  </div>
+  <div id="authArea"></div>
+</header>
+
+<section class="recent-hero">
+  <h1>📺 Airing Today</h1>
+  <p>Popular anime episodes airing today – stay up to date!</p>
+</section>
+
+<div class="recent-episodes-grid" id="recentEpisodesGrid">
+  <div class="loading active">Loading recent episodes...</div>
+</div>
+
+<div id="spinOverlay" class="spin-overlay">
+  <div class="spinner-content">
+    <div class="big-spinner">🎲</div>
+    <h3>Finding your next obsession...</h3>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <p>Made with ❤️ by anicrunch · Powered by <a href="https://jikan.moe" target="_blank" rel="noopener">Jikan API</a></p>
+</footer>
+
+<script src="script.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    loadAllRecentEpisodes(1);
+  });
+</script>
+</body>
+</html>
