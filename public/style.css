@@ -454,11 +454,20 @@ header input:focus {
 }
 
 .hero-slide.active .hero-bg {
-  animation: heroSlideIn 0.8s ease-out forwards;
+  animation: kenBurnsZoom 12s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
 .hero-slide.exiting .hero-bg {
   animation: heroSlideOut 0.6s ease-in forwards;
+}
+
+@keyframes kenBurnsZoom {
+  0% {
+    transform: scale(1) translate(0, 0);
+  }
+  100% {
+    transform: scale(1.08) translate(-1%, -0.5%);
+  }
 }
 
 /* Hero Overlay - NO BLUR */
@@ -496,8 +505,44 @@ header input:focus {
   height: 100%;
 }
 
-.hero-slide.active .hero-content {
-  animation: heroContentFadeIn 0.6s ease-out 0.2s both;
+/* Staggered Transitions inside Active Hero Banner Slide */
+.hero-slide .hero-content > * {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hero-slide.active .hero-content .hero-badge {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.1s;
+}
+
+.hero-slide.active .hero-content h1,
+.hero-slide.active .hero-content h2,
+.hero-slide.active .hero-content .hero-title {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.2s;
+}
+
+.hero-slide.active .hero-content .hero-meta,
+.hero-slide.active .hero-content .hero-synopsis {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.3s;
+}
+
+.hero-slide.active .hero-content .hero-genres {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.4s;
+}
+
+.hero-slide.active .hero-content .hero-actions {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.5s;
 }
 
 .hero-badge {
@@ -908,8 +953,9 @@ header input:focus {
   transform: translateY(-12px) scale(1.02);
   box-shadow:
     0 25px 50px rgba(0,0,0,0.6),
-    0 0 0 1px rgba(255,60,172,0.5);
-  border-color: rgba(255, 60, 172, 0.3);
+    0 0 30px rgba(255, 60, 172, 0.45),
+    0 0 0 1px rgba(255, 60, 172, 0.35) !important;
+  border-color: rgba(255, 60, 172, 0.45);
 }
 
 /* Card Image Wrapper */
@@ -1204,23 +1250,26 @@ header input:focus {
   position: fixed;
   bottom: 30px;
   right: 30px;
-  padding: 16px 24px;
-  background: rgba(0, 0, 0, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  padding: 16px 24px 20px 24px; /* extra bottom padding for the progress bar */
+  background: rgba(7, 7, 15, 0.8) !important;
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
   color: white;
   font-size: 14px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   transform: translateY(100px);
   opacity: 0;
   transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   z-index: 1000;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  box-shadow: 
+    0 15px 40px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
   max-width: 350px;
+  overflow: hidden;
 }
 
 .toast.show {
@@ -1229,19 +1278,22 @@ header input:focus {
 }
 
 .toast.toast-success {
-  border-color: var(--success);
+  border-color: rgba(0, 230, 118, 0.4) !important;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 230, 118, 0.15) !important;
 }
 
 .toast.toast-error {
-  border-color: var(--error);
+  border-color: rgba(255, 82, 82, 0.4) !important;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 82, 82, 0.15) !important;
 }
 
 .toast.toast-warning {
-  border-color: var(--warning);
+  border-color: rgba(255, 193, 7, 0.4) !important;
 }
 
 .toast.toast-info {
-  border-color: var(--info);
+  border-color: rgba(255, 60, 172, 0.4) !important;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 60, 172, 0.15) !important;
 }
 
 .toast-icon {
@@ -1251,6 +1303,39 @@ header input:focus {
 
 .toast-message {
   flex: 1;
+  font-weight: 500;
+}
+
+/* Ticking Depleting Progress Bar */
+.toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  width: 100%;
+  background: var(--gradient); /* Default pink/purple brand timer */
+  transform-origin: left;
+}
+
+.toast.show .toast-progress {
+  animation: toastProgressDecay 4s linear forwards;
+}
+
+@keyframes toastProgressDecay {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+.toast.toast-success .toast-progress {
+  background: linear-gradient(90deg, #00e676, #00c853) !important;
+}
+
+.toast.toast-error .toast-progress {
+  background: linear-gradient(90deg, #ff5252, #ff1744) !important;
 }
 
 /* =====================
@@ -2101,8 +2186,9 @@ header input:focus {
   transform: translateY(-8px) scale(1.02);
   box-shadow:
     0 20px 40px rgba(0,0,0,0.5),
-    0 0 0 1px rgba(0, 230, 118, 0.4);
-  border-color: rgba(0, 230, 118, 0.3);
+    0 0 30px rgba(0, 230, 118, 0.45),
+    0 0 0 1px rgba(0, 230, 118, 0.35) !important;
+  border-color: rgba(0, 230, 118, 0.45);
 }
 
 .episode-card-poster {
@@ -2654,4 +2740,47 @@ button:active:not(:disabled) {
   font-weight: 500;
   color: var(--muted);
   transition: all 0.3s ease;
+}
+
+/* ========================================================
+   HIGH-END METALLIC SHIMMER SKELETON PLACEHOLDERS
+   ======================================================== */
+.skeleton-card {
+  position: relative !important;
+  overflow: hidden !important;
+  background: #11111f !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.skeleton-card::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  transform: translateX(-100%) !important;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 20%,
+    rgba(255, 255, 255, 0.12) 60%,
+    transparent 100%
+  ) !important;
+  animation: shimmerPulse 1.6s infinite !important;
+  z-index: 2 !important;
+}
+
+@keyframes shimmerPulse {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton-line {
+  height: 12px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  margin-bottom: 8px !important;
+  border-radius: 4px !important;
+}
+
+.skeleton-line.short {
+  width: 60% !important;
 }

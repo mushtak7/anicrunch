@@ -1591,6 +1591,7 @@ function showToast(message, type = 'info') {
     toast.innerHTML = `
       <span class="toast-icon"></span>
       <span class="toast-message"></span>
+      <div class="toast-progress"></div>
     `;
     document.body.appendChild(toast);
   }

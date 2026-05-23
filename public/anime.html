@@ -649,6 +649,15 @@ function closeModal() {
   setTimeout(() => document.getElementById('modalFrame').src = '', 300);
 }
 
+// Lightweight scroll parallax effect for the cinematic blurred backdrop
+window.addEventListener('scroll', () => {
+  const bg = document.getElementById('bg');
+  if (bg) {
+    const yOffset = window.pageYOffset;
+    bg.style.transform = `translateY(${yOffset * 0.28}px)`;
+  }
+}, { passive: true });
+
 load();
 </script>
 </body>
