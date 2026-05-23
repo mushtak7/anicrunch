@@ -1970,40 +1970,29 @@ header input:focus {
 ===================== */
 @media (max-width: 600px) {
   header {
-    gap: 8px 10px;
+    gap: 12px 10px !important;
+    padding: 12px 16px !important;
   }
   
   header h1,
   header .logo {
-    font-size: 20px;
+    font-size: 22px !important;
   }
   
+  /* 1. Hide cluttered top navigation links on mobile */
   .nav-links {
-    gap: 6px;
+    display: none !important;
   }
   
-  .nav-link {
-    font-size: 11px;
-    padding: 3px 6px;
-  }
-  
-  /* Hide text, show only emoji on very small screens */
-  .nav-link span:not(:first-child) {
-    display: none;
-  }
-  
-  .btn-random {
-    padding: 3px 8px;
-    font-size: 11px;
-  }
-  
+  /* 2. Float profile/auth area perfectly to the right */
   #authArea {
-    gap: 4px;
+    margin-left: auto !important;
+    gap: 8px !important;
   }
   
   .auth-link {
-    padding: 5px 10px;
-    font-size: 11px;
+    padding: 6px 12px !important;
+    font-size: 12px !important;
   }
   
   /* FIX 2: Show username on small screens - more compact */
@@ -2019,6 +2008,13 @@ header input:focus {
     padding: 3px 6px;
     border-radius: 10px;
     border: 1px solid rgba(255, 60, 172, 0.3);
+  }
+
+  /* 3. Make Search Container full-width on mobile */
+  .search-container {
+    width: 100% !important;
+    margin: 4px 0 0 0 !important;
+    order: 3 !important; /* Force it below the logo and profile */
   }
   
   .hero {
@@ -2783,4 +2779,72 @@ button:active:not(:disabled) {
 
 .skeleton-line.short {
   width: 60% !important;
+}
+
+/* ========================================================
+   PREMIUM MOBILE BOTTOM NAVIGATION BAR (TAB BAR) SYSTEM
+   ======================================================== */
+.mobile-nav-bar {
+  display: none; /* Hidden on desktop */
+}
+
+@media (max-width: 768px) {
+  /* Prevent content overlap with persistent bottom navigation tab bar */
+  body, .layout, .watchlist-page, .schedule-page, .details-page {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .mobile-nav-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    height: calc(64px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: rgba(7, 7, 15, 0.78) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 60, 172, 0.25);
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 998; /* Under toast notifications and spinner overlay */
+    box-sizing: border-box;
+  }
+
+  .mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted) !important;
+    text-decoration: none;
+    font-size: 10px;
+    font-weight: 500;
+    gap: 4px;
+    flex: 1;
+    height: 100%;
+    transition: all 0.2s ease;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .mobile-nav-item .nav-icon {
+    font-size: 20px;
+    transition: transform 0.2s ease;
+  }
+
+  .mobile-nav-item:hover,
+  .mobile-nav-item.active {
+    color: white !important;
+  }
+
+  .mobile-nav-item.active .nav-icon {
+    transform: scale(1.15);
+    text-shadow: 0 0 10px rgba(255, 60, 172, 0.6);
+  }
 }

@@ -292,5 +292,29 @@ async function loadProfile() {
   }
 }
 </script>
+<!-- Modern Mobile Bottom Navigation Bar -->
+<div class="mobile-nav-bar" aria-label="Mobile Navigation Bar">
+  <a href="/" class="mobile-nav-item" id="mobileNavHome">
+    <span class="nav-icon">🏠</span>
+    <span>Home</span>
+  </a>
+  <a href="/schedule.html" class="mobile-nav-item" id="mobileNavSchedule">
+    <span class="nav-icon">📅</span>
+    <span>Schedule</span>
+  </a>
+  <button onclick="spinWheel()" class="mobile-nav-item" id="mobileNavRandom" aria-label="Random anime">
+    <span class="nav-icon">🎲</span>
+    <span>Random</span>
+  </button>
+  <a href="/watchlist.html" class="mobile-nav-item" id="mobileNavWatchlist">
+    <span class="nav-icon">📚</span>
+    <span>Watchlist</span>
+  </a>
+  <a href="/blog/" class="mobile-nav-item" id="mobileNavBlog">
+    <span class="nav-icon">📖</span>
+    <span>Blog</span>
+  </a>
+</div>
+<script src="script.js"></script>
 </body>
 </html>
