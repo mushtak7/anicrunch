@@ -2356,3 +2356,133 @@ button:active:not(:disabled) {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ========================================================
+   PREMIUM MOBILE HORIZONTAL SWIPE UPGRADE FOR ROW SECTIONS
+   ======================================================== */
+@media (max-width: 768px) {
+  /* 1. Hide desktop row-navigation buttons & page indicators to save screen estate */
+  .row-wrapper .nav-btn,
+  .row-wrapper .page-indicator {
+    display: none !important;
+  }
+  
+  .row-wrapper {
+    gap: 0 !important;
+    position: relative;
+    width: 100vw !important;
+    margin-left: -16px !important; /* Offset the mobile parent layout padding */
+    padding: 0 16px !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  /* 2. Turn Row Scroll into a smooth, premium native swipe slider */
+  .row-scroll,
+  #seasonal,
+  #trending,
+  #recentEpisodes,
+  #recommendsPreview {
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scroll-snap-type: x mandatory !important;
+    scroll-behavior: smooth !important;
+    gap: 14px !important;
+    padding: 10px 4px 20px !important; /* Clear card bottom shadow cutoff */
+    margin: 0 !important;
+    min-height: auto !important;
+    width: 100% !important;
+    scrollbar-width: none !important; /* Hide Firefox scrollbar */
+    -ms-overflow-style: none !important; /* Hide IE/Edge scrollbar */
+    -webkit-overflow-scrolling: touch !important; /* Smooth momentum scrolling on iOS */
+  }
+
+  .row-scroll::-webkit-scrollbar,
+  #seasonal::-webkit-scrollbar,
+  #trending::-webkit-scrollbar,
+  #recentEpisodes::-webkit-scrollbar,
+  #recommendsPreview::-webkit-scrollbar {
+    display: none !important; /* Hide Chrome/Safari scrollbar */
+  }
+
+  /* 3. Forces all cards to show on mobile (bypassing the script-driven pagination) */
+  .row-scroll .anime-card,
+  .row-scroll .episode-card,
+  .row-scroll .anime-card.hidden,
+  .row-scroll .episode-card.hidden {
+    display: flex !important;
+    flex: 0 0 142px !important; /* Balanced readable card width */
+    width: 142px !important;
+    min-height: 250px !important;
+    max-height: 250px !important;
+    scroll-snap-align: start !important;
+    border-radius: 14px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+    transition: transform 0.2s ease !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Poster scaling */
+  .row-scroll .anime-card-poster,
+  .row-scroll .episode-card-poster {
+    padding-top: 135% !important;
+    border-radius: 14px 14px 0 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Optimize card metadata and typography for narrow swipe cards */
+  .row-scroll .anime-card-content,
+  .row-scroll .episode-card-content {
+    padding: 10px 8px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    flex: 1 !important;
+  }
+
+  .row-scroll .anime-card-content h3,
+  .row-scroll .episode-card-content h3 {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    line-height: 1.35 !important;
+    min-height: 34px !important;
+    max-height: 34px !important;
+    margin: 0 !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    color: #fff !important;
+  }
+
+  .row-scroll .anime-card-meta,
+  .row-scroll .episode-card-content .episode-title {
+    font-size: 11px !important;
+    margin: 0 !important;
+    color: var(--muted) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: block !important;
+  }
+
+  .row-scroll .anime-card-genres {
+    display: none !important; /* Hide genres to maintain clean card vertical aspect */
+  }
+
+  .row-scroll .anime-card-rating {
+    font-size: 11px !important;
+    padding: 4px 8px !important;
+    top: 8px !important;
+    right: 8px !important;
+  }
+
+  .row-scroll .episode-badge {
+    font-size: 10px !important;
+    padding: 4px 8px !important;
+    bottom: 8px !important;
+    left: 8px !important;
+  }
+}
