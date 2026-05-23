@@ -11,6 +11,7 @@
   <meta name="description" content="AniCrunch – Discover anime with curated recommendations, reviews, schedules, and hidden gems. Built for anime fans by anime fans.">
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.json">
   
   <meta name="theme-color" content="#141428">
   
@@ -380,6 +381,14 @@
 </div>
 
 <script src="script.js" defer></script>
-
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then((reg) => console.log('✅ Service worker registered:', reg.scope))
+        .catch((err) => console.error('❌ Service worker registration failed:', err));
+    });
+  }
+</script>
 </body>
 </html>

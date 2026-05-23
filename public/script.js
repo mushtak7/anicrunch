@@ -1464,24 +1464,106 @@ async function spinWheel() {
     overlay = document.createElement('div');
     overlay.id = 'spinOverlay';
     overlay.className = 'spin-overlay';
-    overlay.innerHTML = `
-      <div class="spinner-content">
-        <div class="big-spinner">🎲</div>
-        <h3 style="color:white; margin:0">Finding your next obsession...</h3>
-      </div>
-    `;
     document.body.appendChild(overlay);
   }
+  
+  // Set up premium roulette wheel layout
+  overlay.innerHTML = `
+    <div class="roulette-container">
+      <h2 class="roulette-header">🎲 Rolling for Your Next Obsession...</h2>
+      <div class="roulette-viewport">
+        <div class="roulette-pointer"></div>
+        <div class="roulette-strip" id="rouletteStrip"></div>
+      </div>
+      <div class="roulette-footer">
+        <span class="roulette-winner-title" id="rouletteWinnerTitle">Spinning the reels...</span>
+      </div>
+    </div>
+  `;
   overlay.classList.add('active');
   
   try {
-    await delay(1500);
+    // 1. Fetch winning anime from Jikan API in background
     const anime = await queuedFetch('https://api.jikan.moe/v4/random/anime?sfw=true', 'critical');
-    if (anime && anime.mal_id) {
-      location.href = `/anime.html?id=${anime.mal_id}`;
-    } else {
-      throw new Error("No data");
+    if (!anime || !anime.mal_id) throw new Error("No random anime data found");
+
+    // 2. Fetch popular seasonal anime to act as decoys in the strip
+    let decoys = [];
+    try {
+      const seasonalRes = await fetch('https://api.jikan.moe/v4/seasons/now?sfw=true&limit=15');
+      if (seasonalRes.ok) {
+        const json = await seasonalRes.json();
+        decoys = json.data || [];
+      }
+    } catch (_) {}
+
+    // Fallback decoys if fetch fails
+    if (decoys.length < 10) {
+      decoys = [
+        { title: "One Piece", images: { jpg: { image_url: "https://cdn.myanimelist.net/images/anime/6/73245.jpg" } } },
+        { title: "Naruto", images: { jpg: { image_url: "https://cdn.myanimelist.net/images/anime/13/17405.jpg" } } },
+        { title: "Attack on Titan", images: { jpg: { image_url: "https://cdn.myanimelist.net/images/anime/10/47347.jpg" } } },
+        { title: "Bleach", images: { jpg: { image_url: "https://cdn.myanimelist.net/images/anime/3/40451.jpg" } } },
+        { title: "Demon Slayer", images: { jpg: { image_url: "https://cdn.myanimelist.net/images/anime/1908/135431.jpg" } } },
+        { title: "Death Note", images: { jpg: { image_url: "https://cdn.myanimelist.net/images/anime/9/9453.jpg" } } }
+      ];
     }
+
+    // 3. Assemble 12 total items (winner will be centered at index 9)
+    const winnerTitle = anime.title_english || anime.title;
+    const winnerImg = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url;
+    
+    const rouletteItems = [];
+    for (let i = 0; i < 12; i++) {
+      if (i === 9) {
+        rouletteItems.push({
+          title: winnerTitle,
+          image: winnerImg,
+          isWinner: true
+        });
+      } else {
+        const decoy = decoys[i % decoys.length];
+        rouletteItems.push({
+          title: decoy.title_english || decoy.title,
+          image: decoy.images?.jpg?.image_url || decoy.images?.jpg?.large_image_url,
+          isWinner: false
+        });
+      }
+    }
+
+    // 4. Render cards into the strip
+    const strip = document.getElementById("rouletteStrip");
+    if (!strip) throw new Error("Roulette DOM nodes not found");
+    
+    rouletteItems.forEach(item => {
+      const card = document.createElement("div");
+      card.className = `roulette-card ${item.isWinner ? 'winner-card' : ''}`;
+      card.innerHTML = `
+        <img src="${item.image}" alt="${item.title}" loading="eager">
+        <div class="roulette-card-title">${item.title}</div>
+      `;
+      strip.appendChild(card);
+    });
+
+    // 5. Trigger translation animation (force reflow first)
+    await delay(100);
+    const cardWidth = 130;
+    const gap = 16;
+    const itemOffset = 9 * (cardWidth + gap);
+    const centerAdjustment = (strip.parentElement.offsetWidth / 2) - (cardWidth / 2);
+    const finalTranslate = itemOffset - centerAdjustment;
+
+    strip.style.transform = `translateX(-${finalTranslate}px)`;
+
+    // 6. Reveal winning states and redirect
+    await delay(3500);
+    document.getElementById("rouletteWinnerTitle").innerHTML = `🎉 Winner: <strong style="color: #ff6bc5;">${winnerTitle}</strong>!`;
+    const winnerCardEl = document.querySelector(".winner-card");
+    if (winnerCardEl) winnerCardEl.classList.add("reveal");
+
+    await delay(1500);
+    location.href = `/anime.html?id=${anime.mal_id}`;
+
   } catch (e) {
     console.error('Spin error:', e);
     showToast('Spin failed! Please try again.', 'error');

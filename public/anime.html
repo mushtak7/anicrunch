@@ -9,6 +9,7 @@
   <title>anicrunch · Anime Details</title>
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="style.css">
   <style>
     /* =====================
@@ -372,7 +373,50 @@ async function load() {
 
 function render(data) {
   const displayTitle = data.title_english || data.title;
-  document.title = displayTitle;
+  document.title = `Watch ${displayTitle} Reviews, Details & Recommendations | AniCrunch`;
+
+  // 1. Update/Create Meta Description dynamically for search engine snippet precision
+  let metaDesc = document.querySelector('meta[name="description"]');
+  const cleanSynopsis = (data.synopsis || '').substring(0, 150).replace(/"/g, '&quot;').replace(/\n/g, ' ');
+  const descContent = `Discover ${displayTitle} details, editorial reviews, official trailer, streaming portals, and recommendations. Synopsis: ${cleanSynopsis}...`;
+  if (!metaDesc) {
+    metaDesc = document.createElement('meta');
+    metaDesc.name = 'description';
+    document.head.appendChild(metaDesc);
+  }
+  metaDesc.content = descContent;
+
+  // 2. Inject Dynamic JSON-LD Structured Data Schema for rich search results
+  let schemaScript = document.getElementById('jsonLdSchema');
+  if (!schemaScript) {
+    schemaScript = document.createElement('script');
+    schemaScript.id = 'jsonLdSchema';
+    schemaScript.type = 'application/ld+json';
+    document.head.appendChild(schemaScript);
+  }
+  
+  const animeSchema = {
+    "@context": "https://schema.org",
+    "@type": data.type === "Movie" ? "Movie" : "TVSeries",
+    "name": displayTitle,
+    "alternativeHeadline": data.title_japanese || undefined,
+    "image": data.images?.jpg?.large_image_url || data.images?.jpg?.image_url,
+    "description": data.synopsis || "No synopsis available.",
+    "genre": data.genres?.map(g => g.name) || [],
+    "aggregateRating": data.score ? {
+      "@type": "AggregateRating",
+      "ratingValue": data.score,
+      "bestRating": "10",
+      "worstRating": "1",
+      "ratingCount": data.scored_by || 100
+    } : undefined,
+    "numberOfEpisodes": data.episodes || undefined,
+    "productionCompany": data.studios?.map(s => ({
+      "@type": "Organization",
+      "name": s.name
+    })) || []
+  };
+  schemaScript.textContent = JSON.stringify(animeSchema);
   
   // Background & Poster
   document.getElementById('bg').style.backgroundImage = `url('${data.images.jpg.large_image_url}')`;

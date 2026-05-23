@@ -205,12 +205,11 @@ header {
   padding: 14px 28px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  background: linear-gradient(
-    90deg,
-    rgba(255, 60, 172, 0.12),
-    rgba(120, 75, 160, 0.12)
-  );
-  border-bottom: 1px solid var(--border);
+  background: rgba(7, 7, 15, 0.65) !important; /* Premium Translucent Glass */
+  border-bottom: 1px solid rgba(255, 60, 172, 0.25); /* Subtle Neon Bottom Glow */
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05); /* Clean iOS Inset Depth */
   flex-wrap: wrap;
 }
 
@@ -2485,4 +2484,174 @@ button:active:not(:disabled) {
     bottom: 8px !important;
     left: 8px !important;
   }
+}
+
+/* ========================================================
+   PREMIUM ROULETTE WHEEL SPIN SYSTEM OVERLAY
+   ======================================================== */
+.spin-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(7, 7, 15, 0.95);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.spin-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Roulette Frame */
+.roulette-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+  width: 90%;
+  max-width: 650px;
+  text-align: center;
+  padding: 40px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  box-shadow: 
+    0 25px 80px rgba(0, 0, 0, 0.8),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.roulette-header {
+  font-size: 22px;
+  font-weight: 700;
+  background: linear-gradient(90deg, #ff3cac, #784ba0);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+}
+
+/* Viewport - Locks horizontal window */
+.roulette-viewport {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  box-shadow: inset 0 10px 30px rgba(0, 0, 0, 0.8);
+}
+
+/* Center Pointer indicator */
+.roulette-pointer {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 100%;
+  background: linear-gradient(180deg, #ff3cac, #784ba0);
+  box-shadow: 0 0 20px rgba(255, 60, 172, 0.8);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.roulette-pointer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-top: 12px solid #ff3cac;
+}
+
+.roulette-pointer::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-bottom: 12px solid #784ba0;
+}
+
+/* Scrollable strip of covers */
+.roulette-strip {
+  display: flex;
+  gap: 16px;
+  padding: 0 50%; /* Allow first and last items to be perfectly centered */
+  transform: translateX(0);
+  transition: transform 3.2s cubic-bezier(0.1, 0.8, 0.1, 1); /* Ultra premium slow ease-out */
+  will-change: transform;
+}
+
+/* Individual roulette cards */
+.roulette-card {
+  flex: 0 0 130px;
+  width: 130px;
+  height: 170px;
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s ease;
+  background: #10101f;
+  transform: scale(0.92);
+  opacity: 0.5;
+}
+
+.roulette-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.roulette-card-title {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
+  color: white;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 10px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+/* Winner Card Highlight Glow */
+.roulette-card.winner-card.reveal {
+  transform: scale(1.08) !important;
+  opacity: 1 !important;
+  border-color: #ff3cac !important;
+  box-shadow: 0 0 30px rgba(255, 60, 172, 0.8) !important;
+}
+
+.roulette-footer {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.roulette-winner-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--muted);
+  transition: all 0.3s ease;
 }

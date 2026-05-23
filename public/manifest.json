@@ -1,0 +1,37 @@
+{
+  "name": "AniCrunch – Discover Anime, Reviews & Recommendations",
+  "short_name": "AniCrunch",
+  "description": "Discover anime with curated recommendations, reviews, schedules, and hidden gems.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07070f",
+  "theme_color": "#141428",
+  "orientation": "any",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Airing Schedule",
+      "url": "/schedule.html",
+      "icons": [{ "src": "/favicon.png", "sizes": "512x512" }]
+    },
+    {
+      "name": "Watchlist",
+      "url": "/watchlist.html",
+      "icons": [{ "src": "/favicon.png", "sizes": "512x512" }]
+    }
+  ]
+}
