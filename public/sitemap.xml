@@ -2,43 +2,43 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
   <url>
-    <loc>https://anicrunch.vercel.app/</loc>
+    <loc>https://anicrunch.page/</loc>
     <lastmod>2026-01-18</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
 
   <url>
-    <loc>https://anicrunch.vercel.app/blog/</loc>
+    <loc>https://anicrunch.page/blog/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://anicrunch.vercel.app/schedule.html</loc>
+    <loc>https://anicrunch.page/schedule.html</loc>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://anicrunch.vercel.app/recommendations.html</loc>
+    <loc>https://anicrunch.page/recommendations.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
 
   <url>
-    <loc>https://anicrunch.vercel.app/login.html</loc>
+    <loc>https://anicrunch.page/login.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
 
   <url>
-    <loc>https://anicrunch.vercel.app/signup.html</loc>
+    <loc>https://anicrunch.page/signup.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://anicrunch.vercel.app/recent-episodes.html</loc>
+    <loc>https://anicrunch.page/recent-episodes.html</loc>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>

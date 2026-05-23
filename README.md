@@ -2,7 +2,7 @@
 # AniCrunch 🎌  
 A fast, modern anime discovery platform built with performance, UX, and SEO in mind.
 
-🌐 Live site: https://anicrunch.vercel.app/
+🌐 Live site: https://anicrunch.page/
 
 ---
 
