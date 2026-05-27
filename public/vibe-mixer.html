@@ -161,6 +161,18 @@
   
   <section class="mixer-results-block" id="mixerResultsBlock" style="display: none;">
     <h2 id="resultsHeader">🧪 Synthesizing...</h2>
+    
+    <!-- Real-Time Synthesizer Console Diagnostics -->
+    <div class="synthesizer-console" style="background: rgba(7, 7, 15, 0.85); border: 1px solid rgba(255, 60, 172, 0.2); border-radius: 16px; padding: 20px; font-family: monospace; color: #a5b4fc; font-size: 13px; line-height: 1.6; margin-bottom: 24px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05); max-width: 800px; margin: 0 auto 30px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 8px;">
+        <span style="font-weight: bold; color: white; display: flex; align-items: center; gap: 8px;">🧪 Vibe Synthesizer Console</span>
+        <span class="live-badge" id="synthStatusBadge" style="background: var(--accent); padding: 3px 8px; font-size: 9px; border-radius: 20px; font-weight: 700; letter-spacing: 0.5px; animation: pulse 1.5s infinite;">SYNTHESIZING</span>
+      </div>
+      <div id="synthLogs" style="max-height: 150px; overflow-y: auto; text-align: left; scroll-behavior: smooth;">
+        <p style="color: var(--success); margin: 4px 0;">> [system] Emotion frequencies online. Awaiting signals...</p>
+      </div>
+    </div>
+
     <div id="mixerResultsContainer"></div>
   </section>
 
@@ -274,6 +286,31 @@
       
       resultsBlock.style.display = "block";
       resultsHeader.textContent = "🧪 Synthesizing Mix...";
+      
+      // Initialize Console Logs
+      const logs = document.getElementById('synthLogs');
+      if (logs) {
+        logs.innerHTML = `<p style="color: var(--success); margin: 4px 0;">> [system] Emotion frequencies online. Initializing synthesis...</p>`;
+      }
+      const badge = document.getElementById('synthStatusBadge');
+      if (badge) {
+        badge.textContent = 'SYNTHESIZING';
+        badge.style.background = 'var(--accent)';
+      }
+      
+      function addLog(msg, type = 'info') {
+        if (!logs) return;
+        const p = document.createElement('p');
+        p.style.margin = '4px 0';
+        if (type === 'success') p.style.color = '#00e676';
+        else if (type === 'error') p.style.color = '#ff5252';
+        else if (type === 'warning') p.style.color = '#ffc107';
+        else p.style.color = '#a5b4fc';
+        p.textContent = `> ${msg}`;
+        logs.appendChild(p);
+        logs.scrollTop = logs.scrollHeight;
+      }
+      
       resultsContainer.innerHTML = `
         <div class="loading active" style="grid-column: 1 / -1; min-height: 200px; display: flex; align-items: center; justify-content: center;">
           Synthesizing your vibe frequencies...
@@ -281,21 +318,35 @@
       `;
       
       try {
-        // Collect all unique genre IDs across the top 2 active vibes to query individually
+        addLog(`Active frequencies: ${active.map(v => `${v.name} (${v.val}%)`).join(', ')}`);
+        
         const topVibes = active.slice(0, 2);
+        addLog(`Selected top moods: ${topVibes.map(v => v.name).join(' & ')}`);
+        
         let targetGenres = [];
         topVibes.forEach(v => {
           targetGenres = targetGenres.concat(v.genres);
         });
         const uniqueGenreIds = [...new Set(targetGenres)];
+        addLog(`Mapped unique genre IDs: [${uniqueGenreIds.join(', ')}]`);
 
+        addLog(`Dispatching Jikan API queries in parallel...`);
         // Fire parallel Jikan requests for each genre individually to achieve OR logic (Action OR Sports)
-        const fetchPromises = uniqueGenreIds.map(genreId => 
-          queuedFetch(`https://api.jikan.moe/v4/anime?genres=${genreId}&order_by=popularity&sfw=true&limit=16`, 'critical')
-        );
+        const fetchPromises = uniqueGenreIds.map(async (genreId) => {
+          try {
+            addLog(`Querying genre ID ${genreId}...`);
+            const data = await queuedFetch(`https://api.jikan.moe/v4/anime?genres=${genreId}&order_by=popularity&sfw=true&limit=16`, 'critical');
+            addLog(`Received genre ID ${genreId}: ${data ? data.length : 0} items.`, 'success');
+            return data;
+          } catch (e) {
+            addLog(`Failed query for ID ${genreId}: ${e.message}`, 'warning');
+            return [];
+          }
+        });
         
         const rawResultsArray = await Promise.all(fetchPromises);
         
+        addLog(`Merging and deduplicating visual records...`);
         // Merge lists and deduplicate
         const mergedMap = new Map();
         rawResultsArray.forEach((animeList) => {
@@ -309,8 +360,14 @@
         });
         
         let mergedList = Array.from(mergedMap.values());
+        addLog(`Total unique visual matches found: ${mergedList.length}`, 'success');
         
         if (!mergedList.length) {
+          addLog(`No records matched emotion matrix! Synthesis aborted.`, 'error');
+          if (badge) {
+            badge.textContent = 'ABORTED';
+            badge.style.background = 'var(--error)';
+          }
           resultsContainer.innerHTML = `
             <div class="empty-state" style="grid-column: 1 / -1; text-align: center; padding: 40px 0;">
               <h3>🧪 No matching vibes found</h3>
@@ -320,9 +377,11 @@
           return;
         }
         
+        addLog(`Sorting records by popularity scores...`);
         // Sort merged results by score descending
         mergedList.sort((a, b) => (b.score || 0) - (a.score || 0));
         
+        addLog(`Generating high-fidelity glassmorphic cards...`);
         // Render cards with direct image loading to bypass intersection observer delay
         resultsContainer.innerHTML = "";
         const fragment = document.createDocumentFragment();
@@ -332,6 +391,11 @@
           fragment.appendChild(card);
         });
         resultsContainer.appendChild(fragment);
+        addLog(`Rendered ${mergedList.length} card structures successfully!`, 'success');
+        if (badge) {
+          badge.textContent = 'COMPLETE';
+          badge.style.background = 'var(--success)';
+        }
         
         const mixLabels = active.map(v => `${v.name} (${v.val}%)`).join(' + ');
         resultsHeader.textContent = `🧪 Mixed Vibes: ${mixLabels}`;
@@ -340,6 +404,11 @@
         resultsBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
         
       } catch (err) {
+        addLog(`Critical error inside synthesis matrix: ${err.message}`, 'error');
+        if (badge) {
+          badge.textContent = 'ERROR';
+          badge.style.background = 'var(--error)';
+        }
         console.error("Vibe mixer error:", err);
         resultsContainer.innerHTML = `
           <div class="error-state" style="grid-column: 1 / -1; text-align: center; padding: 40px 0;">
