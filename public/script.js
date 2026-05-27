@@ -1011,6 +1011,10 @@ document.addEventListener("DOMContentLoaded", () => {
     recommendsPreviewList.forEach(() => fragment.appendChild(createSkeletonCard()));
     recommendsPreview.appendChild(fragment);
 
+    // Bind scroll boundary check
+    recommendsPreview.addEventListener("scroll", () => updateScrollButtons(recommendsPreview));
+
+    let itemsLoaded = 0;
     recommendsPreviewList.forEach(async item => {
       try {
         const anime = await queuedFetch(`https://api.jikan.moe/v4/anime/${item.id}`);
@@ -1032,6 +1036,11 @@ document.addEventListener("DOMContentLoaded", () => {
           skeleton.replaceWith(card);
         } else {
           recommendsPreview.appendChild(card);
+        }
+        
+        itemsLoaded++;
+        if (itemsLoaded === recommendsPreviewList.length) {
+          setTimeout(() => updateScrollButtons(recommendsPreview), 200);
         }
       } catch (e) { console.error("Failed to load recommended anime", e); }
     });
@@ -1067,19 +1076,46 @@ document.addEventListener("DOMContentLoaded", () => {
     renderCuratedList("topTen", curatedLists.topTen);
   });
 
+  function updateScrollButtons(container) {
+    if (!container || window.innerWidth <= 768) return;
+    const wrapper = container.closest(".row-wrapper");
+    if (!wrapper) return;
+    const leftBtn = wrapper.querySelector(".nav-btn.left");
+    const rightBtn = wrapper.querySelector(".nav-btn.right");
+    
+    const scrollLeft = container.scrollLeft;
+    const maxScroll = container.scrollWidth - container.clientWidth;
+    
+    if (leftBtn) {
+      const showLeft = scrollLeft > 10;
+      leftBtn.disabled = !showLeft;
+      leftBtn.style.opacity = showLeft ? "1" : "0";
+      leftBtn.style.visibility = showLeft ? "visible" : "hidden";
+    }
+    
+    if (rightBtn) {
+      const showRight = scrollLeft < maxScroll - 10;
+      rightBtn.disabled = !showRight;
+      rightBtn.style.opacity = showRight ? "1" : "0";
+      rightBtn.style.visibility = showRight ? "visible" : "hidden";
+    }
+  }
+
   function updateCarousel(id) {
     const container = getElement(id);
+    if (!container) return;
+    
+    if (window.innerWidth > 768) {
+      updateScrollButtons(container);
+      return;
+    }
+
     const state = carousels[id];
-    if (!container || !state) return;
+    if (!state) return;
     
     const cards = container.querySelectorAll(".anime-card, .episode-card");
     const totalCards = state.totalCards;
-    
-    let cardsPerPage = CARDS_PER_PAGE;
-    if (window.innerWidth <= 768) {
-      cardsPerPage = 6;
-    }
-    
+    const cardsPerPage = 6;
     const totalPages = Math.ceil(totalCards / cardsPerPage);
     
     cards.forEach((card, index) => {
@@ -1135,7 +1171,12 @@ document.addEventListener("DOMContentLoaded", () => {
         fragment.appendChild(card);
       });
       box.replaceChildren(fragment);
+      
+      // Bind scroll boundary check
+      box.addEventListener("scroll", () => updateScrollButtons(box));
+      
       updateCarousel(id);
+      setTimeout(() => updateScrollButtons(box), 150);
     } catch(e) { 
       console.error(`Section ${id} load error:`, e);
       box.innerHTML = '<div class="error-state">Failed to load</div>';
@@ -1145,20 +1186,24 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".nav-btn").forEach(btn => {
     btn.onclick = () => {
       const id = btn.dataset.target;
-      if (!id || !carousels[id]) return;
-      const state = carousels[id];
-      const dir = btn.classList.contains("left") ? -1 : 1;
-      let cardsPerPage = CARDS_PER_PAGE;
-      if (window.innerWidth <= 768) {
-        cardsPerPage = 6;
-      }
-      const totalPages = Math.ceil(state.totalCards / cardsPerPage);
-      const newPage = state.currentPage + dir;
-      if (newPage < 0 || newPage >= totalPages) return;
-      state.currentPage = newPage;
-      updateCarousel(id);
+      if (!id) return;
       const container = getElement(id);
-      if (container) {
+      if (!container) return;
+      
+      const dir = btn.classList.contains("left") ? -1 : 1;
+      
+      if (window.innerWidth > 768) {
+        const scrollAmount = container.clientWidth * 0.85;
+        container.scrollBy({ left: dir * scrollAmount, behavior: 'smooth' });
+      } else {
+        if (!carousels[id]) return;
+        const state = carousels[id];
+        const cardsPerPage = 6;
+        const totalPages = Math.ceil(state.totalCards / cardsPerPage);
+        const newPage = state.currentPage + dir;
+        if (newPage < 0 || newPage >= totalPages) return;
+        state.currentPage = newPage;
+        updateCarousel(id);
         const block = container.closest('.block');
         if (block) {
           block.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1171,6 +1216,8 @@ document.addEventListener("DOMContentLoaded", () => {
     Object.keys(carousels).forEach(id => {
       updateCarousel(id);
     });
+    const recs = getElement('recommendsPreview');
+    if (recs) updateScrollButtons(recs);
   }, 250));
 
   async function loadTopAnime() {
@@ -1277,11 +1324,15 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       box.replaceChildren(fragment);
 
+      // Bind scroll boundary check
+      box.addEventListener("scroll", () => updateScrollButtons(box));
+
       // Update carousel state
       if (carousels.recentEpisodes) {
         carousels.recentEpisodes.totalCards = limited.length;
         updateCarousel('recentEpisodes');
       }
+      setTimeout(() => updateScrollButtons(box), 150);
     } catch (e) {
       console.error('Recent episodes load error:', e);
       box.innerHTML = '<div class="error-state">Failed to load recent episodes</div>';
