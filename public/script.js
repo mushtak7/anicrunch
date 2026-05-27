@@ -827,35 +827,8 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
 
-    // Vibe Mixer Setup
-    const sliders = [
-      { id: 'hypeSlider', valId: 'hypeVal' },
-      { id: 'chillSlider', valId: 'chillVal' },
-      { id: 'cryingSlider', valId: 'cryingVal' },
-      { id: 'escapismSlider', valId: 'escapismVal' }
-    ];
-    sliders.forEach(s => {
-      const slider = getElement(s.id);
-      const valSpan = getElement(s.valId);
-      if (slider && valSpan) {
-        slider.addEventListener('input', (e) => {
-          valSpan.textContent = `${e.target.value}%`;
-        });
-      }
-    });
+    // Note: Vibe Mixer has been fully moved to its own page vibe-mixer.html to prevent DOM/API clashes
 
-    const resetBtn = getElement('resetVibesBtn');
-    if (resetBtn) {
-      resetBtn.onclick = () => {
-        resetVibeSliders();
-        resetToHome();
-      };
-    }
-
-    const mixBtn = getElement('mixVibesBtn');
-    if (mixBtn) {
-      mixBtn.onclick = () => handleVibeMix();
-    }
 
     // Initialize Cozy Mode globally on all browsing pages
     if (typeof CozyMode !== 'undefined') {
@@ -947,99 +920,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function resetVibeSliders() {
-    const sliders = ['hypeSlider', 'chillSlider', 'cryingSlider', 'escapismSlider'];
-    sliders.forEach(id => {
-      const slider = document.getElementById(id);
-      const valSpan = document.getElementById(id.replace('Slider', 'Val'));
-      if (slider) slider.value = 0;
-      if (valSpan) valSpan.textContent = '0%';
-    });
+    // Safe no-op on pages loaded via script.js since vibe mixing now lives completely inside vibe-mixer.html
   }
 
-  async function handleVibeMix() {
-    const hypeVal = Number(getElement('hypeSlider')?.value || 0);
-    const chillVal = Number(getElement('chillSlider')?.value || 0);
-    const cryingVal = Number(getElement('cryingSlider')?.value || 0);
-    const escapismVal = Number(getElement('escapismSlider')?.value || 0);
-
-    const activeVibes = [];
-    if (hypeVal >= 20) activeVibes.push({ name: 'Hype', val: hypeVal, genres: [1, 30] });
-    if (chillVal >= 20) activeVibes.push({ name: 'Chill', val: chillVal, genres: [36, 4] });
-    if (cryingVal >= 20) activeVibes.push({ name: 'Emotional', val: cryingVal, genres: [8, 22] });
-    if (escapismVal >= 20) activeVibes.push({ name: 'Escapism', val: escapismVal, genres: [10, 2] });
-
-    if (!activeVibes.length) {
-      showToast('🧪 Please dial up at least one vibe slider to mix!', 'warning');
-      return;
-    }
-
-    activeVibes.sort((a, b) => b.val - a.val);
-
-    let combinedGenres = [];
-    activeVibes.forEach(v => {
-      combinedGenres = combinedGenres.concat(v.genres);
-    });
-    const genreIds = [...new Set(combinedGenres)].join(',');
-
-    document.querySelectorAll('.genre-chip').forEach(c => c.classList.remove('active'));
-    showResults();
-    appState.viewState = { mode: 'vibe', currentQuery: genreIds, currentPage: 1, isLoading: true, hasMore: true };
-
-    let searchHeader = document.getElementById("searchHeader");
-    if (!searchHeader) {
-      searchHeader = document.createElement("div");
-      searchHeader.id = "searchHeader";
-      searchHeader.className = "filter-header";
-      resultsBox.parentElement.insertBefore(searchHeader, resultsBox);
-    }
-    
-    const mixLabels = activeVibes.map(v => `${v.name} (${v.val}%)`).join(' + ');
-    searchHeader.innerHTML = `<h2>🧪 mixed Vibes: ${mixLabels}</h2>`;
-    searchHeader.style.display = "block";
-
-    resultsBox.replaceChildren();
-    const loader = document.createElement("div");
-    loader.className = "loading active";
-    loader.textContent = "Synthesizing your vibe mix...";
-    resultsBox.appendChild(loader);
-
-    await loadVibeMixPage(genreIds);
-  }
-
-  async function loadVibeMixPage(genreIds, btnElement = null) {
-    if (!resultsBox) return;
-    try {
-      const page = appState.viewState.currentPage;
-      const data = await queuedFetch(`https://api.jikan.moe/v4/anime?genres=${genreIds}&order_by=popularity&sfw=true&limit=24&page=${page}`);
-      
-      const loader = resultsBox.querySelector('.loading');
-      if (loader) loader.remove();
-
-      if (!data.length) {
-        if (page === 1) {
-          resultsBox.innerHTML = '<div class="empty-state"><div class="empty-icon">🧪</div><h3>No matching vibes found</h3><p>Try mixing different sliders!</p></div>';
-        } else if (btnElement) {
-          btnElement.innerText = 'No more results'; btnElement.disabled = true;
-        }
-        return;
-      }
-      renderAnimeGrid(resultsBox, data, page > 1);
-      if (data.length === 24) {
-        appState.viewState.currentPage++;
-        renderLoadMoreButton(resultsBox, (btn) => loadVibeMixPage(genreIds, btn));
-      } else if (btnElement) {
-        const container = btnElement.closest('.load-more-container');
-        if (container) container.remove();
-      }
-    } catch (e) {
-      console.error('Vibe mix load error:', e);
-      if (btnElement) { btnElement.disabled = false; btnElement.style.opacity = '1'; btnElement.innerText = '⚠ Error - Retry'; }
-      else {
-        const loader = resultsBox.querySelector('.loading'); if (loader) loader.remove();
-        resultsBox.innerHTML += '<div class="error-state"><p>Failed to mix vibes</p><button class="retry-btn" onclick="location.reload()">Retry</button></div>';
-      }
-    }
-  }
 
   function resetToHome() {
     resetVibeSliders();

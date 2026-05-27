@@ -218,8 +218,17 @@
   <span class="toast-message"></span>
 </div>
 
-<script src="script.js"></script>
+<script src="script.js" defer></script>
 <script>
+  // Global Error Catcher for real-time diagnostic reporting on PC/Mobile
+  window.onerror = function(msg, url, line, col, error) {
+    console.error("🚨 AniCrunch Vibe Mixer Runtime Exception Caught:", msg, "at line", line, "col", col);
+    if (typeof showToast === 'function') {
+      showToast(`⚠️ Exception: ${msg} (Line ${line}:${col})`, 'error');
+    }
+    return false;
+  };
+
   document.addEventListener("DOMContentLoaded", () => {
     const resultsContainer = document.getElementById("mixerResultsContainer");
     const resultsBlock = document.getElementById("mixerResultsBlock");
