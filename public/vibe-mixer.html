@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5700333343796793" crossorigin="anonymous"></script>
+  <meta name="google-adsense-account" content="ca-pub-5700333343796793">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>AniCrunch – Anime Vibe Mixer</title>
+  <meta name="description" content="AniCrunch Anime Vibe Mixer – Combine different moods like Hype, Chill, Emotional, and Escapism to discover the perfect tailored anime recommendations.">
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.json">
+  
+  <meta name="theme-color" content="#141428">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  
+  <style>
+    .mixer-page-container {
+      padding: 40px 0 80px;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    
+    .mixer-header-text {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .mixer-header-text h1 {
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #fff 0%, #b0b0c5 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin: 0 0 10px 0;
+    }
+    
+    .mixer-header-text p {
+      font-size: 15px;
+      color: var(--muted);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+    
+    .mixer-results-block {
+      max-width: 1400px;
+      margin: 40px auto 0;
+      padding: 0 60px;
+      box-sizing: border-box;
+    }
+    
+    .mixer-results-block h2 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 24px;
+      letter-spacing: -0.5px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    #mixerResultsContainer {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 24px;
+      width: 100%;
+    }
+    
+    @media (max-width: 768px) {
+      .mixer-page-container {
+        padding: 20px 0 60px;
+      }
+      .mixer-results-block {
+        padding: 0 16px;
+      }
+    }
+  </style>
+</head>
+<body class="details-page">
+
+<header>
+  <h1 class="logo" onclick="location.href='/'">anicrunch</h1>
+  
+  <nav class="nav-links">
+    <a href="/blog/" class="nav-link"><span>📖</span> <span>Blog</span></a>
+    <a href="/recent-episodes.html" class="nav-link"><span>🆕</span> <span>New Episodes</span></a>
+    <a href="/schedule.html" class="nav-link"><span>📅</span> <span>Schedule</span></a>
+    <a href="/vibe-mixer.html" class="nav-link active"><span>🧪</span> <span>Vibe Mixer</span></a>
+    <button onclick="spinWheel()" class="btn-random" aria-label="Random anime">
+      <span>🎲</span> <span>Random</span>
+    </button>
+  </nav>
+
+  <div id="authArea">
+    <a href="/login.html" class="auth-link">Login</a>
+    <a href="/signup.html" class="auth-link">Sign Up</a>
+  </div>
+</header>
+
+<main class="mixer-page-container">
+  
+  <div class="mixer-header-text">
+    <h1>🧪 Anime Vibe Mixer</h1>
+    <p>Slide and mix your visual emotions to discover uniquely blended anime recommendations that fit your exact mood.</p>
+  </div>
+  
+  <section class="vibe-mixer-section" id="vibeMixerSection" style="padding-bottom: 0;">
+    <div class="vibe-mixer-content" style="background: rgba(255, 255, 255, 0.02);">
+      <div class="vibe-mixers-container">
+        <div class="vibe-slider-card">
+          <span class="vibe-emoji">🔥</span>
+          <div class="vibe-info">
+            <label for="hypeSlider">Hype</label>
+            <span class="vibe-description">Action & high-energy sports</span>
+          </div>
+          <input type="range" id="hypeSlider" min="0" max="100" value="0" class="vibe-range">
+          <span class="vibe-val" id="hypeVal">0%</span>
+        </div>
+        <div class="vibe-slider-card">
+          <span class="vibe-emoji">🌸</span>
+          <div class="vibe-info">
+            <label for="chillSlider">Chill</label>
+            <span class="vibe-description">Slice of life & comedy</span>
+          </div>
+          <input type="range" id="chillSlider" min="0" max="100" value="0" class="vibe-range">
+          <span class="vibe-val" id="chillVal">0%</span>
+        </div>
+        <div class="vibe-slider-card">
+          <span class="vibe-emoji">😢</span>
+          <div class="vibe-info">
+            <label for="cryingSlider">Emotional</label>
+            <span class="vibe-description">Tear-jerkers & romance</span>
+          </div>
+          <input type="range" id="cryingSlider" min="0" max="100" value="0" class="vibe-range">
+          <span class="vibe-val" id="cryingVal">0%</span>
+        </div>
+        <div class="vibe-slider-card">
+          <span class="vibe-emoji">🧙</span>
+          <div class="vibe-info">
+            <label for="escapismSlider">Escapism</label>
+            <span class="vibe-description">Fantasy & deep adventure</span>
+          </div>
+          <input type="range" id="escapismSlider" min="0" max="100" value="0" class="vibe-range">
+          <span class="vibe-val" id="escapismVal">0%</span>
+        </div>
+      </div>
+      <div class="vibe-mixer-actions">
+        <button class="btn btn-primary" id="mixVibesBtn" aria-label="Mix Vibes">🧪 Mix Vibes</button>
+        <button class="btn btn-secondary" id="resetVibesBtn" aria-label="Reset Mix">✕ Reset</button>
+      </div>
+    </div>
+  </section>
+  
+  <section class="mixer-results-block" id="mixerResultsBlock" style="display: none;">
+    <h2 id="resultsHeader">🧪 Synthesizing...</h2>
+    <div id="mixerResultsContainer"></div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <p>Made with ❤️ by anicrunch · Powered by <a href="https://jikan.moe" target="_blank" rel="noopener">Jikan API</a></p>
+</footer>
+
+<!-- Modern Mobile Bottom Navigation Bar -->
+<div class="mobile-nav-bar" aria-label="Mobile Navigation Bar">
+  <a href="/" class="mobile-nav-item" id="mobileNavHome">
+    <span class="nav-icon">🏠</span>
+    <span>Home</span>
+  </a>
+  <a href="/schedule.html" class="mobile-nav-item" id="mobileNavSchedule">
+    <span class="nav-icon">📅</span>
+    <span>Schedule</span>
+  </a>
+  <button onclick="spinWheel()" class="mobile-nav-item" id="mobileNavRandom" aria-label="Random anime">
+    <span class="nav-icon">🎲</span>
+    <span>Random</span>
+  </button>
+  <a href="/watchlist.html" class="mobile-nav-item" id="mobileNavWatchlist">
+    <span class="nav-icon">📚</span>
+    <span>Watchlist</span>
+  </a>
+  <a href="/vibe-mixer.html" class="mobile-nav-item active" id="mobileNavMixer">
+    <span class="nav-icon">🧪</span>
+    <span>Vibes</span>
+  </a>
+</div>
+
+<div class="spin-overlay" id="spinOverlay">
+  <div class="spinner-content">
+    <div class="big-spinner">🎲</div>
+    <p style="color: white;">Finding your next anime...</p>
+  </div>
+</div>
+
+<div id="toast" class="toast" role="alert" aria-live="polite">
+  <span class="toast-icon"></span>
+  <span class="toast-message"></span>
+</div>
+
+<script src="script.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const resultsContainer = document.getElementById("mixerResultsContainer");
+    const resultsBlock = document.getElementById("mixerResultsBlock");
+    const resultsHeader = document.getElementById("resultsHeader");
+    
+    // Sliders Bindings
+    const sliders = [
+      { id: 'hypeSlider', valId: 'hypeVal' },
+      { id: 'chillSlider', valId: 'chillVal' },
+      { id: 'cryingSlider', valId: 'cryingVal' },
+      { id: 'escapismSlider', valId: 'escapismVal' }
+    ];
+    
+    sliders.forEach(s => {
+      const slider = document.getElementById(s.id);
+      const valSpan = document.getElementById(s.valId);
+      if (slider && valSpan) {
+        slider.addEventListener('input', (e) => {
+          valSpan.textContent = `${e.target.value}%`;
+        });
+      }
+    });
+    
+    // Actions
+    const resetBtn = document.getElementById("resetVibesBtn");
+    if (resetBtn) {
+      resetBtn.onclick = () => {
+        sliders.forEach(s => {
+          const slider = document.getElementById(s.id);
+          const valSpan = document.getElementById(s.valId);
+          if (slider) slider.value = 0;
+          if (valSpan) valSpan.textContent = '0%';
+        });
+        resultsBlock.style.display = "none";
+        if (resultsContainer) resultsContainer.innerHTML = "";
+      };
+    }
+    
+    const mixBtn = document.getElementById("mixVibesBtn");
+    if (mixBtn) {
+      mixBtn.onclick = () => runRobustVibeMix();
+    }
+    
+    // Bulletproof Parallel Genre Merging Algorithm
+    async function runRobustVibeMix() {
+      const hype = Number(document.getElementById('hypeSlider').value);
+      const chill = Number(document.getElementById('chillSlider').value);
+      const crying = Number(document.getElementById('cryingSlider').value);
+      const escapism = Number(document.getElementById('escapismSlider').value);
+      
+      const active = [];
+      if (hype >= 20) active.push({ name: 'Hype', val: hype, genres: [1, 30] });
+      if (chill >= 20) active.push({ name: 'Chill', val: chill, genres: [36, 4] });
+      if (crying >= 20) active.push({ name: 'Emotional', val: crying, genres: [8, 22] });
+      if (escapism >= 20) active.push({ name: 'Escapism', val: escapism, genres: [10, 2] });
+      
+      if (!active.length) {
+        showToast('🧪 Please slide at least one emotion up to 20%!', 'warning');
+        return;
+      }
+      
+      // Sort to get the most dominant moods
+      active.sort((a, b) => b.val - a.val);
+      
+      resultsBlock.style.display = "block";
+      resultsHeader.textContent = "🧪 Synthesizing Mix...";
+      resultsContainer.innerHTML = `
+        <div class="loading active" style="grid-column: 1 / -1; min-height: 200px; display: flex; align-items: center; justify-content: center;">
+          Mixing your vibe frequencies...
+        </div>
+      `;
+      
+      try {
+        // Run Jikan searches in parallel for the top 2 active vibes to guarantee rich matching entries!
+        const fetchPromises = [];
+        const topVibes = active.slice(0, 2);
+        
+        topVibes.forEach(v => {
+          const genreIds = v.genres.join(',');
+          fetchPromises.push(
+            queuedFetch(`https://api.jikan.moe/v4/anime?genres=${genreIds}&order_by=popularity&sfw=true&limit=24`, 'critical')
+          );
+        });
+        
+        const rawResultsArray = await Promise.all(fetchPromises);
+        
+        // Merge lists and deduplicate
+        const mergedMap = new Map();
+        rawResultsArray.forEach((animeList) => {
+          if (Array.isArray(animeList)) {
+            animeList.forEach(anime => {
+              if (anime && anime.mal_id) {
+                mergedMap.set(anime.mal_id, anime);
+              }
+            });
+          }
+        });
+        
+        let mergedList = Array.from(mergedMap.values());
+        
+        if (!mergedList.length) {
+          resultsContainer.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">🔭</div>
+              <h3>No matching vibes found</h3>
+              <p>Try sliding other vibes to mix them together.</p>
+            </div>
+          `;
+          return;
+        }
+        
+        // Sort merged results by score descending
+        mergedList.sort((a, b) => (b.score || 0) - (a.score || 0));
+        
+        // Render
+        resultsContainer.innerHTML = "";
+        const fragment = document.createDocumentFragment();
+        mergedList.forEach(anime => {
+          const card = createCard(anime);
+          card.style.width = "100%";
+          fragment.appendChild(card);
+        });
+        resultsContainer.appendChild(fragment);
+        
+        const mixLabels = active.map(v => `${v.name} (${v.val}%)`).join(' + ');
+        resultsHeader.textContent = `🧪 Mixed Vibes: ${mixLabels}`;
+        
+        // Scroll smoothly to results
+        resultsBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        
+      } catch (err) {
+        console.error("Vibe mixer error:", err);
+        resultsContainer.innerHTML = `
+          <div class="error-state">
+            <p>Failed to load Jikan vibe blend.</p>
+            <button class="retry-btn" onclick="location.reload()">Retry</button>
+          </div>
+        `;
+      }
+    }
+  });
+</script>
+</body>
+</html>

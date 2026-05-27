@@ -856,6 +856,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if (mixBtn) {
       mixBtn.onclick = () => handleVibeMix();
     }
+
+    // Initialize Cozy Mode globally on all browsing pages
+    if (typeof CozyMode !== 'undefined') {
+      CozyMode.init();
+    }
+
+    // Initialize Character Battle Arena sidebar carousel on the homepage
+    if (typeof CharacterBattleArena !== 'undefined') {
+      CharacterBattleArena.init();
+    }
   });
 
   window.logout = function() {
@@ -1802,3 +1812,660 @@ function showToast(message, type = 'info') {
   }, 4000);
 }
 window.showToast = showToast;
+
+// ==========================================
+// FEATURE 4: COZY / STUDY MODE ENGINE
+// ==========================================
+const CozyMode = {
+  active: false,
+  mode: 'sakura', // sakura, snow, rain, off
+  volume: 0.5,
+  audio: null,
+  canvas: null,
+  ctx: null,
+  animationFrameId: null,
+  particles: [],
+  maxParticles: 45,
+  ripples: [],
+
+  init() {
+    // 1. Inject Canvas Backdrop
+    this.canvas = document.createElement('canvas');
+    this.canvas.id = 'cozyCanvas';
+    document.body.prepend(this.canvas);
+    this.ctx = this.canvas.getContext('2d');
+
+    // 2. Inject Floating Control Deck Widget
+    const widget = document.createElement('div');
+    widget.className = 'cozy-widget';
+    widget.innerHTML = `
+      <button class="cozy-toggle-btn" id="cozyToggleBtn" aria-label="Toggle Cozy Mode">
+        <span>🍵</span> <span>Cozy Mode</span>
+        <span class="music-indicator"></span>
+      </button>
+      <div class="cozy-deck-card" id="cozyDeckCard">
+        <div class="cozy-deck-header">
+          <h3><span>🍵</span> Cozy Ambient Deck</h3>
+          <button class="cozy-close-btn" id="cozyCloseBtn" aria-label="Close panel">✕</button>
+        </div>
+        
+        <div class="cozy-deck-section">
+          <label>Lofi Study Radio</label>
+          <div class="cozy-audio-controls">
+            <button class="cozy-play-btn" id="cozyPlayBtn" aria-label="Play Music">▶</button>
+            <div class="cozy-volume-wrapper">
+              <div class="cozy-volume-row">
+                <span>Volume</span>
+                <span id="cozyVolumeVal">50%</span>
+              </div>
+              <input type="range" class="cozy-volume-slider" id="cozyVolumeSlider" min="0" max="100" value="50">
+            </div>
+          </div>
+          <div class="cozy-visualizer-box">
+            <span>Visualizer</span>
+            <div class="equalizer-container" id="cozyEqualizer">
+              <div class="equalizer-bar"></div>
+              <div class="equalizer-bar"></div>
+              <div class="equalizer-bar"></div>
+              <div class="equalizer-bar"></div>
+              <div class="equalizer-bar"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cozy-deck-section">
+          <label>Backdrop Ambient</label>
+          <div class="cozy-chips-container">
+            <button class="cozy-chip" data-mode="sakura">🌸 Sakura</button>
+            <button class="cozy-chip" data-mode="snow">❄️ Snow</button>
+            <button class="cozy-chip" data-mode="rain">🌧️ Rain</button>
+            <button class="cozy-chip" data-mode="off">🚫 Off</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(widget);
+
+    // 3. Set Up Audio Object (using FreeCodeCamp stream with fallback)
+    this.audio = new Audio('https://coderadio-admin.freecodecamp.org/radio/8010/radio.mp3');
+    this.audio.crossOrigin = 'anonymous';
+
+    // 4. Load Saved State from localStorage
+    const saved = localStorage.getItem('anicrunch_cozy_settings');
+    if (saved) {
+      try {
+        const settings = JSON.parse(saved);
+        this.active = !!settings.active;
+        this.mode = settings.mode || 'sakura';
+        this.volume = settings.volume !== undefined ? settings.volume : 0.5;
+      } catch (e) {
+        console.warn('Stale cozy settings');
+      }
+    }
+
+    // 5. Apply Volume
+    this.audio.volume = this.volume;
+    const volSlider = document.getElementById('cozyVolumeSlider');
+    const volVal = document.getElementById('cozyVolumeVal');
+    if (volSlider) volSlider.value = Math.round(this.volume * 100);
+    if (volVal) volVal.textContent = `${Math.round(this.volume * 100)}%`;
+
+    // 6. Setup Canvas Dimensions & Resize Handler
+    this.resizeCanvas();
+    window.addEventListener('resize', () => this.resizeCanvas());
+
+    // 7. Bind Actions & Event Listeners
+    this.setupListeners();
+
+    // 8. If active, trigger environment right away (Audio remains paused until user interaction or play button tap)
+    if (this.active) {
+      document.body.classList.add('cozy-mode-active');
+      this.updateChipState();
+      this.startParticleEngine();
+      
+      // Attempt autoplay. If blocked by browser, it fails silently, keeping play state in "paused" visual state.
+      // We show a cute little toast reminder to help them start the vibes.
+      setTimeout(() => {
+        if (this.active && this.audio.paused) {
+          showToast('🍵 Cozy Mode Active! Tap Cozy Deck to play study lofi.', 'info');
+        }
+      }, 2000);
+    } else {
+      this.mode = 'off';
+      this.updateChipState();
+    }
+  },
+
+  resizeCanvas() {
+    if (this.canvas) {
+      this.canvas.width = window.innerWidth;
+      this.canvas.height = window.innerHeight;
+    }
+  },
+
+  setupListeners() {
+    const toggleBtn = document.getElementById('cozyToggleBtn');
+    const closeBtn = document.getElementById('cozyCloseBtn');
+    const deckCard = document.getElementById('cozyDeckCard');
+    const playBtn = document.getElementById('cozyPlayBtn');
+    const volSlider = document.getElementById('cozyVolumeSlider');
+    const volVal = document.getElementById('cozyVolumeVal');
+    
+    // Toggle Deck Expanded Panel
+    toggleBtn.onclick = (e) => {
+      e.stopPropagation();
+      deckCard.classList.toggle('expanded');
+    };
+
+    closeBtn.onclick = (e) => {
+      e.stopPropagation();
+      deckCard.classList.remove('expanded');
+    };
+
+    // Close deck on outside click
+    document.addEventListener('click', (e) => {
+      if (!deckCard.contains(e.target) && !toggleBtn.contains(e.target)) {
+        deckCard.classList.remove('expanded');
+      }
+    });
+
+    // Audio Play/Pause Trigger
+    playBtn.onclick = () => {
+      if (this.audio.paused) {
+        this.playAudio();
+      } else {
+        this.pauseAudio();
+      }
+    };
+
+    // Audio Error Handling - Failsafe backup URL just in case
+    this.audio.onerror = () => {
+      console.warn('Lofi radio stream interrupted, retrying or falling back');
+      this.audio.src = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'; // Backup stream
+      if (this.active) this.audio.play().catch(() => {});
+    };
+
+    // Volume Slider Handler
+    volSlider.oninput = (e) => {
+      const vol = e.target.value / 100;
+      this.volume = vol;
+      this.audio.volume = vol;
+      volVal.textContent = `${e.target.value}%`;
+      this.saveSettings();
+    };
+
+    // Ambient Selector Chips
+    const chips = document.querySelectorAll('.cozy-chip');
+    chips.forEach(chip => {
+      chip.onclick = () => {
+        const selectedMode = chip.getAttribute('data-mode');
+        this.changeMode(selectedMode);
+      };
+    });
+  },
+
+  playAudio() {
+    this.audio.play()
+      .then(() => {
+        const playBtn = document.getElementById('cozyPlayBtn');
+        const toggleBtn = document.getElementById('cozyToggleBtn');
+        const eq = document.getElementById('cozyEqualizer');
+        if (playBtn) playBtn.textContent = '⏸';
+        if (toggleBtn) toggleBtn.classList.add('playing');
+        if (eq) eq.classList.add('playing');
+        
+        // Cozy Mode is active if audio plays
+        this.active = true;
+        document.body.classList.add('cozy-mode-active');
+        
+        // If backdrop was off, default to Sakura
+        if (this.mode === 'off') {
+          this.changeMode('sakura');
+        }
+        
+        this.saveSettings();
+      })
+      .catch(err => {
+        console.error('Audio play blocked:', err);
+        showToast('Click play again to start lofi stream!', 'warning');
+      });
+  },
+
+  pauseAudio() {
+    this.audio.pause();
+    const playBtn = document.getElementById('cozyPlayBtn');
+    const toggleBtn = document.getElementById('cozyToggleBtn');
+    const eq = document.getElementById('cozyEqualizer');
+    if (playBtn) playBtn.textContent = '▶';
+    if (toggleBtn) toggleBtn.classList.remove('playing');
+    if (eq) eq.classList.remove('playing');
+    this.saveSettings();
+  },
+
+  changeMode(selectedMode) {
+    this.mode = selectedMode;
+    this.updateChipState();
+    this.saveSettings();
+
+    if (selectedMode === 'off') {
+      document.body.classList.remove('cozy-mode-active');
+      this.stopParticleEngine();
+      // Keep playing audio if active, just remove visual drift
+    } else {
+      this.active = true;
+      document.body.classList.add('cozy-mode-active');
+      this.startParticleEngine();
+    }
+  },
+
+  updateChipState() {
+    const chips = document.querySelectorAll('.cozy-chip');
+    chips.forEach(c => {
+      if (c.getAttribute('data-mode') === this.mode) {
+        c.classList.add('active');
+      } else {
+        c.classList.remove('active');
+      }
+    });
+  },
+
+  saveSettings() {
+    localStorage.setItem('anicrunch_cozy_settings', JSON.stringify({
+      active: this.active,
+      mode: this.mode,
+      volume: this.volume
+    }));
+  },
+
+  startParticleEngine() {
+    // Prevent double drawing loops
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+    }
+    
+    // Seed particles
+    this.particles = [];
+    this.ripples = [];
+    for (let i = 0; i < this.maxParticles; i++) {
+      this.particles.push(this.createParticle(true));
+    }
+
+    const draw = () => {
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      
+      if (this.mode === 'sakura') {
+        this.drawSakura();
+      } else if (this.mode === 'snow') {
+        this.drawSnow();
+      } else if (this.mode === 'rain') {
+        this.drawRain();
+      }
+
+      this.animationFrameId = requestAnimationFrame(draw);
+    };
+
+    draw();
+  },
+
+  stopParticleEngine() {
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+    if (this.ctx && this.canvas) {
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+  },
+
+  createParticle(randomY = false) {
+    const w = this.canvas.width;
+    const h = this.canvas.height;
+
+    const y = randomY ? Math.random() * h : -20;
+    const x = Math.random() * w;
+
+    if (this.mode === 'sakura') {
+      return {
+        x,
+        y,
+        size: Math.random() * 8 + 6,
+        speedY: Math.random() * 1.2 + 0.8,
+        speedX: Math.random() * 0.8 - 0.4,
+        oscSpeed: Math.random() * 0.02 + 0.01,
+        oscRange: Math.random() * 15 + 10,
+        angle: Math.random() * 360,
+        spin: Math.random() * 2 - 1,
+        color: `rgba(255, ${Math.floor(Math.random() * 40 + 175)}, ${Math.floor(Math.random() * 40 + 190)}, ${Math.random() * 0.4 + 0.4})`
+      };
+    } else if (this.mode === 'snow') {
+      return {
+        x,
+        y,
+        size: Math.random() * 3 + 1.5,
+        speedY: Math.random() * 0.8 + 0.5,
+        speedX: Math.random() * 0.4 - 0.2,
+        oscSpeed: Math.random() * 0.01 + 0.005,
+        oscRange: Math.random() * 8 + 4,
+        opacity: Math.random() * 0.5 + 0.4
+      };
+    } else if (this.mode === 'rain') {
+      return {
+        x,
+        y,
+        len: Math.random() * 25 + 15,
+        speedY: Math.random() * 12 + 10,
+        speedX: -2, // Windy slant
+        opacity: Math.random() * 0.15 + 0.08
+      };
+    }
+  },
+
+  drawSakura() {
+    this.particles.forEach((p, index) => {
+      p.y += p.speedY;
+      p.x += p.speedX + Math.sin(p.y * p.oscSpeed) * 0.5;
+      p.angle += p.spin;
+
+      // Wrap-around boundary checking
+      if (p.y > this.canvas.height + 20 || p.x > this.canvas.width + 20 || p.x < -20) {
+        this.particles[index] = this.createParticle(false);
+        return;
+      }
+
+      this.ctx.save();
+      this.ctx.translate(p.x, p.y);
+      this.ctx.rotate((p.angle * Math.PI) / 180);
+      this.ctx.beginPath();
+      
+      // Draw sakura petal outline
+      this.ctx.ellipse(0, 0, p.size, p.size / 2, 0, 0, 2 * Math.PI);
+      this.ctx.fillStyle = p.color;
+      this.ctx.fill();
+      this.ctx.restore();
+    });
+  },
+
+  drawSnow() {
+    this.particles.forEach((p, index) => {
+      p.y += p.speedY;
+      p.x += p.speedX + Math.sin(p.y * p.oscSpeed) * 0.3;
+
+      if (p.y > this.canvas.height + 10) {
+        this.particles[index] = this.createParticle(false);
+        return;
+      }
+
+      this.ctx.beginPath();
+      this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      this.ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
+      this.ctx.fill();
+    });
+  },
+
+  drawRain() {
+    // 1. Draw Rain Streaks
+    this.particles.forEach((p, index) => {
+      p.y += p.speedY;
+      p.x += p.speedX;
+
+      if (p.y > this.canvas.height - 10) {
+        // Trigger ripple splash
+        if (Math.random() < 0.4) {
+          this.ripples.push({
+            x: p.x,
+            y: this.canvas.height - Math.random() * 15,
+            radius: 1,
+            maxRadius: Math.random() * 15 + 10,
+            opacity: 0.6
+          });
+        }
+        this.particles[index] = this.createParticle(false);
+        return;
+      }
+
+      this.ctx.beginPath();
+      this.ctx.moveTo(p.x, p.y);
+      this.ctx.lineTo(p.x + p.speedX * 0.5, p.y + p.len);
+      this.ctx.strokeStyle = `rgba(165, 180, 252, ${p.opacity})`;
+      this.ctx.lineWidth = 1.2;
+      this.ctx.stroke();
+    });
+
+    // 2. Draw & Grow Splash Ripples
+    this.ripples.forEach((r, idx) => {
+      r.radius += 0.8;
+      r.opacity -= 0.03;
+
+      if (r.opacity <= 0 || r.radius >= r.maxRadius) {
+        this.ripples.splice(idx, 1);
+        return;
+      }
+
+      this.ctx.beginPath();
+      this.ctx.ellipse(r.x, r.y, r.radius, r.radius * 0.3, 0, 0, 2 * Math.PI);
+      this.ctx.strokeStyle = `rgba(129, 140, 248, ${r.opacity})`;
+      this.ctx.lineWidth = 0.8;
+      this.ctx.stroke();
+    });
+  }
+};
+window.CozyMode = CozyMode;
+
+// ==========================================
+// FEATURE 5: CHARACTER BATTLE ARENA
+// ==========================================
+const CharacterBattleArena = {
+  currentMatchIndex: 0,
+  matchups: [
+    {
+      id: 'match1',
+      title: 'The Battle of the Strongest',
+      charA: { id: 124381, name: 'Satoru Gojo', anime: 'Jujutsu Kaisen', fallbackImage: 'https://cdn.myanimelist.net/images/characters/12/424342.jpg', voteSeed: 56 },
+      charB: { id: 161403, name: 'Ryomen Sukuna', anime: 'Jujutsu Kaisen', fallbackImage: 'https://cdn.myanimelist.net/images/characters/3/492160.jpg', voteSeed: 44 }
+    },
+    {
+      id: 'match2',
+      title: 'Legend of the Shonen Kings',
+      charA: { id: 246, name: 'Son Goku', anime: 'Dragon Ball Z', fallbackImage: 'https://cdn.myanimelist.net/images/characters/9/131317.jpg', voteSeed: 51 },
+      charB: { id: 67, name: 'Monkey Luffy', anime: 'One Piece', fallbackImage: 'https://cdn.myanimelist.net/images/characters/9/310307.jpg', voteSeed: 49 }
+    },
+    {
+      id: 'match3',
+      title: 'The Eternal Rivals',
+      charA: { id: 17, name: 'Naruto Uzumaki', anime: 'Naruto', fallbackImage: 'https://cdn.myanimelist.net/images/characters/9/131319.jpg', voteSeed: 53 },
+      charB: { id: 13, name: 'Sasuke Uchiha', anime: 'Naruto', fallbackImage: 'https://cdn.myanimelist.net/images/characters/9/131311.jpg', voteSeed: 47 }
+    }
+  ],
+  votes: {},
+
+  init() {
+    const container = document.getElementById('characterBattleArena');
+    if (!container) return; // Sidebar Battle block is only on index.html homepage
+
+    // Load Votes from localStorage
+    const savedVotes = localStorage.getItem('anicrunch_votes');
+    if (savedVotes) {
+      try { this.votes = JSON.parse(savedVotes); } catch(e) {}
+    }
+
+    // Set Navigation Listeners
+    const prevBtn = document.getElementById('battlePrevBtn');
+    const nextBtn = document.getElementById('battleNextBtn');
+    const revoteBtn = document.getElementById('battleRevoteBtn');
+
+    if (prevBtn) {
+      prevBtn.onclick = () => {
+        if (this.currentMatchIndex > 0) {
+          this.currentMatchIndex--;
+          this.renderCurrentMatch();
+        }
+      };
+    }
+
+    if (nextBtn) {
+      nextBtn.onclick = () => {
+        if (this.currentMatchIndex < this.matchups.length - 1) {
+          this.currentMatchIndex++;
+          this.renderCurrentMatch();
+        }
+      };
+    }
+
+    if (revoteBtn) {
+      revoteBtn.onclick = () => {
+        this.resetVote();
+      };
+    }
+
+    // Load dynamic API resources in background and render
+    this.renderCurrentMatch();
+    this.preloadMatchupAvatars();
+  },
+
+  async renderCurrentMatch() {
+    const container = document.getElementById('characterBattleArena');
+    if (!container) return;
+
+    const matchup = this.matchups[this.currentMatchIndex];
+    const userVote = this.votes[matchup.id]; // 'left' or 'right' or undefined
+
+    // Update Footer Buttons & Nav Labels
+    const prevBtn = document.getElementById('battlePrevBtn');
+    const nextBtn = document.getElementById('battleNextBtn');
+    const indicator = document.getElementById('battleIndicator');
+    const revoteBtn = document.getElementById('battleRevoteBtn');
+
+    if (prevBtn) prevBtn.disabled = this.currentMatchIndex === 0;
+    if (nextBtn) nextBtn.disabled = this.currentMatchIndex === this.matchups.length - 1;
+    if (indicator) indicator.textContent = `Match ${this.currentMatchIndex + 1} of ${this.matchups.length}`;
+    if (revoteBtn) revoteBtn.style.display = userVote ? 'block' : 'none';
+
+    // Set loading visual opacity
+    container.style.opacity = '0.5';
+
+    // Load details (from Jikan with fallback to local)
+    const [charADetails, charBDetails] = await Promise.all([
+      this.fetchCharacterDetails(matchup.charA),
+      this.fetchCharacterDetails(matchup.charB)
+    ]);
+
+    container.style.opacity = '1';
+    container.innerHTML = `
+      <div class="battle-char-card vote-left ${userVote ? 'voted' : ''} ${userVote === 'left' ? 'user-choice' : ''}" id="btnVoteLeft">
+        <img src="${charADetails.image}" alt="${charADetails.name}">
+        <div class="battle-percentage" id="percentLeft">--%</div>
+        <div class="battle-char-info">
+          <p class="battle-char-name">${charADetails.name}</p>
+          <p class="battle-char-anime">${charADetails.anime}</p>
+        </div>
+      </div>
+      
+      <div class="battle-vs-badge">VS</div>
+      
+      <div class="battle-char-card vote-right ${userVote ? 'voted' : ''} ${userVote === 'right' ? 'user-choice' : ''}" id="btnVoteRight">
+        <img src="${charBDetails.image}" alt="${charBDetails.name}">
+        <div class="battle-percentage" id="percentRight">--%</div>
+        <div class="battle-char-info">
+          <p class="battle-char-name">${charBDetails.name}</p>
+          <p class="battle-char-anime">${charBDetails.anime}</p>
+        </div>
+      </div>
+    `;
+
+    // Bind click actions if user hasn't voted yet
+    if (!userVote) {
+      document.getElementById('btnVoteLeft').onclick = () => this.castVote('left');
+      document.getElementById('btnVoteRight').onclick = () => this.castVote('right');
+      document.getElementById('battleResultsBar').classList.remove('visible');
+    } else {
+      this.animateResults(userVote);
+    }
+  },
+
+  async fetchCharacterDetails(char) {
+    try {
+      // Fetch from Jikan API and cache results
+      const apiData = await queuedFetch(`https://api.jikan.moe/v4/characters/${char.id}`, 'background');
+      if (apiData && apiData.images?.jpg?.image_url) {
+        return {
+          name: apiData.name_english || apiData.name || char.name,
+          anime: char.anime,
+          image: apiData.images.jpg.large_image_url || apiData.images.jpg.image_url || char.fallbackImage
+        };
+      }
+    } catch (e) {
+      console.warn(`Jikan failed for character ${char.id}, using fallback data.`);
+    }
+    
+    return {
+      name: char.name,
+      anime: char.anime,
+      image: char.fallbackImage
+    };
+  },
+
+  castVote(choice) {
+    const matchup = this.matchups[this.currentMatchIndex];
+    this.votes[matchup.id] = choice;
+    localStorage.setItem('anicrunch_votes', JSON.stringify(this.votes));
+
+    const winnerName = choice === 'left' ? matchup.charA.name : matchup.charB.name;
+    showToast(`⚔️ Vote cast for ${winnerName}!`, 'success');
+
+    this.renderCurrentMatch();
+  },
+
+  resetVote() {
+    const matchup = this.matchups[this.currentMatchIndex];
+    delete this.votes[matchup.id];
+    localStorage.setItem('anicrunch_votes', JSON.stringify(this.votes));
+    
+    showToast('⚔️ Vote reset! Cast a new choice.', 'info');
+    this.renderCurrentMatch();
+  },
+
+  animateResults(userVote) {
+    const matchup = this.matchups[this.currentMatchIndex];
+    
+    let baseLeft = matchup.charA.voteSeed;
+    let baseRight = matchup.charB.voteSeed;
+
+    if (userVote === 'left') {
+      baseLeft += 1;
+    } else {
+      baseRight += 1;
+    }
+
+    const total = baseLeft + baseRight;
+    const pctLeft = Math.round((baseLeft / total) * 100);
+    const pctRight = 100 - pctLeft;
+
+    const percentLeftEl = document.getElementById('percentLeft');
+    const percentRightEl = document.getElementById('percentRight');
+    if (percentLeftEl) percentLeftEl.textContent = `${pctLeft}%`;
+    if (percentRightEl) percentRightEl.textContent = `${pctRight}%`;
+
+    const resultsBar = document.getElementById('battleResultsBar');
+    const fillLeft = document.getElementById('battleFillLeft');
+    const fillRight = document.getElementById('battleFillRight');
+
+    if (resultsBar && fillLeft && fillRight) {
+      resultsBar.classList.add('visible');
+      requestAnimationFrame(() => {
+        fillLeft.style.width = `${pctLeft}%`;
+        fillRight.style.width = `${pctRight}%`;
+      });
+    }
+  },
+
+  preloadMatchupAvatars() {
+    this.matchups.forEach(m => {
+      const imgA = new Image();
+      imgA.src = m.charA.fallbackImage;
+      const imgB = new Image();
+      imgB.src = m.charB.fallbackImage;
+    });
+  }
+};
+window.CharacterBattleArena = CharacterBattleArena;
+
