@@ -276,21 +276,23 @@
       resultsHeader.textContent = "🧪 Synthesizing Mix...";
       resultsContainer.innerHTML = `
         <div class="loading active" style="grid-column: 1 / -1; min-height: 200px; display: flex; align-items: center; justify-content: center;">
-          Mixing your vibe frequencies...
+          Synthesizing your vibe frequencies...
         </div>
       `;
       
       try {
-        // Run Jikan searches in parallel for the top 2 active vibes to guarantee rich matching entries!
-        const fetchPromises = [];
+        // Collect all unique genre IDs across the top 2 active vibes to query individually
         const topVibes = active.slice(0, 2);
-        
+        let targetGenres = [];
         topVibes.forEach(v => {
-          const genreIds = v.genres.join(',');
-          fetchPromises.push(
-            queuedFetch(`https://api.jikan.moe/v4/anime?genres=${genreIds}&order_by=popularity&sfw=true&limit=24`, 'critical')
-          );
+          targetGenres = targetGenres.concat(v.genres);
         });
+        const uniqueGenreIds = [...new Set(targetGenres)];
+
+        // Fire parallel Jikan requests for each genre individually to achieve OR logic (Action OR Sports)
+        const fetchPromises = uniqueGenreIds.map(genreId => 
+          queuedFetch(`https://api.jikan.moe/v4/anime?genres=${genreId}&order_by=popularity&sfw=true&limit=16`, 'critical')
+        );
         
         const rawResultsArray = await Promise.all(fetchPromises);
         
@@ -310,9 +312,8 @@
         
         if (!mergedList.length) {
           resultsContainer.innerHTML = `
-            <div class="empty-state">
-              <div class="empty-icon">🔭</div>
-              <h3>No matching vibes found</h3>
+            <div class="empty-state" style="grid-column: 1 / -1; text-align: center; padding: 40px 0;">
+              <h3>🧪 No matching vibes found</h3>
               <p>Try sliding other vibes to mix them together.</p>
             </div>
           `;
@@ -322,11 +323,11 @@
         // Sort merged results by score descending
         mergedList.sort((a, b) => (b.score || 0) - (a.score || 0));
         
-        // Render
+        // Render cards with direct image loading to bypass intersection observer delay
         resultsContainer.innerHTML = "";
         const fragment = document.createDocumentFragment();
         mergedList.forEach(anime => {
-          const card = createCard(anime);
+          const card = createCard(anime, { disableLazy: true });
           card.style.width = "100%";
           fragment.appendChild(card);
         });
@@ -341,9 +342,9 @@
       } catch (err) {
         console.error("Vibe mixer error:", err);
         resultsContainer.innerHTML = `
-          <div class="error-state">
-            <p>Failed to load Jikan vibe blend.</p>
-            <button class="retry-btn" onclick="location.reload()">Retry</button>
+          <div class="error-state" style="grid-column: 1 / -1; text-align: center; padding: 40px 0;">
+            <p>⚠️ Failed to synthesize Jikan vibe blend.</p>
+            <button class="retry-btn" onclick="location.reload()" style="padding: 8px 16px; background: var(--accent); border: none; border-radius: 20px; color: white; cursor: pointer; margin-top: 10px;">Retry</button>
           </div>
         `;
       }
