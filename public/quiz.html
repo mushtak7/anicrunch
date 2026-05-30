@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>anicrunch · Daily Trivia Arena</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .quiz-page { 
+      min-height: 100vh;
+      background: var(--bg-gradient);
+      background-color: var(--bg);
+    }
+    
+    .quiz-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 60px 40px;
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 40px;
+    }
+    
+    @media (max-width: 992px) {
+      .quiz-container {
+        grid-template-columns: 1fr;
+        padding: 40px 20px;
+      }
+    }
+
+    /* Glassmorphic Cards */
+    .quiz-card-deck {
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 420px;
+      transition: all 0.3s ease;
+    }
+    
+    .quiz-card-deck::before {
+      content: '';
+      position: absolute;
+      width: 250px;
+      height: 250px;
+      background: var(--gradient);
+      filter: blur(140px);
+      opacity: 0.12;
+      top: -100px;
+      right: -100px;
+      pointer-events: none;
+    }
+    
+    .quiz-progress-bar {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 99px;
+      margin-bottom: 30px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    
+    .quiz-progress-fill {
+      height: 100%;
+      background: var(--gradient);
+      width: 0%;
+      transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 99px;
+    }
+    
+    .quiz-question-header {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.4;
+      margin-bottom: 25px;
+    }
+    
+    .quiz-options-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .quiz-option-btn {
+      width: 100%;
+      padding: 16px 24px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      text-align: left;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      outline: none;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .quiz-option-btn:hover:not(:disabled) {
+      background: var(--glass-hover);
+      border-color: rgba(255, 60, 172, 0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(255, 60, 172, 0.08);
+    }
+    
+    .quiz-option-btn.selected {
+      background: linear-gradient(135deg, rgba(255, 60, 172, 0.2) 0%, rgba(120, 75, 160, 0.2) 100%);
+      border-color: var(--accent);
+      box-shadow: 0 0 15px rgba(255, 60, 172, 0.15);
+      font-weight: 600;
+    }
+    
+    .quiz-option-btn.correct {
+      background: rgba(0, 230, 118, 0.15) !important;
+      border-color: #00e676 !important;
+      color: #00e676;
+    }
+    
+    .quiz-option-btn.wrong {
+      background: rgba(255, 82, 82, 0.15) !important;
+      border-color: #ff5252 !important;
+      color: #ff5252;
+    }
+
+    .option-letter {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    
+    .quiz-option-btn.selected .option-letter {
+      background: var(--accent);
+      color: white;
+      border-color: transparent;
+    }
+    
+    /* Leaderboard Styling */
+    .leaderboard-card {
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 30px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+    }
+    
+    .leaderboard-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: white;
+      margin: 0 0 20px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .leaderboard-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .leaderboard-row {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      transition: background 0.2s;
+    }
+    
+    .leaderboard-row:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    
+    .leaderboard-row:last-child {
+      border-bottom: none;
+    }
+    
+    .leaderboard-cell {
+      padding: 12px 10px;
+      vertical-align: middle;
+      font-size: 14px;
+    }
+    
+    .rank-col {
+      width: 40px;
+      font-weight: 700;
+      text-align: center;
+    }
+    
+    .player-col {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .player-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    
+    .player-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .player-name {
+      font-weight: 600;
+      color: white;
+    }
+    
+    .points-col {
+      text-align: right;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    
+    .badge-rank-1 { color: #ffd700; font-size: 18px; }
+    .badge-rank-2 { color: #c0c0c0; font-size: 18px; }
+    .badge-rank-3 { color: #cd7f32; font-size: 18px; }
+
+    /* Cooldown State styling */
+    .cooldown-state {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    
+    .cooldown-icon {
+      font-size: 60px;
+      margin-bottom: 20px;
+      animation: float 3s ease-in-out infinite;
+    }
+    
+    .btn-action {
+      background: var(--gradient);
+      color: white;
+      border: none;
+      padding: 14px 30px;
+      border-radius: 99px;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(255, 60, 172, 0.35);
+      transition: all 0.25s ease;
+      display: inline-block;
+      text-decoration: none;
+    }
+    
+    .btn-action:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(255, 60, 172, 0.5);
+    }
+  </style>
+</head>
+<body class="quiz-page">
+
+<header>
+  <h1 class="logo" onclick="location.href='/'">anicrunch</h1>
+  <nav class="nav-links">
+    <a href="/blog/" class="nav-link"><span>📖</span> <span>Blog</span></a>
+    <a href="/recent-episodes.html" class="nav-link"><span>🆕</span> <span>New Episodes</span></a>
+    <a href="/schedule.html" class="nav-link"><span>📅</span> <span>Schedule</span></a>
+    <a href="/vibe-mixer.html" class="nav-link"><span>🧪</span> <span>Vibe Mixer</span></a>
+    <a href="/quiz.html" class="nav-link active"><span>🏆</span> <span>Trivia Arena</span></a>
+    <button onclick="spinWheel()" class="btn-random" aria-label="Random anime">
+      <span>🎲</span> <span>Random</span>
+    </button>
+  </nav>
+  <div id="authArea"></div>
+</header>
+
+<section class="watchlist-hero" style="min-height: auto; padding: 50px 20px;">
+  <div class="watchlist-hero-content" style="text-align: center;">
+    <h1>🏆 Trivia Arena</h1>
+    <p>Test your anime knowledge, gain points, and dominate the daily leaderboard!</p>
+  </div>
+</section>
+
+<main class="quiz-container">
+  <!-- Left Side: Quiz Decks -->
+  <section>
+    <div id="quizContent" class="quiz-card-deck">
+      <div style="text-align: center; color: var(--muted); padding: 40px 0;">
+        <div class="loader"></div>
+        <p style="margin-top: 15px;">Loading today's challenge...</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Right Side: Leaderboard -->
+  <aside class="leaderboard-card">
+    <h2 class="leaderboard-title">🥇 Top 10 Leaders</h2>
+    <table class="leaderboard-table">
+      <tbody id="leaderboardBody">
+        <tr>
+          <td colspan="3" style="text-align: center; padding: 40px; color: var(--muted);">Loading ranking board...</td>
+        </tr>
+      </tbody>
+    </table>
+  </aside>
+</main>
+
+<div class="spin-overlay" id="spinOverlay">
+  <div class="spinner-content">
+    <div class="big-spinner">🎲</div>
+    <p style="color: white;">Finding your next anime...</p>
+  </div>
+</div>
+
+<script src="script.js"></script>
+<script>
+  window.API_BASE = (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname === "") ? "" : "https://anicrunch-backend.onrender.com";
+  let todayQuestions = [];
+  let currentQuestionIndex = 0;
+  let userAnswers = []; // Array of { questionId, selectedOptionIndex }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // Auth Check
+    fetch(`${API_BASE}/api/me`, { credentials: "include" })
+      .then(r => r.json())
+      .then(d => {
+        const authArea = document.getElementById("authArea");
+        if (d.user) {
+          authArea.innerHTML = `<span style="color:var(--muted)">👤 ${d.user.username}</span> <button class="auth-link" style="background: none; border: none; color: var(--accent); cursor: pointer; margin-left: 10px;" onclick="logout()">Logout</button>`;
+          loadQuizChallenge();
+        } else {
+          showLoginMessage();
+        }
+      })
+      .catch(() => showLoginMessage());
+
+    loadLeaderboard();
+  });
+
+  async function loadQuizChallenge() {
+    try {
+      const res = await fetch(`${API_BASE}/api/quiz/today`, { credentials: "include" });
+      if (!res.ok) {
+        throw new Error("Failed to load daily challenge");
+      }
+      const data = await res.json();
+      
+      if (data.alreadyPlayed) {
+        showCooldownState(data.score);
+      } else {
+        todayQuestions = data.questions;
+        currentQuestionIndex = 0;
+        userAnswers = [];
+        renderQuestion();
+      }
+    } catch (err) {
+      console.error(err);
+      document.getElementById('quizContent').innerHTML = `
+        <div style="text-align: center; padding: 40px 20px; color: #ff5252;">
+          <h3>⚠️ Error Loading Trivia</h3>
+          <p>Failed to retrieve today's questions. Please try again later.</p>
+        </div>
+      `;
+    }
+  }
+
+  function renderQuestion() {
+    if (!todayQuestions.length) return;
+    const q = todayQuestions[currentQuestionIndex];
+    const totalQ = todayQuestions.length;
+    
+    const progressPercent = ((currentQuestionIndex) / totalQ) * 100;
+    const optionLetters = ['A', 'B', 'C', 'D'];
+    
+    let optionsHtml = '';
+    q.options.forEach((opt, idx) => {
+      optionsHtml += `
+        <button class="quiz-option-btn" onclick="selectOption(${idx})" id="opt-${idx}">
+          <span class="option-letter">${optionLetters[idx]}</span>
+          <span>${escapeHtml(opt)}</span>
+        </button>
+      `;
+    });
+
+    document.getElementById('quizContent').innerHTML = `
+      <div class="quiz-progress-bar">
+        <div class="quiz-progress-fill" style="width: ${progressPercent}%;"></div>
+      </div>
+      <div style="display:flex; justify-content: space-between; font-size: 13px; color: var(--muted); font-weight:600; margin-bottom: 12px;">
+        <span>DAILY CHALLENGE</span>
+        <span>QUESTION ${currentQuestionIndex + 1} OF ${totalQ}</span>
+      </div>
+      <div class="quiz-question-header">${escapeHtml(q.question)}</div>
+      <div class="quiz-options-list">
+        ${optionsHtml}
+      </div>
+      <div style="margin-top: 25px; display: flex; justify-content: flex-end;">
+        <button id="nextBtn" class="btn-action" disabled style="opacity: 0.5; padding: 10px 25px; font-size: 14px;" onclick="goToNextQuestion()">
+          ${currentQuestionIndex === totalQ - 1 ? 'Submit Answers' : 'Next Question →'}
+        </button>
+      </div>
+    `;
+  }
+
+  let selectedIdxTemp = null;
+  function selectOption(idx) {
+    selectedIdxTemp = idx;
+    document.querySelectorAll('.quiz-option-btn').forEach(btn => btn.classList.remove('selected'));
+    document.getElementById(`opt-${idx}`).classList.add('selected');
+    document.getElementById('nextBtn').disabled = false;
+    document.getElementById('nextBtn').style.opacity = '1';
+  }
+
+  function goToNextQuestion() {
+    const q = todayQuestions[currentQuestionIndex];
+    userAnswers.push({
+      questionId: q.id,
+      selectedOptionIndex: selectedIdxTemp
+    });
+    
+    selectedIdxTemp = null;
+    currentQuestionIndex++;
+    
+    if (currentQuestionIndex < todayQuestions.length) {
+      renderQuestion();
+    } else {
+      submitQuizAnswers();
+    }
+  }
+
+  async function submitQuizAnswers() {
+    const container = document.getElementById('quizContent');
+    container.innerHTML = `
+      <div style="text-align: center; color: var(--muted); padding: 40px 0;">
+        <div class="loader"></div>
+        <p style="margin-top: 15px;">Calculating your score...</p>
+      </div>
+    `;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/quiz/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ answers: userAnswers })
+      });
+      
+      if (!res.ok) throw new Error("Submission error");
+      
+      const data = await res.json();
+      showResultsState(data.score, data.pointsAwarded);
+      loadLeaderboard(); // Reload ranking board
+    } catch (err) {
+      console.error(err);
+      container.innerHTML = `
+        <div style="text-align: center; padding: 40px 20px; color: #ff5252;">
+          <h3>⚠️ Submission Error</h3>
+          <p>Failed to submit your answers. Please refresh the page and try again.</p>
+        </div>
+      `;
+    }
+  }
+
+  function showResultsState(score, points) {
+    const stars = ['🌑 Run', '⭐ Decent', '⭐⭐ Pro', '⭐⭐⭐ Legend'];
+    document.getElementById('quizContent').innerHTML = `
+      <div class="cooldown-state">
+        <div class="cooldown-icon">🎉</div>
+        <h2 style="color: white; font-size: 28px; margin-bottom: 5px;">Challenge Completed!</h2>
+        <p style="font-size: 16px; color: var(--muted); margin: 0 0 25px 0;">Rank achieved: <span style="color: var(--accent); font-weight: 700;">${stars[score]}</span></p>
+        
+        <div style="display: flex; gap: 20px; justify-content: center; margin-bottom: 30px;">
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 15px 25px; border-radius: 16px; min-width: 120px;">
+            <h3 style="font-size: 32px; color: white; margin: 0;">${score}/3</h3>
+            <p style="font-size: 11px; color: var(--muted); margin: 5px 0 0 0; text-transform: uppercase;">Score</p>
+          </div>
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 15px 25px; border-radius: 16px; min-width: 120px;">
+            <h3 style="font-size: 32px; color: var(--accent); margin: 0;">+${points}</h3>
+            <p style="font-size: 11px; color: var(--muted); margin: 5px 0 0 0; text-transform: uppercase;">Points Won</p>
+          </div>
+        </div>
+        
+        <p style="color: var(--muted); font-size: 14px; margin-bottom: 25px;">You have played today's challenge. Come back tomorrow for brand new trivia!</p>
+        <button class="btn-action" onclick="shareResults(${score})">🔗 Share My Score</button>
+      </div>
+    `;
+  }
+
+  function showCooldownState(score) {
+    document.getElementById('quizContent').innerHTML = `
+      <div class="cooldown-state">
+        <div class="cooldown-icon">⏳</div>
+        <h2 style="color: white; font-size: 28px; margin-bottom: 5px;">Locked for Today!</h2>
+        <p style="font-size: 15px; color: var(--muted); margin-bottom: 30px;">You answered <span style="color:white; font-weight:600;">${score}/3</span> questions correctly today.</p>
+        
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 16px; padding: 20px; max-width: 400px; margin: 0 auto 30px;">
+          <h4 style="margin: 0 0 8px 0; color: white; font-size: 14px;">Next Challenge countdown:</h4>
+          <div id="quizTimerDisplay" style="font-size: 24px; font-weight: 700; color: var(--accent);">00:00:00</div>
+        </div>
+        
+        <button class="btn-action" onclick="shareResults(${score})">🔗 Share Results</button>
+      </div>
+    `;
+    startQuizCooldownTimer();
+  }
+
+  function startQuizCooldownTimer() {
+    const timerEl = document.getElementById('quizTimerDisplay');
+    if (!timerEl) return;
+
+    function tick() {
+      const now = new Date();
+      // Next day starts at midnight in local time
+      const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      const diffMs = tomorrow.getTime() - now.getTime();
+      
+      if (diffMs <= 0) {
+        location.reload();
+        return;
+      }
+      
+      const hours = Math.floor(diffMs / 3600000);
+      const minutes = Math.floor((diffMs % 3600000) / 60000);
+      const seconds = Math.floor((diffMs % 60000) / 1000);
+      
+      const pad = (n) => String(n).padStart(2, '0');
+      timerEl.innerText = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    }
+    
+    tick();
+    setInterval(tick, 1000);
+  }
+
+  function shareResults(score) {
+    const text = `🏆 I scored ${score}/3 in today's AniCrunch Daily Trivia Arena! Think you can beat me? Play now at ${location.origin}/quiz.html! ⚔️`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert("📋 Share text copied to clipboard!");
+      });
+    } else {
+      alert("Results: " + text);
+    }
+  }
+
+  async function loadLeaderboard() {
+    try {
+      const res = await fetch(`${API_BASE}/api/quiz/leaderboard`);
+      if (!res.ok) throw new Error("Leaderboard loading error");
+      const board = await res.json();
+      
+      const tbody = document.getElementById('leaderboardBody');
+      tbody.innerHTML = '';
+      
+      if (!board.length) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 40px; color: var(--muted);">No records yet. Be the first to claim the top spot!</td></tr>`;
+        return;
+      }
+      
+      board.forEach((player, idx) => {
+        const rank = idx + 1;
+        let rankBadge = `${rank}`;
+        if (rank === 1) rankBadge = `<span class="badge-rank-1">👑</span>`;
+        else if (rank === 2) rankBadge = `<span class="badge-rank-2">🥈</span>`;
+        else if (rank === 3) rankBadge = `<span class="badge-rank-3">🥉</span>`;
+        
+        const avatar = player.avatar_url ? `<img src="${player.avatar_url}" alt="Avatar">` : '👤';
+        
+        const tr = document.createElement('tr');
+        tr.className = 'leaderboard-row';
+        tr.innerHTML = `
+          <td class="leaderboard-cell rank-col">${rankBadge}</td>
+          <td class="leaderboard-cell player-col">
+            <div class="player-avatar">${avatar}</div>
+            <span class="player-name">${escapeHtml(player.username)}</span>
+          </td>
+          <td class="leaderboard-cell points-col">${player.points} pts</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch (err) {
+      console.error(err);
+      document.getElementById('leaderboardBody').innerHTML = `
+        <tr><td colspan="3" style="text-align: center; padding: 40px; color: #ff5252;">⚠️ Error loading leaderboard.</td></tr>
+      `;
+    }
+  }
+
+  function showLoginMessage() {
+    document.getElementById('quizContent').innerHTML = `
+      <div class="cooldown-state">
+        <div class="cooldown-icon">🔒</div>
+        <h2 style="color: white; font-size: 26px; margin-bottom: 10px;">Login Required</h2>
+        <p style="font-size: 15px; color: var(--muted); margin-bottom: 25px;">You must be logged in to participate in the Daily Trivia Arena and compete on the global leaderboard.</p>
+        <a href="/login.html" class="btn-action">Sign In to Play</a>
+      </div>
+    `;
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>

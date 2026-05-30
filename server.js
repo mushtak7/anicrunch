@@ -20,6 +20,60 @@ app.set("trust proxy", 1);
    BASIC MIDDLEWARE
 ===================== */
 app.use(express.json());
+
+/* =====================
+   SEO DYNAMIC SITEMAP
+===================== */
+app.get("/sitemap.xml", async (req, res) => {
+  res.header("Content-Type", "application/xml");
+  try {
+    const dbAnime = await pool.query("SELECT DISTINCT anime_id FROM watchlists");
+    
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+    xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+    
+    // Static main paths
+    const staticUrls = [
+      "",
+      "/blog/",
+      "/recent-episodes.html",
+      "/schedule.html",
+      "/vibe-mixer.html",
+      "/recommendations.html"
+    ];
+    
+    staticUrls.forEach(url => {
+      xml += `  <url>\n`;
+      xml += `    <loc>https://anicrunch.page${url}</loc>\n`;
+      xml += `    <changefreq>${url === "" || url === "/schedule.html" ? "daily" : "weekly"}</changefreq>\n`;
+      xml += `    <priority>${url === "" ? "1.0" : "0.8"}</priority>\n`;
+      xml += `  </url>\n`;
+    });
+
+    // Dynamic anime detailed paths
+    dbAnime.rows.forEach(row => {
+      xml += `  <url>\n`;
+      xml += `    <loc>https://anicrunch.page/anime.html?id=${row.anime_id}</loc>\n`;
+      xml += `    <changefreq>weekly</changefreq>\n`;
+      xml += `    <priority>0.7</priority>\n`;
+      xml += `  </url>\n`;
+    });
+
+    xml += `</urlset>`;
+    res.send(xml);
+  } catch (err) {
+    console.error("Sitemap generation error:", err);
+    res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>https://anicrunch.page/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>\n</urlset>`);
+  }
+});
+
+/* =====================
+   SEO CLEAN URL ROUTING
+===================== */
+app.get("/anime/:id-:slug", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "anime.html"));
+});
+
 app.use(express.static(path.join(__dirname, "public")));
 
 /* =====================
@@ -78,7 +132,9 @@ async function initDB() {
       ALTER TABLE watchlists 
       ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'plan',
       ADD COLUMN IF NOT EXISTS progress INTEGER DEFAULT 0,
-      ADD COLUMN IF NOT EXISTS score INTEGER DEFAULT NULL;
+      ADD COLUMN IF NOT EXISTS score INTEGER DEFAULT NULL,
+      ADD COLUMN IF NOT EXISTS genres TEXT DEFAULT '',
+      ADD COLUMN IF NOT EXISTS anime_title TEXT DEFAULT '';
     `);
     
     // Add missing columns to users table
@@ -87,7 +143,130 @@ async function initDB() {
       ADD COLUMN IF NOT EXISTS avatar_url TEXT DEFAULT '',
       ADD COLUMN IF NOT EXISTS bio TEXT DEFAULT '';
     `);
+
+    // Create quizzes table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS quizzes (
+        id SERIAL PRIMARY KEY,
+        question TEXT NOT NULL,
+        options TEXT[] NOT NULL,
+        correct_option_index INTEGER NOT NULL,
+        difficulty VARCHAR(20) DEFAULT 'medium'
+      );
+    `);
+
+    // Create user_quiz_stats table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_quiz_stats (
+        user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        points INTEGER DEFAULT 0,
+        last_played DATE DEFAULT NULL
+      );
+    `);
+
+    // Create user_quiz_history table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_quiz_history (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        played_date DATE NOT NULL,
+        score INTEGER NOT NULL,
+        UNIQUE(user_id, played_date)
+      );
+    `);
+    
     console.log("✅ Database schema verified/updated");
+
+    // Auto-seed quiz table if empty
+    const checkQuiz = await pool.query("SELECT COUNT(*) FROM quizzes");
+    if (parseInt(checkQuiz.rows[0].count, 10) === 0) {
+      console.log("🌱 Seeding trivia quizzes...");
+      const sampleQuizzes = [
+        {
+          question: "Who is the main protagonist of 'One Piece'?",
+          options: ["Roronoa Zoro", "Monkey D. Luffy", "Vinsmoke Sanji", "Portgas D. Ace"],
+          correct_option_index: 1
+        },
+        {
+          question: "In 'Naruto', what is the name of the nine-tailed fox sealed inside Naruto?",
+          options: ["Gyuki", "Shukaku", "Kurama", "Matatabi"],
+          correct_option_index: 2
+        },
+        {
+          question: "Which anime features a notebook that can kill anyone whose name is written in it?",
+          options: ["Bleach", "Death Note", "Code Geass", "Attack on Titan"],
+          correct_option_index: 1
+        },
+        {
+          question: "What is the name of the giant wall protecting humanity in 'Attack on Titan'?",
+          options: ["Wall Maria", "Wall Sina", "Wall Rose", "All of the above"],
+          correct_option_index: 3
+        },
+        {
+          question: "In 'Fullmetal Alchemist', what is the ultimate goal of the Elric brothers?",
+          options: ["Become State Alchemists", "Find the Philosopher's Stone", "Defeat the Homunculi", "Revive their father"],
+          correct_option_index: 1
+        },
+        {
+          question: "Who is known as the 'One Punch Man'?",
+          options: ["Genos", "Mumen Rider", "Saitama", "Garou"],
+          correct_option_index: 2
+        },
+        {
+          question: "What is the name of the virtual world in the anime 'Sword Art Online'?",
+          options: ["Alfheim Online", "Aincrad", "Gun Gale Online", "Underworld"],
+          correct_option_index: 1
+        },
+        {
+          question: "In 'Demon Slayer', what breath style does Tanjiro Kamado originally use?",
+          options: ["Water Breathing", "Sun Breathing", "Flame Breathing", "Thunder Breathing"],
+          correct_option_index: 0
+        },
+        {
+          question: "Which anime features characters using 'Nen' as their primary power system?",
+          options: ["Yu Yu Hakusho", "Hunter x Hunter", "My Hero Academia", "Jujutsu Kaisen"],
+          correct_option_index: 1
+        },
+        {
+          question: "In 'Jujutsu Kaisen', who is the King of Curses whose fingers Yuji Itadori swallows?",
+          options: ["Ryomen Sukuna", "Mahito", "Suguru Geto", "Jogo"],
+          correct_option_index: 0
+        },
+        {
+          question: "What is the name of Goku's signature energy blast in 'Dragon Ball'?",
+          options: ["Spirit Bomb", "Kamehameha", "Special Beam Cannon", "Galick Gun"],
+          correct_option_index: 1
+        },
+        {
+          question: "In 'My Hero Academia', what is All Might's Quirk named?",
+          options: ["All for One", "One for All", "Explosion", "Half-Cold Half-Hot"],
+          correct_option_index: 1
+        },
+        {
+          question: "Which studio animated the movie 'Spirited Away'?",
+          options: ["Studio Trigger", "Studio Ghibli", "Madhouse", "MAPPA"],
+          correct_option_index: 1
+        },
+        {
+          question: "In 'Steins;Gate', what is the name of Okabe's time machine?",
+          options: ["Phone Microwave", "Time Leap Machine", "FG204", "Ibn 5100"],
+          correct_option_index: 0
+        },
+        {
+          question: "What is the primary sport played in the anime 'Haikyu!!'?",
+          options: ["Basketball", "Soccer", "Volleyball", "Tennis"],
+          correct_option_index: 2
+        }
+      ];
+
+      for (const q of sampleQuizzes) {
+        await pool.query(
+          "INSERT INTO quizzes (question, options, correct_option_index) VALUES ($1, $2, $3)",
+          [q.question, q.options, q.correct_option_index]
+        );
+      }
+      console.log("🌱 Seeding completed!");
+    }
   } catch (err) {
     console.error("Database migration error:", err);
   }
@@ -194,7 +373,7 @@ app.get("/api/me", (req, res) => {
 app.get("/api/watchlist", requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT anime_id, status, progress, score FROM watchlists WHERE user_id=$1",
+      "SELECT anime_id, status, progress, score, genres, anime_title FROM watchlists WHERE user_id=$1",
       [req.session.user.id]
     );
     res.json(result.rows);
@@ -205,14 +384,12 @@ app.get("/api/watchlist", requireAuth, async (req, res) => {
 });
 
 app.post("/api/watchlist/add", requireAuth, async (req, res) => {
-  const { animeId } = req.body;
+  const { animeId, genres, title } = req.body;
 
   try {
-    // If it exists, we don't overwrite. 
-    // Wait, let's explicitly specify conflict target if we can, but DO NOTHING is safe.
     await pool.query(
-      "INSERT INTO watchlists (user_id, anime_id, status, progress) VALUES ($1, $2, 'plan', 0) ON CONFLICT DO NOTHING",
-      [req.session.user.id, animeId]
+      "INSERT INTO watchlists (user_id, anime_id, status, progress, genres, anime_title) VALUES ($1, $2, 'plan', 0, $3, $4) ON CONFLICT DO NOTHING",
+      [req.session.user.id, animeId, genres || '', title || '']
     );
     res.json({ success: true });
   } catch (err) {
@@ -222,16 +399,18 @@ app.post("/api/watchlist/add", requireAuth, async (req, res) => {
 });
 
 app.post("/api/watchlist/update", requireAuth, async (req, res) => {
-  const { animeId, status, progress, score } = req.body;
+  const { animeId, status, progress, score, genres, title } = req.body;
 
   try {
     await pool.query(
       `UPDATE watchlists 
        SET status = COALESCE($3, status), 
            progress = COALESCE($4, progress),
-           score = COALESCE($5, score)
+           score = COALESCE($5, score),
+           genres = COALESCE($6, genres),
+           anime_title = COALESCE($7, anime_title)
        WHERE user_id=$1 AND anime_id=$2`,
-      [req.session.user.id, animeId, status, progress, score]
+      [req.session.user.id, animeId, status, progress, score, genres, title]
     );
     res.json({ success: true });
   } catch (err) {
@@ -266,17 +445,15 @@ app.get("/api/profile", requireAuth, async (req, res) => {
     );
     if (userRes.rows.length === 0) return res.status(404).json({ message: "User not found" });
     
-    // Get total anime watched count
+    // Get all watchlist items to calculate statistics
     const statsRes = await pool.query(
-      "SELECT COUNT(*) FROM watchlists WHERE user_id=$1 AND status='completed'",
+      "SELECT anime_id, status, progress, score, genres, anime_title FROM watchlists WHERE user_id=$1",
       [req.session.user.id]
     );
     
     res.json({
       user: userRes.rows[0],
-      stats: {
-        totalWatched: parseInt(statsRes.rows[0].count, 10)
-      }
+      watchlist: statsRes.rows
     });
   } catch (err) {
     console.error(err);
@@ -295,6 +472,128 @@ app.post("/api/profile/update", requireAuth, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error updating profile" });
+  }
+});
+
+/* =====================
+   QUIZ ROUTES (NEW)
+===================== */
+app.get("/api/quiz/today", requireAuth, async (req, res) => {
+  try {
+    const daysSinceEpoch = Math.floor(Date.now() / 86400000);
+    
+    // Fetch all quiz questions
+    const quizzesRes = await pool.query("SELECT id, question, options FROM quizzes ORDER BY id");
+    const allQuizzes = quizzesRes.rows;
+    
+    if (allQuizzes.length === 0) {
+      return res.status(404).json({ message: "No quizzes available yet." });
+    }
+    
+    // Pick 3 stable daily questions using index modulo
+    const dailyQuestions = [];
+    const totalQ = allQuizzes.length;
+    for (let i = 0; i < 3; i++) {
+      const index = (daysSinceEpoch * 3 + i) % totalQ;
+      dailyQuestions.push(allQuizzes[index]);
+    }
+    
+    // Check if user has already played today
+    const historyRes = await pool.query(
+      "SELECT score FROM user_quiz_history WHERE user_id=$1 AND played_date = CURRENT_DATE",
+      [req.session.user.id]
+    );
+    const alreadyPlayed = historyRes.rows.length > 0;
+    const score = alreadyPlayed ? historyRes.rows[0].score : 0;
+    
+    res.json({
+      questions: dailyQuestions,
+      alreadyPlayed,
+      score
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error loading daily quiz" });
+  }
+});
+
+app.post("/api/quiz/submit", requireAuth, async (req, res) => {
+  const { answers } = req.body;
+  
+  if (!Array.isArray(answers)) {
+    return res.status(400).json({ message: "Invalid submission format" });
+  }
+  
+  try {
+    // Check if already played today
+    const historyRes = await pool.query(
+      "SELECT * FROM user_quiz_history WHERE user_id=$1 AND played_date = CURRENT_DATE",
+      [req.session.user.id]
+    );
+    
+    if (historyRes.rows.length > 0) {
+      return res.status(400).json({ message: "You have already completed today's quiz challenge!" });
+    }
+    
+    let correctCount = 0;
+    const results = [];
+    
+    for (const ans of answers) {
+      const quizRes = await pool.query("SELECT correct_option_index FROM quizzes WHERE id=$1", [ans.questionId]);
+      if (quizRes.rows.length > 0) {
+        const correctIdx = quizRes.rows[0].correct_option_index;
+        const isCorrect = Number(ans.selectedOptionIndex) === correctIdx;
+        if (isCorrect) correctCount++;
+        results.push({
+          questionId: ans.questionId,
+          correct: isCorrect,
+          correctOptionIndex: correctIdx
+        });
+      }
+    }
+    
+    const pointsAwarded = correctCount * 10;
+    
+    // Update total quiz stats for the user
+    await pool.query(
+      `INSERT INTO user_quiz_stats (user_id, points, last_played) 
+       VALUES ($1, $2, CURRENT_DATE) 
+       ON CONFLICT (user_id) DO UPDATE 
+       SET points = user_quiz_stats.points + $2,
+           last_played = CURRENT_DATE`,
+      [req.session.user.id, pointsAwarded]
+    );
+    
+    // Log play in history
+    await pool.query(
+      "INSERT INTO user_quiz_history (user_id, played_date, score) VALUES ($1, CURRENT_DATE, $2) ON CONFLICT DO NOTHING",
+      [req.session.user.id, correctCount]
+    );
+    
+    res.json({
+      score: correctCount,
+      pointsAwarded,
+      results
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error submitting answers" });
+  }
+});
+
+app.get("/api/quiz/leaderboard", async (req, res) => {
+  try {
+    const boardRes = await pool.query(`
+      SELECT u.username, u.avatar_url, COALESCE(s.points, 0) as points 
+      FROM users u
+      JOIN user_quiz_stats s ON u.id = s.user_id 
+      ORDER BY points DESC, u.username ASC 
+      LIMIT 10
+    `);
+    res.json(boardRes.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error loading leaderboard" });
   }
 });
 

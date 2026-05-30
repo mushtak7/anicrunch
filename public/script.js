@@ -1,7 +1,18 @@
+// Apply Persisted Theme Immediately (avoids FOUC)
+(function() {
+  const savedTheme = localStorage.getItem("anicrunch_theme");
+  if (savedTheme && savedTheme !== "default") {
+    document.documentElement.classList.add(`theme-${savedTheme}`);
+    window.addEventListener("DOMContentLoaded", () => {
+      document.body.classList.add(`theme-${savedTheme}`);
+    });
+  }
+})();
+
 // =====================
 // API CONFIGURATION
 // =====================
-const API_BASE = location.hostname === "localhost" ? "" : "https://anicrunch-backend.onrender.com";
+window.API_BASE = (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname === "") ? "" : "https://anicrunch-backend.onrender.com";
 
 // =====================
 // GLOBAL STATE
@@ -779,18 +790,108 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }).catch(() => {});
 
+    // Search Autocomplete Panel Setup
+    const dropdown = document.createElement("div");
+    dropdown.className = "search-autocomplete-dropdown";
+    const searchContainer = document.querySelector(".search-container");
+    if (searchContainer) {
+      searchContainer.appendChild(dropdown);
+    }
+
+    let autocompleteTimeout;
+    const runAutocomplete = (query) => {
+      clearTimeout(autocompleteTimeout);
+      if (query.length < 3) {
+        dropdown.classList.remove("active");
+        dropdown.innerHTML = "";
+        return;
+      }
+
+      autocompleteTimeout = setTimeout(async () => {
+        try {
+          const data = await queuedFetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=6`, 'background');
+          if (!data || !data.length) {
+            dropdown.innerHTML = `
+              <div style="padding: 16px; text-align: center; color: var(--muted); font-size: 13px;">
+                🔭 No anime matches found.
+              </div>
+            `;
+            dropdown.classList.add("active");
+            return;
+          }
+
+          dropdown.innerHTML = "";
+          data.forEach(item => {
+            const row = document.createElement("div");
+            row.className = "autocomplete-item";
+            const displayTitle = item.title_english || item.title;
+            const score = item.score ? `⭐ ${item.score}` : '⭐ N/A';
+            const year = item.year || (item.aired && item.aired.prop && item.aired.prop.from && item.aired.prop.from.year) || 'N/A';
+            row.innerHTML = `
+              <img src="${item.images?.jpg?.small_image_url || item.images?.jpg?.image_url}" alt="${displayTitle}">
+              <div class="autocomplete-info">
+                <div class="autocomplete-title">${displayTitle}</div>
+                <div class="autocomplete-meta">${item.type || 'TV'} · ${year} · <span class="autocomplete-score">${score}</span></div>
+              </div>
+            `;
+            row.onclick = () => {
+              dropdown.classList.remove("active");
+              location.href = `/anime.html?id=${item.mal_id}`;
+            };
+            dropdown.appendChild(row);
+          });
+
+          // Add "View All Results" bottom link
+          const allResultsRow = document.createElement("a");
+          allResultsRow.href = "#";
+          allResultsRow.className = "autocomplete-all-results";
+          allResultsRow.textContent = `View all results for "${query}" →`;
+          allResultsRow.onclick = (e) => {
+            e.preventDefault();
+            dropdown.classList.remove("active");
+            triggerFullSearch(query);
+          };
+          dropdown.appendChild(allResultsRow);
+
+          dropdown.classList.add("active");
+        } catch (err) {
+          console.warn("Autocomplete fetch error:", err);
+        }
+      }, 250);
+    };
+
+    function triggerFullSearch(query) {
+      if (resultsBox) {
+        handleSearch(query);
+      } else {
+        location.href = `/?search=${encodeURIComponent(query)}`;
+      }
+    }
+
     // Search Listeners
     if (searchInput) {
       searchInput.oninput = (e) => {
+        const query = e.target.value.trim();
         resetVibeSliders();
-        handleSearch(e.target.value.trim());
+        if (resultsBox) {
+          handleSearch(query);
+        }
+        runAutocomplete(query);
       };
+      
       searchInput.onkeydown = (e) => { 
-        if (e.key === 'Escape') { e.preventDefault(); searchClear.click(); }
+        if (e.key === 'Escape') { 
+          e.preventDefault(); 
+          dropdown.classList.remove("active");
+          if (searchClear) searchClear.click(); 
+        }
         if (e.key === 'Enter') {
           e.preventDefault();
-          const firstCard = resultsBox ? resultsBox.querySelector('.anime-card') : null;
-          if (firstCard && appState.viewState.mode === 'search') firstCard.click();
+          const query = searchInput.value.trim();
+          if (query.length >= 3) {
+            dropdown.classList.remove("active");
+            triggerFullSearch(query);
+          }
         }
       };
     }
@@ -798,10 +899,20 @@ document.addEventListener("DOMContentLoaded", () => {
     if (searchClear) {
       searchClear.onclick = () => {
         if (searchInput) { searchInput.value = ''; searchInput.focus(); }
+        dropdown.classList.remove("active");
+        dropdown.innerHTML = "";
         resetToHome();
         loadAllData();
       };
     }
+
+    document.addEventListener("click", (e) => {
+      if (searchContainer && !searchContainer.contains(e.target)) {
+        dropdown.classList.remove("active");
+      } else if (searchInput && searchInput.value.trim().length >= 3) {
+        dropdown.classList.add("active");
+      }
+    });
 
     // Genre Chips Setup
     const genres = [
@@ -830,15 +941,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Note: Vibe Mixer has been fully moved to its own page vibe-mixer.html to prevent DOM/API clashes
 
 
-    // Initialize Cozy Mode globally on all browsing pages
-    if (typeof CozyMode !== 'undefined') {
-      CozyMode.init();
-    }
 
-    // Initialize Character Battle Arena sidebar carousel on the homepage
-    if (typeof CharacterBattleArena !== 'undefined') {
-      CharacterBattleArena.init();
-    }
   });
 
   window.logout = function() {
@@ -1373,6 +1476,155 @@ document.addEventListener("DOMContentLoaded", () => {
 // =====================
 // SCHEDULE FUNCTIONALITY
 // =====================
+const notifiedAnimeIds = new Set();
+
+function updateCountdowns() {
+  const badges = document.querySelectorAll('.countdown-badge');
+  if (!badges.length) return;
+
+  const dayMap = {
+    'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3, 'thursday': 4, 'friday': 5, 'saturday': 6
+  };
+
+  // Get current JST time
+  const now = new Date();
+  const jstStr = now.toLocaleString("en-US", { timeZone: "Asia/Tokyo" });
+  const nowJST = new Date(jstStr);
+
+  badges.forEach(badge => {
+    const targetDayName = badge.getAttribute('data-broadcast-day');
+    const targetTimeStr = badge.getAttribute('data-broadcast-time');
+    const malId = badge.getAttribute('data-mal-id');
+    if (!targetTimeStr) return;
+
+    const targetDay = dayMap[targetDayName];
+    const [hours, minutes] = targetTimeStr.split(':').map(Number);
+
+    // Create target date in JST
+    let targetDate = new Date(nowJST);
+    targetDate.setHours(hours, minutes, 0, 0);
+
+    // Calculate days until next airing
+    let dayDiff = targetDay - nowJST.getDay();
+    if (dayDiff < 0) {
+      dayDiff += 7;
+    } else if (dayDiff === 0) {
+      if (nowJST.getTime() > targetDate.getTime()) {
+        dayDiff = 7;
+      }
+    }
+
+    targetDate.setDate(targetDate.getDate() + dayDiff);
+
+    const diffMs = targetDate.getTime() - nowJST.getTime();
+
+    // If within last 30 minutes, or currently airing (assume episode length is 30 mins)
+    if (diffMs <= 0 && diffMs > -30 * 60 * 1000) {
+      badge.innerHTML = `<span style="color: #00e676; font-weight: 700;">🔴 Airing Now</span>`;
+      
+      // Trigger Notification if matched and watchlisted
+      if (diffMs > -10000 && malId) { // Check within first 10 seconds of airing
+        const titleEl = badge.parentElement.querySelector('.schedule-title');
+        const imgEl = badge.parentElement.parentElement.querySelector('.schedule-img');
+        const animeTitle = titleEl ? titleEl.innerText : 'Your favorite anime';
+        const imgUrl = imgEl ? imgEl.src : '';
+        checkAndTriggerAiringNotification(malId, animeTitle, imgUrl);
+      }
+    } else if (diffMs <= -30 * 60 * 1000) {
+      badge.innerText = "Aired today";
+    } else {
+      // Future
+      const totalSeconds = Math.floor(diffMs / 1000);
+      const totalMinutes = Math.floor(totalSeconds / 60);
+      const totalHours = Math.floor(totalMinutes / 60);
+      const daysLeft = Math.floor(totalHours / 24);
+
+      const hoursLeft = totalHours % 24;
+      const minutesLeft = totalMinutes % 60;
+      const secondsLeft = totalSeconds % 60;
+
+      let parts = [];
+      if (daysLeft > 0) parts.push(`${daysLeft}d`);
+      if (hoursLeft > 0 || daysLeft > 0) parts.push(`${hoursLeft}h`);
+      parts.push(`${minutesLeft}m`);
+      if (daysLeft === 0 && hoursLeft === 0) {
+        parts.push(`${secondsLeft}s`);
+      }
+
+      badge.innerHTML = `⏳ Airing in <span style="color: white; font-weight: 600;">${parts.join(' ')}</span>`;
+    }
+  });
+}
+
+function checkAndTriggerAiringNotification(malId, title, imgUrl) {
+  if (Notification.permission !== 'granted' || localStorage.getItem('anicrunch_alerts') !== 'enabled') return;
+  if (notifiedAnimeIds.has(malId)) return;
+
+  // Read watchlisted IDs from local cache
+  const watchlist = JSON.parse(localStorage.getItem('anicrunch_user_watchlist') || '[]');
+  const isWatchlisted = watchlist.some(item => Number(item.anime_id) === Number(malId) && (item.status === 'watching' || item.status === 'plan'));
+
+  if (isWatchlisted) {
+    notifiedAnimeIds.add(malId);
+    try {
+      new Notification(`📺 Now Airing: ${title}`, {
+        body: `A new episode is airing now in Japan!`,
+        icon: imgUrl || '/favicon.png'
+      });
+    } catch (e) {
+      console.warn("Notification trigger failed:", e);
+    }
+  }
+}
+
+// Bind Airing Alerts Button on schedule.html load
+function initScheduleAlertsToggle() {
+  const toggleBtn = document.getElementById('alertToggleBtn');
+  if (!toggleBtn) return;
+
+  if ('Notification' in window) {
+    toggleBtn.style.display = 'inline-block';
+    
+    // Update button text on initial state
+    const currentPref = localStorage.getItem('anicrunch_alerts');
+    if (Notification.permission === 'granted' && currentPref === 'enabled') {
+      toggleBtn.innerText = '🔔 Alerts Enabled';
+      toggleBtn.style.background = 'var(--success)';
+      toggleBtn.style.color = '#fff';
+    } else {
+      toggleBtn.innerText = '🔔 Get Airing Alerts';
+      toggleBtn.style.background = 'rgba(255,255,255,0.05)';
+      toggleBtn.style.color = 'var(--muted)';
+    }
+
+    toggleBtn.onclick = async () => {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        const isEnabled = localStorage.getItem('anicrunch_alerts') === 'enabled';
+        if (isEnabled) {
+          localStorage.setItem('anicrunch_alerts', 'disabled');
+          toggleBtn.innerText = '🔔 Get Airing Alerts';
+          toggleBtn.style.background = 'rgba(255,255,255,0.05)';
+          toggleBtn.style.color = 'var(--muted)';
+        } else {
+          localStorage.setItem('anicrunch_alerts', 'enabled');
+          toggleBtn.innerText = '🔔 Alerts Enabled';
+          toggleBtn.style.background = 'var(--success)';
+          toggleBtn.style.color = '#fff';
+          try {
+            new Notification("🔔 Notifications Enabled!", {
+              body: "You'll be alerted when watchlisted anime air!",
+              icon: '/favicon.png'
+            });
+          } catch (e) {}
+        }
+      } else {
+        alert("Please enable notifications in your browser settings to receive airing alerts.");
+      }
+    };
+  }
+}
+
 async function loadSchedule(day) {
   const grid = getElement('scheduleGrid');
   const buttons = document.querySelectorAll('.day-btn');
@@ -1391,6 +1643,19 @@ async function loadSchedule(day) {
   });
   
   grid.innerHTML = `<div class="loading active">Fetching ${normalizedDay}'s anime...</div>`;
+
+  // Fetch watchlist to cache it in localStorage for alerts check
+  fetch(`${API_BASE}/api/watchlist`, { credentials: "include" })
+    .then(r => r.json())
+    .then(items => {
+      if (Array.isArray(items)) {
+        localStorage.setItem('anicrunch_user_watchlist', JSON.stringify(items));
+      }
+    })
+    .catch(() => {});
+
+  // Initialize alert toggle button
+  initScheduleAlertsToggle();
 
   try {
     const data = await queuedFetch(`https://api.jikan.moe/v4/schedules?filter=${normalizedDay}&sfw=true`);
@@ -1418,6 +1683,7 @@ async function loadSchedule(day) {
         <img src="${imgUrl}" class="schedule-img" alt="${getTitle(anime)}" loading="lazy">
         <div class="schedule-info">
           <div class="time-badge">⏰ ${anime.broadcast?.time || 'TBA'} JST</div>
+          ${anime.broadcast?.time ? `<div class="countdown-badge" data-broadcast-day="${normalizedDay}" data-broadcast-time="${anime.broadcast.time}" data-mal-id="${anime.mal_id}" style="font-size: 11.5px; color: var(--muted); margin-top: 4px;">⏳ Calculating...</div>` : ''}
           <div class="schedule-title">${getTitle(anime)}</div>
           <div class="schedule-meta">${(anime.genres || []).slice(0, 2).map(g => g.name).join(', ') || 'N/A'}</div>
         </div>
@@ -1425,6 +1691,14 @@ async function loadSchedule(day) {
       fragment.appendChild(div);
     });
     grid.replaceChildren(fragment);
+
+    // Setup active tickers
+    if (window.scheduleCountdownInterval) {
+      clearInterval(window.scheduleCountdownInterval);
+    }
+    updateCountdowns();
+    window.scheduleCountdownInterval = setInterval(updateCountdowns, 1000);
+
   } catch (e) { 
     console.error('Schedule error:', e); 
     grid.innerHTML = '<div class="error-state">Failed to load schedule</div>'; 
@@ -1696,659 +1970,4 @@ function showToast(message, type = 'info') {
 }
 window.showToast = showToast;
 
-// ==========================================
-// FEATURE 4: COZY / STUDY MODE ENGINE
-// ==========================================
-const CozyMode = {
-  active: false,
-  mode: 'sakura', // sakura, snow, rain, off
-  volume: 0.5,
-  audio: null,
-  canvas: null,
-  ctx: null,
-  animationFrameId: null,
-  particles: [],
-  maxParticles: 45,
-  ripples: [],
-
-  init() {
-    // 1. Inject Canvas Backdrop
-    this.canvas = document.createElement('canvas');
-    this.canvas.id = 'cozyCanvas';
-    document.body.prepend(this.canvas);
-    this.ctx = this.canvas.getContext('2d');
-
-    // 2. Inject Floating Control Deck Widget
-    const widget = document.createElement('div');
-    widget.className = 'cozy-widget';
-    widget.innerHTML = `
-      <button class="cozy-toggle-btn" id="cozyToggleBtn" aria-label="Toggle Cozy Mode">
-        <span>🍵</span> <span>Cozy Mode</span>
-        <span class="music-indicator"></span>
-      </button>
-      <div class="cozy-deck-card" id="cozyDeckCard">
-        <div class="cozy-deck-header">
-          <h3><span>🍵</span> Cozy Ambient Deck</h3>
-          <button class="cozy-close-btn" id="cozyCloseBtn" aria-label="Close panel">✕</button>
-        </div>
-        
-        <div class="cozy-deck-section">
-          <label>Lofi Study Radio</label>
-          <div class="cozy-audio-controls">
-            <button class="cozy-play-btn" id="cozyPlayBtn" aria-label="Play Music">▶</button>
-            <div class="cozy-volume-wrapper">
-              <div class="cozy-volume-row">
-                <span>Volume</span>
-                <span id="cozyVolumeVal">50%</span>
-              </div>
-              <input type="range" class="cozy-volume-slider" id="cozyVolumeSlider" min="0" max="100" value="50">
-            </div>
-          </div>
-          <div class="cozy-visualizer-box">
-            <span>Visualizer</span>
-            <div class="equalizer-container" id="cozyEqualizer">
-              <div class="equalizer-bar"></div>
-              <div class="equalizer-bar"></div>
-              <div class="equalizer-bar"></div>
-              <div class="equalizer-bar"></div>
-              <div class="equalizer-bar"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="cozy-deck-section">
-          <label>Backdrop Ambient</label>
-          <div class="cozy-chips-container">
-            <button class="cozy-chip" data-mode="sakura">🌸 Sakura</button>
-            <button class="cozy-chip" data-mode="snow">❄️ Snow</button>
-            <button class="cozy-chip" data-mode="rain">🌧️ Rain</button>
-            <button class="cozy-chip" data-mode="off">🚫 Off</button>
-          </div>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(widget);
-
-    // 3. Set Up Audio Object (using FreeCodeCamp stream with fallback)
-    this.audio = new Audio('https://coderadio-admin.freecodecamp.org/radio/8010/radio.mp3');
-    this.audio.crossOrigin = 'anonymous';
-
-    // 4. Load Saved State from localStorage
-    const saved = localStorage.getItem('anicrunch_cozy_settings');
-    if (saved) {
-      try {
-        const settings = JSON.parse(saved);
-        this.active = !!settings.active;
-        this.mode = settings.mode || 'sakura';
-        this.volume = settings.volume !== undefined ? settings.volume : 0.5;
-      } catch (e) {
-        console.warn('Stale cozy settings');
-      }
-    }
-
-    // 5. Apply Volume
-    this.audio.volume = this.volume;
-    const volSlider = document.getElementById('cozyVolumeSlider');
-    const volVal = document.getElementById('cozyVolumeVal');
-    if (volSlider) volSlider.value = Math.round(this.volume * 100);
-    if (volVal) volVal.textContent = `${Math.round(this.volume * 100)}%`;
-
-    // 6. Setup Canvas Dimensions & Resize Handler
-    this.resizeCanvas();
-    window.addEventListener('resize', () => this.resizeCanvas());
-
-    // 7. Bind Actions & Event Listeners
-    this.setupListeners();
-
-    // 8. If active, trigger environment right away (Audio remains paused until user interaction or play button tap)
-    if (this.active) {
-      document.body.classList.add('cozy-mode-active');
-      this.updateChipState();
-      this.startParticleEngine();
-      
-      // Attempt autoplay. If blocked by browser, it fails silently, keeping play state in "paused" visual state.
-      // We show a cute little toast reminder to help them start the vibes.
-      setTimeout(() => {
-        if (this.active && this.audio.paused) {
-          showToast('🍵 Cozy Mode Active! Tap Cozy Deck to play study lofi.', 'info');
-        }
-      }, 2000);
-    } else {
-      this.mode = 'off';
-      this.updateChipState();
-    }
-  },
-
-  resizeCanvas() {
-    if (this.canvas) {
-      this.canvas.width = window.innerWidth;
-      this.canvas.height = window.innerHeight;
-    }
-  },
-
-  setupListeners() {
-    const toggleBtn = document.getElementById('cozyToggleBtn');
-    const closeBtn = document.getElementById('cozyCloseBtn');
-    const deckCard = document.getElementById('cozyDeckCard');
-    const playBtn = document.getElementById('cozyPlayBtn');
-    const volSlider = document.getElementById('cozyVolumeSlider');
-    const volVal = document.getElementById('cozyVolumeVal');
-    
-    // Toggle Deck Expanded Panel
-    toggleBtn.onclick = (e) => {
-      e.stopPropagation();
-      deckCard.classList.toggle('expanded');
-    };
-
-    closeBtn.onclick = (e) => {
-      e.stopPropagation();
-      deckCard.classList.remove('expanded');
-    };
-
-    // Close deck on outside click
-    document.addEventListener('click', (e) => {
-      if (!deckCard.contains(e.target) && !toggleBtn.contains(e.target)) {
-        deckCard.classList.remove('expanded');
-      }
-    });
-
-    // Audio Play/Pause Trigger
-    playBtn.onclick = () => {
-      if (this.audio.paused) {
-        this.playAudio();
-      } else {
-        this.pauseAudio();
-      }
-    };
-
-    // Audio Error Handling - Failsafe backup URL just in case
-    this.audio.onerror = () => {
-      console.warn('Lofi radio stream interrupted, retrying or falling back');
-      this.audio.src = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'; // Backup stream
-      if (this.active) this.audio.play().catch(() => {});
-    };
-
-    // Volume Slider Handler
-    volSlider.oninput = (e) => {
-      const vol = e.target.value / 100;
-      this.volume = vol;
-      this.audio.volume = vol;
-      volVal.textContent = `${e.target.value}%`;
-      this.saveSettings();
-    };
-
-    // Ambient Selector Chips
-    const chips = document.querySelectorAll('.cozy-chip');
-    chips.forEach(chip => {
-      chip.onclick = () => {
-        const selectedMode = chip.getAttribute('data-mode');
-        this.changeMode(selectedMode);
-      };
-    });
-  },
-
-  playAudio() {
-    this.audio.play()
-      .then(() => {
-        const playBtn = document.getElementById('cozyPlayBtn');
-        const toggleBtn = document.getElementById('cozyToggleBtn');
-        const eq = document.getElementById('cozyEqualizer');
-        if (playBtn) playBtn.textContent = '⏸';
-        if (toggleBtn) toggleBtn.classList.add('playing');
-        if (eq) eq.classList.add('playing');
-        
-        // Cozy Mode is active if audio plays
-        this.active = true;
-        document.body.classList.add('cozy-mode-active');
-        
-        // If backdrop was off, default to Sakura
-        if (this.mode === 'off') {
-          this.changeMode('sakura');
-        }
-        
-        this.saveSettings();
-      })
-      .catch(err => {
-        console.error('Audio play blocked:', err);
-        showToast('Click play again to start lofi stream!', 'warning');
-      });
-  },
-
-  pauseAudio() {
-    this.audio.pause();
-    const playBtn = document.getElementById('cozyPlayBtn');
-    const toggleBtn = document.getElementById('cozyToggleBtn');
-    const eq = document.getElementById('cozyEqualizer');
-    if (playBtn) playBtn.textContent = '▶';
-    if (toggleBtn) toggleBtn.classList.remove('playing');
-    if (eq) eq.classList.remove('playing');
-    this.saveSettings();
-  },
-
-  changeMode(selectedMode) {
-    this.mode = selectedMode;
-    this.updateChipState();
-    this.saveSettings();
-
-    if (selectedMode === 'off') {
-      document.body.classList.remove('cozy-mode-active');
-      this.stopParticleEngine();
-      // Keep playing audio if active, just remove visual drift
-    } else {
-      this.active = true;
-      document.body.classList.add('cozy-mode-active');
-      this.startParticleEngine();
-    }
-  },
-
-  updateChipState() {
-    const chips = document.querySelectorAll('.cozy-chip');
-    chips.forEach(c => {
-      if (c.getAttribute('data-mode') === this.mode) {
-        c.classList.add('active');
-      } else {
-        c.classList.remove('active');
-      }
-    });
-  },
-
-  saveSettings() {
-    localStorage.setItem('anicrunch_cozy_settings', JSON.stringify({
-      active: this.active,
-      mode: this.mode,
-      volume: this.volume
-    }));
-  },
-
-  startParticleEngine() {
-    // Prevent double drawing loops
-    if (this.animationFrameId) {
-      cancelAnimationFrame(this.animationFrameId);
-    }
-    
-    // Seed particles
-    this.particles = [];
-    this.ripples = [];
-    for (let i = 0; i < this.maxParticles; i++) {
-      this.particles.push(this.createParticle(true));
-    }
-
-    const draw = () => {
-      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-      
-      if (this.mode === 'sakura') {
-        this.drawSakura();
-      } else if (this.mode === 'snow') {
-        this.drawSnow();
-      } else if (this.mode === 'rain') {
-        this.drawRain();
-      }
-
-      this.animationFrameId = requestAnimationFrame(draw);
-    };
-
-    draw();
-  },
-
-  stopParticleEngine() {
-    if (this.animationFrameId) {
-      cancelAnimationFrame(this.animationFrameId);
-      this.animationFrameId = null;
-    }
-    if (this.ctx && this.canvas) {
-      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    }
-  },
-
-  createParticle(randomY = false) {
-    const w = this.canvas.width;
-    const h = this.canvas.height;
-
-    const y = randomY ? Math.random() * h : -20;
-    const x = Math.random() * w;
-
-    if (this.mode === 'sakura') {
-      return {
-        x,
-        y,
-        size: Math.random() * 8 + 6,
-        speedY: Math.random() * 1.2 + 0.8,
-        speedX: Math.random() * 0.8 - 0.4,
-        oscSpeed: Math.random() * 0.02 + 0.01,
-        oscRange: Math.random() * 15 + 10,
-        angle: Math.random() * 360,
-        spin: Math.random() * 2 - 1,
-        color: `rgba(255, ${Math.floor(Math.random() * 40 + 175)}, ${Math.floor(Math.random() * 40 + 190)}, ${Math.random() * 0.4 + 0.4})`
-      };
-    } else if (this.mode === 'snow') {
-      return {
-        x,
-        y,
-        size: Math.random() * 3 + 1.5,
-        speedY: Math.random() * 0.8 + 0.5,
-        speedX: Math.random() * 0.4 - 0.2,
-        oscSpeed: Math.random() * 0.01 + 0.005,
-        oscRange: Math.random() * 8 + 4,
-        opacity: Math.random() * 0.5 + 0.4
-      };
-    } else if (this.mode === 'rain') {
-      return {
-        x,
-        y,
-        len: Math.random() * 25 + 15,
-        speedY: Math.random() * 12 + 10,
-        speedX: -2, // Windy slant
-        opacity: Math.random() * 0.15 + 0.08
-      };
-    }
-  },
-
-  drawSakura() {
-    this.particles.forEach((p, index) => {
-      p.y += p.speedY;
-      p.x += p.speedX + Math.sin(p.y * p.oscSpeed) * 0.5;
-      p.angle += p.spin;
-
-      // Wrap-around boundary checking
-      if (p.y > this.canvas.height + 20 || p.x > this.canvas.width + 20 || p.x < -20) {
-        this.particles[index] = this.createParticle(false);
-        return;
-      }
-
-      this.ctx.save();
-      this.ctx.translate(p.x, p.y);
-      this.ctx.rotate((p.angle * Math.PI) / 180);
-      this.ctx.beginPath();
-      
-      // Draw sakura petal outline
-      this.ctx.ellipse(0, 0, p.size, p.size / 2, 0, 0, 2 * Math.PI);
-      this.ctx.fillStyle = p.color;
-      this.ctx.fill();
-      this.ctx.restore();
-    });
-  },
-
-  drawSnow() {
-    this.particles.forEach((p, index) => {
-      p.y += p.speedY;
-      p.x += p.speedX + Math.sin(p.y * p.oscSpeed) * 0.3;
-
-      if (p.y > this.canvas.height + 10) {
-        this.particles[index] = this.createParticle(false);
-        return;
-      }
-
-      this.ctx.beginPath();
-      this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      this.ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
-      this.ctx.fill();
-    });
-  },
-
-  drawRain() {
-    // 1. Draw Rain Streaks
-    this.particles.forEach((p, index) => {
-      p.y += p.speedY;
-      p.x += p.speedX;
-
-      if (p.y > this.canvas.height - 10) {
-        // Trigger ripple splash
-        if (Math.random() < 0.4) {
-          this.ripples.push({
-            x: p.x,
-            y: this.canvas.height - Math.random() * 15,
-            radius: 1,
-            maxRadius: Math.random() * 15 + 10,
-            opacity: 0.6
-          });
-        }
-        this.particles[index] = this.createParticle(false);
-        return;
-      }
-
-      this.ctx.beginPath();
-      this.ctx.moveTo(p.x, p.y);
-      this.ctx.lineTo(p.x + p.speedX * 0.5, p.y + p.len);
-      this.ctx.strokeStyle = `rgba(165, 180, 252, ${p.opacity})`;
-      this.ctx.lineWidth = 1.2;
-      this.ctx.stroke();
-    });
-
-    // 2. Draw & Grow Splash Ripples
-    this.ripples.forEach((r, idx) => {
-      r.radius += 0.8;
-      r.opacity -= 0.03;
-
-      if (r.opacity <= 0 || r.radius >= r.maxRadius) {
-        this.ripples.splice(idx, 1);
-        return;
-      }
-
-      this.ctx.beginPath();
-      this.ctx.ellipse(r.x, r.y, r.radius, r.radius * 0.3, 0, 0, 2 * Math.PI);
-      this.ctx.strokeStyle = `rgba(129, 140, 248, ${r.opacity})`;
-      this.ctx.lineWidth = 0.8;
-      this.ctx.stroke();
-    });
-  }
-};
-window.CozyMode = CozyMode;
-
-// ==========================================
-// FEATURE 5: CHARACTER BATTLE ARENA
-// ==========================================
-const CharacterBattleArena = {
-  currentMatchIndex: 0,
-  matchups: [
-    {
-      id: 'match1',
-      title: 'The Battle of the Strongest',
-      charA: { id: 124381, name: 'Satoru Gojo', anime: 'Jujutsu Kaisen', fallbackImage: 'https://cdn.myanimelist.net/images/characters/12/424342.jpg', voteSeed: 56 },
-      charB: { id: 161403, name: 'Ryomen Sukuna', anime: 'Jujutsu Kaisen', fallbackImage: 'https://cdn.myanimelist.net/images/characters/3/492160.jpg', voteSeed: 44 }
-    },
-    {
-      id: 'match2',
-      title: 'Legend of the Shonen Kings',
-      charA: { id: 246, name: 'Son Goku', anime: 'Dragon Ball Z', fallbackImage: 'https://cdn.myanimelist.net/images/characters/9/131317.jpg', voteSeed: 51 },
-      charB: { id: 67, name: 'Monkey Luffy', anime: 'One Piece', fallbackImage: 'https://cdn.myanimelist.net/images/characters/9/310307.jpg', voteSeed: 49 }
-    },
-    {
-      id: 'match3',
-      title: 'The Eternal Rivals',
-      charA: { id: 17, name: 'Naruto Uzumaki', anime: 'Naruto', fallbackImage: 'https://cdn.myanimelist.net/images/characters/9/131319.jpg', voteSeed: 53 },
-      charB: { id: 13, name: 'Sasuke Uchiha', anime: 'Naruto', fallbackImage: 'https://cdn.myanimelist.net/images/characters/9/131311.jpg', voteSeed: 47 }
-    }
-  ],
-  votes: {},
-
-  init() {
-    const container = document.getElementById('characterBattleArena');
-    if (!container) return; // Sidebar Battle block is only on index.html homepage
-
-    // Load Votes from localStorage
-    const savedVotes = localStorage.getItem('anicrunch_votes');
-    if (savedVotes) {
-      try { this.votes = JSON.parse(savedVotes); } catch(e) {}
-    }
-
-    // Set Navigation Listeners
-    const prevBtn = document.getElementById('battlePrevBtn');
-    const nextBtn = document.getElementById('battleNextBtn');
-    const revoteBtn = document.getElementById('battleRevoteBtn');
-
-    if (prevBtn) {
-      prevBtn.onclick = () => {
-        if (this.currentMatchIndex > 0) {
-          this.currentMatchIndex--;
-          this.renderCurrentMatch();
-        }
-      };
-    }
-
-    if (nextBtn) {
-      nextBtn.onclick = () => {
-        if (this.currentMatchIndex < this.matchups.length - 1) {
-          this.currentMatchIndex++;
-          this.renderCurrentMatch();
-        }
-      };
-    }
-
-    if (revoteBtn) {
-      revoteBtn.onclick = () => {
-        this.resetVote();
-      };
-    }
-
-    // Load dynamic API resources in background and render
-    this.renderCurrentMatch();
-    this.preloadMatchupAvatars();
-  },
-
-  async renderCurrentMatch() {
-    const container = document.getElementById('characterBattleArena');
-    if (!container) return;
-
-    const matchup = this.matchups[this.currentMatchIndex];
-    const userVote = this.votes[matchup.id]; // 'left' or 'right' or undefined
-
-    // Update Footer Buttons & Nav Labels
-    const prevBtn = document.getElementById('battlePrevBtn');
-    const nextBtn = document.getElementById('battleNextBtn');
-    const indicator = document.getElementById('battleIndicator');
-    const revoteBtn = document.getElementById('battleRevoteBtn');
-
-    if (prevBtn) prevBtn.disabled = this.currentMatchIndex === 0;
-    if (nextBtn) nextBtn.disabled = this.currentMatchIndex === this.matchups.length - 1;
-    if (indicator) indicator.textContent = `Match ${this.currentMatchIndex + 1} of ${this.matchups.length}`;
-    if (revoteBtn) revoteBtn.style.display = userVote ? 'block' : 'none';
-
-    // Set loading visual opacity
-    container.style.opacity = '0.5';
-
-    // Load details (from Jikan with fallback to local)
-    const [charADetails, charBDetails] = await Promise.all([
-      this.fetchCharacterDetails(matchup.charA),
-      this.fetchCharacterDetails(matchup.charB)
-    ]);
-
-    container.style.opacity = '1';
-    container.innerHTML = `
-      <div class="battle-char-card vote-left ${userVote ? 'voted' : ''} ${userVote === 'left' ? 'user-choice' : ''}" id="btnVoteLeft">
-        <img src="${charADetails.image}" alt="${charADetails.name}">
-        <div class="battle-percentage" id="percentLeft">--%</div>
-        <div class="battle-char-info">
-          <p class="battle-char-name">${charADetails.name}</p>
-          <p class="battle-char-anime">${charADetails.anime}</p>
-        </div>
-      </div>
-      
-      <div class="battle-vs-badge">VS</div>
-      
-      <div class="battle-char-card vote-right ${userVote ? 'voted' : ''} ${userVote === 'right' ? 'user-choice' : ''}" id="btnVoteRight">
-        <img src="${charBDetails.image}" alt="${charBDetails.name}">
-        <div class="battle-percentage" id="percentRight">--%</div>
-        <div class="battle-char-info">
-          <p class="battle-char-name">${charBDetails.name}</p>
-          <p class="battle-char-anime">${charBDetails.anime}</p>
-        </div>
-      </div>
-    `;
-
-    // Bind click actions if user hasn't voted yet
-    if (!userVote) {
-      document.getElementById('btnVoteLeft').onclick = () => this.castVote('left');
-      document.getElementById('btnVoteRight').onclick = () => this.castVote('right');
-      document.getElementById('battleResultsBar').classList.remove('visible');
-    } else {
-      this.animateResults(userVote);
-    }
-  },
-
-  async fetchCharacterDetails(char) {
-    try {
-      // Fetch from Jikan API and cache results
-      const apiData = await queuedFetch(`https://api.jikan.moe/v4/characters/${char.id}`, 'background');
-      if (apiData && apiData.images?.jpg?.image_url) {
-        return {
-          name: apiData.name_english || apiData.name || char.name,
-          anime: char.anime,
-          image: apiData.images.jpg.large_image_url || apiData.images.jpg.image_url || char.fallbackImage
-        };
-      }
-    } catch (e) {
-      console.warn(`Jikan failed for character ${char.id}, using fallback data.`);
-    }
-    
-    return {
-      name: char.name,
-      anime: char.anime,
-      image: char.fallbackImage
-    };
-  },
-
-  castVote(choice) {
-    const matchup = this.matchups[this.currentMatchIndex];
-    this.votes[matchup.id] = choice;
-    localStorage.setItem('anicrunch_votes', JSON.stringify(this.votes));
-
-    const winnerName = choice === 'left' ? matchup.charA.name : matchup.charB.name;
-    showToast(`⚔️ Vote cast for ${winnerName}!`, 'success');
-
-    this.renderCurrentMatch();
-  },
-
-  resetVote() {
-    const matchup = this.matchups[this.currentMatchIndex];
-    delete this.votes[matchup.id];
-    localStorage.setItem('anicrunch_votes', JSON.stringify(this.votes));
-    
-    showToast('⚔️ Vote reset! Cast a new choice.', 'info');
-    this.renderCurrentMatch();
-  },
-
-  animateResults(userVote) {
-    const matchup = this.matchups[this.currentMatchIndex];
-    
-    let baseLeft = matchup.charA.voteSeed;
-    let baseRight = matchup.charB.voteSeed;
-
-    if (userVote === 'left') {
-      baseLeft += 1;
-    } else {
-      baseRight += 1;
-    }
-
-    const total = baseLeft + baseRight;
-    const pctLeft = Math.round((baseLeft / total) * 100);
-    const pctRight = 100 - pctLeft;
-
-    const percentLeftEl = document.getElementById('percentLeft');
-    const percentRightEl = document.getElementById('percentRight');
-    if (percentLeftEl) percentLeftEl.textContent = `${pctLeft}%`;
-    if (percentRightEl) percentRightEl.textContent = `${pctRight}%`;
-
-    const resultsBar = document.getElementById('battleResultsBar');
-    const fillLeft = document.getElementById('battleFillLeft');
-    const fillRight = document.getElementById('battleFillRight');
-
-    if (resultsBar && fillLeft && fillRight) {
-      resultsBar.classList.add('visible');
-      requestAnimationFrame(() => {
-        fillLeft.style.width = `${pctLeft}%`;
-        fillRight.style.width = `${pctRight}%`;
-      });
-    }
-  },
-
-  preloadMatchupAvatars() {
-    this.matchups.forEach(m => {
-      const imgA = new Image();
-      imgA.src = m.charA.fallbackImage;
-      const imgB = new Image();
-      imgB.src = m.charB.fallbackImage;
-    });
-  }
-};
-window.CharacterBattleArena = CharacterBattleArena;
 

@@ -158,6 +158,7 @@
   <h1 onclick="location.href='/'" style="cursor:pointer; margin: 0; font-size: 24px; font-weight: bold; color: white;">anicrunch</h1>
   <div style="flex:1"></div>
   <a href="/watchlist.html" class="nav-link" style="color: var(--muted); margin-right: 20px; text-decoration: none;">Watchlist</a>
+  <a href="/quiz.html" class="nav-link" style="color: var(--muted); margin-right: 20px; text-decoration: none;">🏆 Trivia Arena</a>
   <div id="authArea"></div>
 </header>
 
@@ -174,11 +175,59 @@
       <div class="profile-info">
         <h1 id="usernameDisplay">Username</h1>
         <p class="profile-bio" id="bioDisplay">No bio set.</p>
-        <div class="stats-bar">
+        <div class="stats-bar" style="margin-top: 25px; flex-wrap: wrap;">
           <div class="stat-card">
             <div class="stat-icon">✅</div>
-            <div class="stat-info"><h3 id="statTotalWatched">0</h3><p>Total Completed</p></div>
+            <div class="stat-info"><h3 id="statTotalWatched">0</h3><p>Completed</p></div>
           </div>
+          <div class="stat-card">
+            <div class="stat-icon">⏱️</div>
+            <div class="stat-info"><h3 id="statHoursWatched">0</h3><p>Hours Watched</p></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">⭐</div>
+            <div class="stat-info"><h3 id="statMeanScore">0.0</h3><p>Mean Score</p></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🏷️</div>
+            <div class="stat-info"><h3 id="statFavGenre" style="font-size: 16px; font-weight: 700; color: white;">N/A</h3><p>Fav Genre</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="profile-settings" style="margin-top: 30px;">
+    <h2>📊 Watchlist Distribution</h2>
+    <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
+      <!-- Watching -->
+      <div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; font-weight: 600;">
+          <span style="color: #3b82f6;">📺 Watching</span>
+          <span id="distWatchingVal">0 shows</span>
+        </div>
+        <div style="width: 100%; height: 10px; background: rgba(255,255,255,0.05); border-radius: 99px; overflow: hidden; border: 1px solid var(--border);">
+          <div id="distWatchingBar" style="width: 0%; height: 100%; background: linear-gradient(135deg, #3b82f6, #1d4ed8); transition: width 0.8s ease-out; border-radius: 99px;"></div>
+        </div>
+      </div>
+      <!-- Completed -->
+      <div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; font-weight: 600;">
+          <span style="color: #10b981;">✅ Completed</span>
+          <span id="distCompletedVal">0 shows</span>
+        </div>
+        <div style="width: 100%; height: 10px; background: rgba(255,255,255,0.05); border-radius: 99px; overflow: hidden; border: 1px solid var(--border);">
+          <div id="distCompletedBar" style="width: 0%; height: 100%; background: linear-gradient(135deg, #10b981, #047857); transition: width 0.8s ease-out; border-radius: 99px;"></div>
+        </div>
+      </div>
+      <!-- Plan to Watch -->
+      <div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; font-weight: 600;">
+          <span style="color: #f59e0b;">📅 Plan to Watch</span>
+          <span id="distPlanVal">0 shows</span>
+        </div>
+        <div style="width: 100%; height: 10px; background: rgba(255,255,255,0.05); border-radius: 99px; overflow: hidden; border: 1px solid var(--border);">
+          <div id="distPlanBar" style="width: 0%; height: 100%; background: linear-gradient(135deg, #f59e0b, #b45309); transition: width 0.8s ease-out; border-radius: 99px;"></div>
         </div>
       </div>
     </div>
@@ -195,6 +244,15 @@
         <label for="bio">Bio (Optional)</label>
         <textarea id="bio" placeholder="Tell us about your favorite anime..."></textarea>
       </div>
+      <div class="form-group">
+        <label for="siteTheme">Website Theme</label>
+        <select id="siteTheme" style="width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-family: inherit;">
+          <option value="default" style="background:#1a1a2e; color:white;">Classic Midnight (Default)</option>
+          <option value="sakura" style="background:#1a1a2e; color:white;">🌸 Sakura Pink</option>
+          <option value="cyberpunk" style="background:#1a1a2e; color:white;">⚡ Neon Cyberpunk</option>
+          <option value="oled" style="background:#1a1a2e; color:white;">🖤 OLED Pure Black</option>
+        </select>
+      </div>
       <button type="submit" class="btn-save" id="saveBtn">Save Changes</button>
       <span id="saveStatus" style="margin-left: 15px; color: #00e676; display: none;">Saved!</span>
     </form>
@@ -202,7 +260,7 @@
 </div>
 
 <script>
-const API_BASE = location.hostname === "localhost" ? "" : "https://anicrunch-backend.onrender.com";
+window.API_BASE = (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname === "") ? "" : "https://anicrunch-backend.onrender.com";
 
 document.addEventListener("DOMContentLoaded", () => {
   const authArea = document.getElementById("authArea");
@@ -219,6 +277,12 @@ document.addEventListener("DOMContentLoaded", () => {
     })
     .catch(() => location.href = '/login.html');
 
+  const siteThemeSelect = document.getElementById('siteTheme');
+  const currentTheme = localStorage.getItem("anicrunch_theme") || "default";
+  if (siteThemeSelect) {
+    siteThemeSelect.value = currentTheme;
+  }
+
   window.logout = () => fetch(`${API_BASE}/api/logout`, { 
     method: "POST", 
     credentials: "include" 
@@ -232,6 +296,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
     const avatarUrl = document.getElementById('avatarUrl').value;
     const bio = document.getElementById('bio').value;
+    const theme = document.getElementById('siteTheme').value;
     
     try {
       const res = await fetch(`${API_BASE}/api/profile/update`, {
@@ -242,6 +307,15 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       
       if (res.ok) {
+        // Save and apply theme instantly
+        localStorage.setItem("anicrunch_theme", theme);
+        document.body.classList.remove('theme-sakura', 'theme-cyberpunk', 'theme-oled');
+        document.documentElement.classList.remove('theme-sakura', 'theme-cyberpunk', 'theme-oled');
+        if (theme !== 'default') {
+          document.body.classList.add(`theme-${theme}`);
+          document.documentElement.classList.add(`theme-${theme}`);
+        }
+
         document.getElementById('saveStatus').style.display = 'inline';
         setTimeout(() => document.getElementById('saveStatus').style.display = 'none', 3000);
         
@@ -282,7 +356,67 @@ async function loadProfile() {
       document.getElementById('bio').value = data.user.bio;
     }
     
-    document.getElementById('statTotalWatched').innerText = data.stats.totalWatched;
+    // Calculate Stats
+    const watchlist = data.watchlist || [];
+    let completedCount = 0;
+    let watchingCount = 0;
+    let planCount = 0;
+    let totalEpisodes = 0;
+    let totalScoresSum = 0;
+    let scoredItemsCount = 0;
+    
+    const genreCounts = {};
+    let favGenre = 'N/A';
+    let maxGenreCount = 0;
+    
+    watchlist.forEach(item => {
+      totalEpisodes += (item.progress || 0);
+      
+      if (item.status === 'completed') completedCount++;
+      else if (item.status === 'watching') watchingCount++;
+      else if (item.status === 'plan') planCount++;
+      
+      if (item.score && item.score > 0) {
+        totalScoresSum += item.score;
+        scoredItemsCount++;
+      }
+      
+      if (item.genres) {
+        item.genres.split(',').forEach(g => {
+          const name = g.trim();
+          if (!name) return;
+          genreCounts[name] = (genreCounts[name] || 0) + 1;
+          if (genreCounts[name] > maxGenreCount) {
+            maxGenreCount = genreCounts[name];
+            favGenre = name;
+          }
+        });
+      }
+    });
+    
+    const totalHours = ((totalEpisodes * 24) / 60).toFixed(1);
+    const meanScore = scoredItemsCount > 0 ? (totalScoresSum / scoredItemsCount).toFixed(1) : '0.0';
+    
+    // Render Stats
+    document.getElementById('statTotalWatched').innerText = completedCount;
+    document.getElementById('statHoursWatched').innerText = totalHours;
+    document.getElementById('statMeanScore').innerText = meanScore;
+    document.getElementById('statFavGenre').innerText = favGenre;
+    
+    // Render Distribution Bars
+    const totalItems = watchlist.length || 1;
+    const pWatching = (watchingCount / totalItems) * 100;
+    const pCompleted = (completedCount / totalItems) * 100;
+    const pPlan = (planCount / totalItems) * 100;
+    
+    document.getElementById('distWatchingBar').style.width = `${pWatching}%`;
+    document.getElementById('distWatchingVal').innerText = `${watchingCount} ${watchingCount === 1 ? 'show' : 'shows'} (${Math.round(pWatching)}%)`;
+    
+    document.getElementById('distCompletedBar').style.width = `${pCompleted}%`;
+    document.getElementById('distCompletedVal').innerText = `${completedCount} ${completedCount === 1 ? 'show' : 'shows'} (${Math.round(pCompleted)}%)`;
+    
+    document.getElementById('distPlanBar').style.width = `${pPlan}%`;
+    document.getElementById('distPlanVal').innerText = `${planCount} ${planCount === 1 ? 'show' : 'shows'} (${Math.round(pPlan)}%)`;
     
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('profileContent').style.display = 'block';

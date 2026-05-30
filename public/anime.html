@@ -369,6 +369,7 @@
 <header style="padding: 20px 40px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; background: rgba(0,0,0,0.3); backdrop-filter: blur(10px);">
   <h1 onclick="location.href='/'" style="margin:0; font-size:24px; cursor:pointer; color:white;">anicrunch</h1>
   <div style="flex:1"></div>
+  <a href="/quiz.html" class="nav-link" style="color: var(--muted); margin-right: 20px; text-decoration: none; font-size: 14px; font-weight: 600;">🏆 Trivia Arena</a>
   <a href="/" class="btn btn-secondary" style="padding: 8px 16px;">← Home</a>
 </header>
 
@@ -473,8 +474,17 @@
 
 <script>
 // 🔥 Logic - GLOBAL API BASE DEFINITION
-const API_BASE = location.hostname === "localhost" ? "" : "https://anicrunch-backend.onrender.com";
-const animeId = new URLSearchParams(location.search).get('id');
+window.API_BASE = (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname === "") ? "" : "https://anicrunch-backend.onrender.com";
+let animeId = new URLSearchParams(location.search).get('id');
+if (!animeId) {
+  const pathParts = window.location.pathname.split('/');
+  const lastPart = pathParts[pathParts.length - 1];
+  if (lastPart && lastPart.includes('-')) {
+    animeId = lastPart.split('-')[0];
+  } else if (lastPart && !isNaN(lastPart) && lastPart.trim() !== '') {
+    animeId = lastPart;
+  }
+}
 let trailerId = null;
 
 // =====================
@@ -518,12 +528,15 @@ but struggles later under its own popularity.
 At its best, it still captures what makes hero stories inspiring.`
 };
 
+let loadedAnimeData = null;
+
 if (!animeId) location.href = '/';
 
 async function load() {
   try {
     const res = await fetch(`https://api.jikan.moe/v4/anime/${animeId}`);
     const { data } = await res.json();
+    loadedAnimeData = data;
     render(data);
     loadExtras();
     checkWatchlistStatus();
@@ -676,7 +689,11 @@ document.getElementById('watchlistBtn').onclick = async function() {
       method: 'POST', 
       headers: {'Content-Type': 'application/json'},
       credentials: 'include', // 🔥 REQUIRED for cookies
-      body: JSON.stringify({animeId: Number(animeId)})
+      body: JSON.stringify({
+        animeId: Number(animeId),
+        genres: loadedAnimeData?.genres?.map(g => g.name).join(','),
+        title: loadedAnimeData?.title_english || loadedAnimeData?.title
+      })
     });
 
     if (res.ok) {

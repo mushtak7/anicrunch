@@ -152,6 +152,7 @@
     <a href="/recent-episodes.html" class="nav-link"><span>🆕</span> <span>New Episodes</span></a>
     <a href="/schedule.html" class="nav-link"><span>📅</span> <span>Schedule</span></a>
     <a href="/vibe-mixer.html" class="nav-link"><span>🧪</span> <span>Vibe Mixer</span></a>
+    <a href="/quiz.html" class="nav-link"><span>🏆</span> <span>Trivia Arena</span></a>
     <button onclick="spinWheel()" class="btn-random" aria-label="Random anime">
       <span>🎲</span> <span>Random</span>
     </button>
@@ -374,30 +375,11 @@
   </section>
 
   <aside class="right">
-    <div class="block character-battle-block">
-      <div class="character-battle-header">
-        <h2>⚔️ Battle Arena</h2>
-        <span class="live-badge">LIVE</span>
-      </div>
-      <p class="editor-note" style="margin-bottom: 0;">Weekly Legendary Matchup! Tap a character to vote.</p>
-      
-      <div class="battle-arena-wrapper">
-        <div id="characterBattleArena" class="battle-arena-container">
-          <div class="loading" style="text-align: center; color: var(--muted); padding: 40px 0;">Loading Arena...</div>
-        </div>
-      </div>
-      
-      <div class="battle-results-bar" id="battleResultsBar">
-        <div class="battle-fill-left" id="battleFillLeft"></div>
-        <div class="battle-fill-right" id="battleFillRight"></div>
-      </div>
-      
-      <div class="battle-footer">
-        <button class="battle-nav-btn" id="battlePrevBtn" aria-label="Previous Matchup" disabled>‹</button>
-        <span class="battle-indicator" id="battleIndicator">Match 1 of 3</span>
-        <button class="battle-revote-btn" id="battleRevoteBtn">Revote</button>
-        <button class="battle-nav-btn" id="battleNextBtn" aria-label="Next Matchup">›</button>
-      </div>
+
+    <div class="block trivia-banner-block" style="background: linear-gradient(135deg, rgba(255, 60, 172, 0.08) 0%, rgba(120, 75, 160, 0.08) 100%); border: 1px solid rgba(255, 60, 172, 0.2); border-radius: 16px; padding: 22px; margin-bottom: 30px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2); cursor: pointer; transition: all 0.3s;" onclick="location.href='/quiz.html'">
+      <h3 style="margin: 0 0 8px 0; color: white; display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700;">🏆 Trivia Arena</h3>
+      <p style="margin: 0 0 16px 0; font-size: 12px; color: var(--muted); line-height: 1.5;">Test your anime knowledge, earn points, and dominate the daily leaderboard!</p>
+      <button style="width: 100%; padding: 10px; background: var(--gradient); border: none; border-radius: 8px; color: white; font-weight: 700; cursor: pointer; font-size: 13px; box-shadow: 0 4px 12px rgba(255, 60, 172, 0.25);">Play Today's Quiz</button>
     </div>
 
     <h2>🏆 Top Anime</h2>

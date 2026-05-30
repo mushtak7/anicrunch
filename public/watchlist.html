@@ -474,6 +474,7 @@
 <header>
   <h1 onclick="location.href='/'" style="cursor:pointer">anicrunch</h1>
   <div style="flex:1"></div>
+  <a href="/quiz.html" class="nav-link" style="color: var(--muted); margin-right: 20px; text-decoration: none;">🏆 Trivia Arena</a>
   <div id="authArea"></div>
 </header>
 
@@ -522,7 +523,7 @@
 // =====================
 // API CONFIGURATION (FIXED)
 // =====================
-const API_BASE = location.hostname === "localhost" ? "" : "https://anicrunch-backend.onrender.com";
+window.API_BASE = (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname === "") ? "" : "https://anicrunch-backend.onrender.com";
 
 // =====================
 // STATE MANAGEMENT
@@ -682,7 +683,9 @@ window.changeProgress = function(id, amount) {
     body: JSON.stringify({ 
       animeId: id, 
       progress: newEp, 
-      status: anime.userStatus 
+      status: anime.userStatus,
+      genres: anime.genres?.map(g => g.name).join(','),
+      title: anime.title
     })
   }).catch(e => console.error("Sync error:", e));
   
@@ -709,7 +712,12 @@ window.updateAnimeStatus = function(id, newStatus) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify({ animeId: id, status: newStatus })
+    body: JSON.stringify({ 
+      animeId: id, 
+      status: newStatus,
+      genres: anime ? anime.genres?.map(g => g.name).join(',') : '',
+      title: anime ? anime.title : ''
+    })
   }).catch(e => console.error("Sync error:", e));
   updateStats();
   applyFilter(currentFilter, document.getElementById('searchInput').value);
