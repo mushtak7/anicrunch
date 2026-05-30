@@ -177,96 +177,251 @@ async function initDB() {
     
     console.log("✅ Database schema verified/updated");
 
-    // Auto-seed quiz table if empty
+    // Auto-seed quiz table if empty or has fewer questions than our curated list
     const checkQuiz = await pool.query("SELECT COUNT(*) FROM quizzes");
-    if (parseInt(checkQuiz.rows[0].count, 10) === 0) {
-      console.log("🌱 Seeding trivia quizzes...");
-      const sampleQuizzes = [
-        {
-          question: "Who is the main protagonist of 'One Piece'?",
-          options: ["Roronoa Zoro", "Monkey D. Luffy", "Vinsmoke Sanji", "Portgas D. Ace"],
-          correct_option_index: 1
-        },
-        {
-          question: "In 'Naruto', what is the name of the nine-tailed fox sealed inside Naruto?",
-          options: ["Gyuki", "Shukaku", "Kurama", "Matatabi"],
-          correct_option_index: 2
-        },
-        {
-          question: "Which anime features a notebook that can kill anyone whose name is written in it?",
-          options: ["Bleach", "Death Note", "Code Geass", "Attack on Titan"],
-          correct_option_index: 1
-        },
-        {
-          question: "What is the name of the giant wall protecting humanity in 'Attack on Titan'?",
-          options: ["Wall Maria", "Wall Sina", "Wall Rose", "All of the above"],
-          correct_option_index: 3
-        },
-        {
-          question: "In 'Fullmetal Alchemist', what is the ultimate goal of the Elric brothers?",
-          options: ["Become State Alchemists", "Find the Philosopher's Stone", "Defeat the Homunculi", "Revive their father"],
-          correct_option_index: 1
-        },
-        {
-          question: "Who is known as the 'One Punch Man'?",
-          options: ["Genos", "Mumen Rider", "Saitama", "Garou"],
-          correct_option_index: 2
-        },
-        {
-          question: "What is the name of the virtual world in the anime 'Sword Art Online'?",
-          options: ["Alfheim Online", "Aincrad", "Gun Gale Online", "Underworld"],
-          correct_option_index: 1
-        },
-        {
-          question: "In 'Demon Slayer', what breath style does Tanjiro Kamado originally use?",
-          options: ["Water Breathing", "Sun Breathing", "Flame Breathing", "Thunder Breathing"],
-          correct_option_index: 0
-        },
-        {
-          question: "Which anime features characters using 'Nen' as their primary power system?",
-          options: ["Yu Yu Hakusho", "Hunter x Hunter", "My Hero Academia", "Jujutsu Kaisen"],
-          correct_option_index: 1
-        },
-        {
-          question: "In 'Jujutsu Kaisen', who is the King of Curses whose fingers Yuji Itadori swallows?",
-          options: ["Ryomen Sukuna", "Mahito", "Suguru Geto", "Jogo"],
-          correct_option_index: 0
-        },
-        {
-          question: "What is the name of Goku's signature energy blast in 'Dragon Ball'?",
-          options: ["Spirit Bomb", "Kamehameha", "Special Beam Cannon", "Galick Gun"],
-          correct_option_index: 1
-        },
-        {
-          question: "In 'My Hero Academia', what is All Might's Quirk named?",
-          options: ["All for One", "One for All", "Explosion", "Half-Cold Half-Hot"],
-          correct_option_index: 1
-        },
-        {
-          question: "Which studio animated the movie 'Spirited Away'?",
-          options: ["Studio Trigger", "Studio Ghibli", "Madhouse", "MAPPA"],
-          correct_option_index: 1
-        },
-        {
-          question: "In 'Steins;Gate', what is the name of Okabe's time machine?",
-          options: ["Phone Microwave", "Time Leap Machine", "FG204", "Ibn 5100"],
-          correct_option_index: 0
-        },
-        {
-          question: "What is the primary sport played in the anime 'Haikyu!!'?",
-          options: ["Basketball", "Soccer", "Volleyball", "Tennis"],
-          correct_option_index: 2
-        }
-      ];
+    console.log(`📊 Quizzes table check: current count is ${checkQuiz.rows[0].count}`);
+    
+    console.log("🌱 Syncing trivia quizzes pool...");
+    const sampleQuizzes = [
+      {
+        question: "Who is the main protagonist of 'One Piece'?",
+        options: ["Roronoa Zoro", "Monkey D. Luffy", "Vinsmoke Sanji", "Portgas D. Ace"],
+        correct_option_index: 1
+      },
+      {
+        question: "In 'Naruto', what is the name of the nine-tailed fox sealed inside Naruto?",
+        options: ["Gyuki", "Shukaku", "Kurama", "Matatabi"],
+        correct_option_index: 2
+      },
+      {
+        question: "Which anime features a notebook that can kill anyone whose name is written in it?",
+        options: ["Bleach", "Death Note", "Code Geass", "Attack on Titan"],
+        correct_option_index: 1
+      },
+      {
+        question: "What is the name of the giant wall protecting humanity in 'Attack on Titan'?",
+        options: ["Wall Maria", "Wall Sina", "Wall Rose", "All of the above"],
+        correct_option_index: 3
+      },
+      {
+        question: "In 'Fullmetal Alchemist', what is the ultimate goal of the Elric brothers?",
+        options: ["Become State Alchemists", "Find the Philosopher's Stone", "Defeat the Homunculi", "Revive their father"],
+        correct_option_index: 1
+      },
+      {
+        question: "Who is known as the 'One Punch Man'?",
+        options: ["Genos", "Mumen Rider", "Saitama", "Garou"],
+        correct_option_index: 2
+      },
+      {
+        question: "What is the name of the virtual world in the anime 'Sword Art Online'?",
+        options: ["Alfheim Online", "Aincrad", "Gun Gale Online", "Underworld"],
+        correct_option_index: 1
+      },
+      {
+        question: "In 'Demon Slayer', what breath style does Tanjiro Kamado originally use?",
+        options: ["Water Breathing", "Sun Breathing", "Flame Breathing", "Thunder Breathing"],
+        correct_option_index: 0
+      },
+      {
+        question: "Which anime features characters using 'Nen' as their primary power system?",
+        options: ["Yu Yu Hakusho", "Hunter x Hunter", "My Hero Academia", "Jujutsu Kaisen"],
+        correct_option_index: 1
+      },
+      {
+        question: "In 'Jujutsu Kaisen', who is the King of Curses whose fingers Yuji Itadori swallows?",
+        options: ["Ryomen Sukuna", "Mahito", "Suguru Geto", "Jogo"],
+        correct_option_index: 0
+      },
+      {
+        question: "What is the name of Goku's signature energy blast in 'Dragon Ball'?",
+        options: ["Spirit Bomb", "Kamehameha", "Special Beam Cannon", "Galick Gun"],
+        correct_option_index: 1
+      },
+      {
+        question: "In 'My Hero Academia', what is All Might's Quirk named?",
+        options: ["All for One", "One for All", "Explosion", "Half-Cold Half-Hot"],
+        correct_option_index: 1
+      },
+      {
+        question: "Which studio animated the movie 'Spirited Away'?",
+        options: ["Studio Trigger", "Studio Ghibli", "Madhouse", "MAPPA"],
+        correct_option_index: 1
+      },
+      {
+        question: "In 'Steins;Gate', what is the name of Okabe's time machine?",
+        options: ["Phone Microwave", "Time Leap Machine", "FG204", "Ibn 5100"],
+        correct_option_index: 0
+      },
+      {
+        question: "What is the primary sport played in the anime 'Haikyu!!'?",
+        options: ["Basketball", "Soccer", "Volleyball", "Tennis"],
+        correct_option_index: 2
+      },
+      {
+        question: "What is the name of the main artificial human creation method in 'Evangelion'?",
+        options: ["Project E", "Human Instrumentality Project", "Magi System", "Terminal Dogma"],
+        correct_option_index: 1
+      },
+      {
+        question: "In 'Cowboy Bebop', what is the name of Spike Spiegel's space spaceship?",
+        options: ["Bebop", "Swordfish II", "Red Tail", "Hammer Head"],
+        correct_option_index: 1
+      },
+      {
+        question: "What power does Lelouch vi Britannia gain in 'Code Geass'?",
+        options: ["Telekinesis", "Geass (Absolute Obedience)", "Invisibility", "Pyrokinesis"],
+        correct_option_index: 1
+      },
+      {
+        question: "In 'Bleach', what is the name of Ichigo Kurosaki's Zanpakuto?",
+        options: ["Senbonzakura", "Zangetsu", "Hyorinmaru", "Tensa Zangetsu"],
+        correct_option_index: 1
+      },
+      {
+        question: "What is the name of the organization in 'Spy x Family' that Loid Forger works for?",
+        options: ["SSS", "WISE", "Garden", "Ostania Intelligence"],
+        correct_option_index: 1
+      },
+      {
+        question: "In 'Tokyo Ghoul', what is Ken Kaneki's favorite book author?",
+        options: ["Sen Takatsuki", "Osamu Dazai", "Ryunosuke Akutagawa", "Natsume Soseki"],
+        correct_option_index: 0
+      },
+      {
+        question: "What is the name of the academy in 'Kaguya-sama: Love is War'?",
+        options: ["Shuchiin Academy", "Otonokizaka Academy", "UA High School", "Hyakkaou Academy"],
+        correct_option_index: 0
+      },
+      {
+        question: "In 'JoJo's Bizarre Adventure Part 3', what is Jotaro Kujo's Stand named?",
+        options: ["Hermit Purple", "Star Platinum", "The World", "Silver Chariot"],
+        correct_option_index: 1
+      },
+      {
+        question: "What is the name of the protagonist in 'Cyberpunk: Edgerunners'?",
+        options: ["David Martinez", "Maine", "Lucy", "Falco"],
+        correct_option_index: 0
+      },
+      {
+        question: "Which anime film directed by Makoto Shinkai features two teenagers swapping bodies?",
+        options: ["Weathering with You", "Your Name", "Suzume", "5 Centimeters per Second"],
+        correct_option_index: 1
+      },
+      {
+        question: "In 'Frieren: Beyond Journey's End', who was the hero that Frieren's party accompanied?",
+        options: ["Himmel", "Heiter", "Eisen", "Flamme"],
+        correct_option_index: 0
+      },
+      {
+        question: "What devil does Denji fuse with in 'Chainsaw Man'?",
+        options: ["Gun Devil", "Pochita (Chainsaw Devil)", "Power (Blood Devil)", "Control Devil"],
+        correct_option_index: 1
+      },
+      {
+        question: "What is the name of Violet's occupation in 'Violet Evergarden'?",
+        options: ["Auto Memory Doll", "State Letter Writer", "Librarian", "Royal Translator"],
+        correct_option_index: 0
+      },
+      {
+        question: "In 'No Game No Life', what is the name of the gaming sibling duo?",
+        options: ["Sora and Shiro (Blank)", "Lelouch and Nunnally", "Edward and Alphonse", "Killua and Alluka"],
+        correct_option_index: 0
+      },
+      {
+        question: "What historical setting is 'Vinland Saga' based on?",
+        options: ["Roman Empire", "Viking Age", "Sengoku Period", "French Revolution"],
+        correct_option_index: 1
+      },
+      {
+        question: "In 'Mob Psycho 100', what is Mob's real name?",
+        options: ["Shigeo Kageyama", "Ritsu Kageyama", "Arataka Reigen", "Teruki Hanazawa"],
+        correct_option_index: 0
+      },
+      {
+        question: "Which game does the protagonist play in 'Yu-Gi-Oh!'?",
+        options: ["Duel Monsters", "Magic the Gathering", "Vanguard", "Hearthstone"],
+        correct_option_index: 0
+      },
+      {
+        question: "In 'Fairy Tail', what kind of magic does Natsu Dragneel use?",
+        options: ["Ice-Make Magic", "Fire Dragon Slayer Magic", "Celestial Spirit Magic", "Requip Magic"],
+        correct_option_index: 1
+      },
+      {
+        question: "What is the name of the main antagonist in 'Sailor Moon' Part 1?",
+        options: ["Queen Beryl", "Queen Nehelenia", "Sailor Galaxia", "Mistress 9"],
+        correct_option_index: 0
+      },
+      {
+        question: "In 'Kill la Kill', what is the name of Ryuko Matoi's sentient sailor uniform?",
+        options: ["Senketsu", "Junketsu", "Kamui", "Goku Uniform"],
+        correct_option_index: 0
+      },
+      {
+        question: "Which anime features a girl named Menma who returns as a ghost to reunite her friends?",
+        options: ["Clannad", "Anohana: The Flower We Saw That Day", "Your Lie in April", "Angel Beats!"],
+        correct_option_index: 1
+      },
+      {
+        question: "In 'Your Lie in April', what instrument does Kaori Miyazono play?",
+        options: ["Piano", "Violin", "Cello", "Flute"],
+        correct_option_index: 1
+      },
+      {
+        question: "What is the name of the main setting in 'Made in Abyss'?",
+        options: ["The Abyss", "Orth", "The Great Rift", "The Depths"],
+        correct_option_index: 0
+      },
+      {
+        question: "In 'The Promised Neverland', what is the name of the orphanage the children live in?",
+        options: ["Grace Field House", "Goldy Pond", "Grand Valley", "Glory Bell"],
+        correct_option_index: 0
+      },
+      {
+        question: "Which Jojo protagonist has a stand named 'Crazy Diamond'?",
+        options: ["Jotaro Kujo", "Josuke Higashikata", "Giorno Giovanna", "Joseph Joestar"],
+        correct_option_index: 1
+      },
+      {
+        question: "In 'Black Clover', what is the name of the magic-less boy who wants to become the Wizard King?",
+        options: ["Yuno", "Asta", "Noelle", "Yami"],
+        correct_option_index: 1
+      },
+      {
+        question: "What is the true identity of L in 'Death Note'?",
+        options: ["Light Yagami", "L Lawliet", "Nate River", "Mihael Keehl"],
+        correct_option_index: 1
+      },
+      {
+        question: "In 'Re:Zero', what unique ability does Subaru Natsuki possess?",
+        options: ["Return by Death", "Absolute Deflection", "Shadow Magic", "Invisibility"],
+        correct_option_index: 0
+      },
+      {
+        question: "What is the name of the high school basketball team in 'Kuroko's Basketball'?",
+        options: ["Seirin", "Kaijo", "Shutoku", "Touou"],
+        correct_option_index: 0
+      },
+      {
+        question: "In 'Overlord', what is the name of the guild founded by Ainz Ooal Gown?",
+        options: ["Great Tomb of Nazarick", "Ainz Ooal Gown", "Nine's Own Goal", "Pleiades"],
+        correct_option_index: 1
+      }
+    ];
 
-      for (const q of sampleQuizzes) {
+    let insertedCount = 0;
+    for (const q of sampleQuizzes) {
+      const exist = await pool.query("SELECT 1 FROM quizzes WHERE question=$1", [q.question]);
+      if (exist.rows.length === 0) {
         await pool.query(
           "INSERT INTO quizzes (question, options, correct_option_index) VALUES ($1, $2, $3)",
           [q.question, q.options, q.correct_option_index]
         );
+        insertedCount++;
       }
-      console.log("🌱 Seeding completed!");
     }
+    console.log(`🌱 Seeding complete! Synchronized ${insertedCount} new quizzes. Total count is now ${parseInt(checkQuiz.rows[0].count, 10) + insertedCount}.`);
   } catch (err) {
     console.error("Database migration error:", err);
   }
