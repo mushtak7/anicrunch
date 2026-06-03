@@ -10,7 +10,7 @@
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/style.css">
   <style>
     /* =====================
        PAGE LAYOUT
@@ -560,6 +560,24 @@ function render(data) {
   }
   metaDesc.content = descContent;
 
+  // 3. Dynamic Canonical URL & URL Clean-up in Browser
+  let canonicalLink = document.querySelector('link[rel="canonical"]');
+  if (!canonicalLink) {
+    canonicalLink = document.createElement('link');
+    canonicalLink.rel = 'canonical';
+    document.head.appendChild(canonicalLink);
+  }
+  const cleanTitleSlug = displayTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const cleanUrl = `/anime/${animeId}-${cleanTitleSlug || 'details'}`;
+  canonicalLink.href = `https://anicrunch.page${cleanUrl}`;
+  
+  // Replace address bar URL if it contains the old query parameter style or doesn't match the slug format
+  const currentPath = window.location.pathname;
+  const currentQuery = window.location.search;
+  if (currentQuery.includes('id=') || currentPath === '/anime.html') {
+    window.history.replaceState(null, "", cleanUrl);
+  }
+
   // 2. Inject Dynamic JSON-LD Structured Data Schema for rich search results
   let schemaScript = document.getElementById('jsonLdSchema');
   if (!schemaScript) {
@@ -741,7 +759,10 @@ async function loadExtras() {
       const div = document.createElement('div');
       div.className = 'rec-card';
       div.innerHTML = `<img class="rec-img" src="${r.entry.images.jpg.image_url}"><div class="rec-title">${r.entry.title}</div>`;
-      div.onclick = () => location.href = `/anime.html?id=${r.entry.mal_id}`;
+      div.onclick = () => {
+        const slug = r.entry.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        location.href = `/anime/${r.entry.mal_id}-${slug || 'details'}`;
+      };
       list.appendChild(div);
     });
   }
@@ -861,6 +882,6 @@ load();
     <span>Vibes</span>
   </a>
 </div>
-<script src="script.js"></script>
+<script src="/script.js"></script>
 </body>
 </html>

@@ -10,7 +10,7 @@
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="/style.css">
   <style>
     .watchlist-page { 
       min-height: 100vh;
@@ -639,7 +639,7 @@ function renderCardContent(card, anime) {
     </div>
     
     <div class="card-info">
-      <div class="card-title" onclick="location.href='/anime.html?id=${anime.mal_id}'">${anime.title}</div>
+      <div class="card-title" onclick="location.href = '${getAnimeUrl(anime)}'">${anime.title}</div>
       
       <div class="progress-wrapper">
         <div class="progress-text">
@@ -817,6 +817,6 @@ function showLoginState() {
     <span>Vibes</span>
   </a>
 </div>
-<script src="script.js"></script>
+<script src="/script.js"></script>
 </body>
 </html>

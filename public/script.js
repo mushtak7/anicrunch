@@ -299,6 +299,13 @@ function getTitle(anime) {
   return anime.title_english || anime.title || 'Untitled';
 }
 
+function getAnimeUrl(anime) {
+  if (!anime || !anime.mal_id) return '/';
+  const title = getTitle(anime);
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  return `/anime/${anime.mal_id}-${slug || 'details'}`;
+}
+
 // =====================
 // CARD CREATOR (Enhanced)
 // =====================
@@ -359,7 +366,7 @@ function createCard(anime, options = {}) {
   
   const navigateToAnime = () => {
     if (anime.mal_id) {
-      location.href = `/anime.html?id=${anime.mal_id}`;
+      location.href = getAnimeUrl(anime);
     }
   };
   
@@ -413,7 +420,7 @@ function createEpisodeCard(entry, episode) {
   `;
 
   const navigate = () => {
-    if (entry.mal_id) location.href = `/anime.html?id=${entry.mal_id}`;
+    if (entry.mal_id) location.href = getAnimeUrl(entry);
   };
   div.onclick = navigate;
   div.onkeydown = (e) => {
@@ -606,7 +613,7 @@ const HeroCarousel = {
       detailsBtn.onclick = (e) => {
         e.stopPropagation();
         if (anime.mal_id) {
-          location.href = `/anime.html?id=${anime.mal_id}`;
+          location.href = getAnimeUrl(anime);
         }
       };
     }
@@ -836,7 +843,7 @@ document.addEventListener("DOMContentLoaded", () => {
             `;
             row.onclick = () => {
               dropdown.classList.remove("active");
-              location.href = `/anime.html?id=${item.mal_id}`;
+              location.href = getAnimeUrl(item);
             };
             dropdown.appendChild(row);
           });
@@ -1357,11 +1364,11 @@ document.addEventListener("DOMContentLoaded", () => {
         div.className = "top-item";
         div.setAttribute('tabindex', '0');
         div.setAttribute('role', 'button');
-        div.onclick = () => { if (a.mal_id) location.href = `/anime.html?id=${a.mal_id}`; };
+        div.onclick = () => { if (a.mal_id) location.href = getAnimeUrl(a); };
         div.onkeydown = (e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            if (a.mal_id) location.href = `/anime.html?id=${a.mal_id}`;
+            if (a.mal_id) location.href = getAnimeUrl(a);
           }
         };
         const imgUrl = a.images?.jpg?.image_url || a.images?.jpg?.large_image_url || '';
@@ -1671,11 +1678,11 @@ async function loadSchedule(day) {
       div.className = 'schedule-card';
       div.setAttribute('tabindex', '0');
       div.setAttribute('role', 'button');
-      div.onclick = () => { if (anime.mal_id) location.href = `/anime.html?id=${anime.mal_id}`; };
+      div.onclick = () => { if (anime.mal_id) location.href = getAnimeUrl(anime); };
       div.onkeydown = (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
-          if (anime.mal_id) location.href = `/anime.html?id=${anime.mal_id}`;
+          if (anime.mal_id) location.href = getAnimeUrl(anime);
         }
       };
       const imgUrl = anime.images?.jpg?.image_url || anime.images?.jpg?.large_image_url || '';
@@ -1910,7 +1917,7 @@ async function spinWheel() {
     if (winnerCardEl) winnerCardEl.classList.add("reveal");
 
     await delay(1500);
-    location.href = `/anime.html?id=${anime.mal_id}`;
+    location.href = getAnimeUrl(anime);
 
   } catch (e) {
     console.error('Spin error:', e);

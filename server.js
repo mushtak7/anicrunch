@@ -27,7 +27,7 @@ app.use(express.json());
 app.get("/sitemap.xml", async (req, res) => {
   res.header("Content-Type", "application/xml");
   try {
-    const dbAnime = await pool.query("SELECT DISTINCT anime_id FROM watchlists");
+    const dbAnime = await pool.query("SELECT anime_id, MAX(anime_title) as anime_title FROM watchlists GROUP BY anime_id");
     
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
     xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
@@ -52,8 +52,10 @@ app.get("/sitemap.xml", async (req, res) => {
 
     // Dynamic anime detailed paths
     dbAnime.rows.forEach(row => {
+      const title = row.anime_title || "anime";
+      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
       xml += `  <url>\n`;
-      xml += `    <loc>https://anicrunch.page/anime.html?id=${row.anime_id}</loc>\n`;
+      xml += `    <loc>https://anicrunch.page/anime/${row.anime_id}-${slug || 'details'}</loc>\n`;
       xml += `    <changefreq>weekly</changefreq>\n`;
       xml += `    <priority>0.7</priority>\n`;
       xml += `  </url>\n`;
