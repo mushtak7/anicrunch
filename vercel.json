@@ -1,22 +1,17 @@
 {
-  "framework": null,
-  "buildCommand": "",
-  "outputDirectory": "public",
-  "rewrites": [
+  "routes": [
     {
-      "source": "/anime/:path*",
-      "destination": "/anime.html"
-    }
-  ],
-  "headers": [
+      "src": "/anime/.*",
+      "dest": "/anime.html"
+    },
     {
-      "source": "/sitemap.xml",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/xml"
-        }
-      ]
+      "src": "/sitemap.xml",
+      "headers": {
+        "Content-Type": "application/xml"
+      }
+    },
+    {
+      "handle": "filesystem"
     }
   ]
 }
