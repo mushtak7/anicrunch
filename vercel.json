@@ -1,4 +1,10 @@
 {
+  "rewrites": [
+    {
+      "source": "/anime/:path*",
+      "destination": "/anime.html"
+    }
+  ],
   "headers": [
     {
       "source": "/sitemap.xml",
