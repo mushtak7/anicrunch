@@ -622,6 +622,13 @@ window.API_BASE = (location.hostname === "localhost" || location.hostname === "1
       audio.src = finalUrl;
       if (trackEl) trackEl.textContent = track.title;
       if (animeTitleEl) animeTitleEl.textContent = track.anime;
+
+      // Log play count dynamically to backend (Popular/Trending tracking)
+      fetch(`${API_BASE}/api/music/play`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: track.url })
+      }).catch(err => console.error("Error logging music play count:", err));
       
       // Load poster
       if (poster) {

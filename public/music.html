@@ -163,8 +163,23 @@
       grouped[animeName].push(track);
     });
 
+    // Convert to array and sort anime sections if 'popular' filter is selected
+    const groupsArray = Object.entries(grouped);
+    if (currentFilter === 'popular') {
+      groupsArray.sort((a, b) => {
+        const totalA = a[1].reduce((sum, t) => sum + (t.plays || 0), 0);
+        const totalB = b[1].reduce((sum, t) => sum + (t.plays || 0), 0);
+        return totalB - totalA;
+      });
+    }
+
     // Render each group as a separate section
-    for (const [animeName, animeTracks] of Object.entries(grouped)) {
+    for (const [animeName, animeTracks] of groupsArray) {
+      // Sort individual tracks within the group by plays descending if 'popular' is selected
+      if (currentFilter === 'popular') {
+        animeTracks.sort((a, b) => (b.plays || 0) - (a.plays || 0));
+      }
+
       const section = document.createElement("div");
       section.className = "music-anime-section";
       section.style.cssText = "width: 100%; display: flex; flex-direction: column; gap: 16px;";
@@ -199,7 +214,10 @@
           <img src="/favicon.png" alt="${escapeHtml(track.anime)}" class="music-card-poster">
           <div class="music-card-info">
             <span class="music-track-name" title="${escapeHtml(track.title)}" style="font-size: 13px; font-weight: 700; color: white; display: block; margin-bottom: 4px;">${escapeHtml(track.title)}</span>
-            <span style="font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; display: inline-block;">${escapeHtml(track.type)}</span>
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <span style="font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; display: inline-block;">${escapeHtml(track.type)}</span>
+              ${track.plays > 0 ? `<span style="font-size: 10px; color: #ff9800; font-weight: 700; background: rgba(255, 152, 0, 0.1); padding: 2px 6px; border-radius: 4px; display: inline-block;">🔥 ${track.plays}</span>` : ''}
+            </div>
           </div>
           <button class="music-play-btn" aria-label="Play Track" title="Play Track">▶</button>
         `;
@@ -223,6 +241,9 @@
         // Play handler on click
         const playAction = () => {
           playLocalSong(track);
+          // Increment locally to update count instantly without reloading entire list from API
+          track.plays = (track.plays || 0) + 1;
+          renderTracks(tracks);
         };
         card.onclick = playAction;
         
@@ -265,15 +286,6 @@
       filtered = filtered.filter(t => t.type && t.type.toUpperCase().includes('OP'));
     } else if (currentFilter === 'ed') {
       filtered = filtered.filter(t => t.type && t.type.toUpperCase().includes('ED'));
-    } else if (currentFilter === 'popular') {
-      const popularAnimeList = [
-        "one piece", "naruto", "sousou no frieren", "steins;gate", 
-        "shingeki no kyojin", "attack on titan", "fullmetal alchemist", 
-        "hunter x hunter", "chainsaw man", "gintama", "jojo"
-      ];
-      filtered = filtered.filter(t => 
-        popularAnimeList.some(p => t.anime && t.anime.toLowerCase().includes(p))
-      );
     }
     
     // 2. Filter by search query

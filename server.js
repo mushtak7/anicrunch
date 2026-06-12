@@ -259,6 +259,12 @@ async function initDB() {
       );
     `);
     
+    // Add plays column to music_tracks if not exists for popular & trending tracking
+    await pool.query(`
+      ALTER TABLE music_tracks 
+      ADD COLUMN IF NOT EXISTS plays INTEGER DEFAULT 0;
+    `);
+    
     console.log("✅ Database schema verified/updated");
 
     // Auto-seed quiz table if empty or has fewer questions than our curated list
@@ -863,25 +869,38 @@ app.get("/api/quiz/leaderboard", async (req, res) => {
 app.get("/api/music", async (req, res) => {
   try {
     // 1. Fetch tracks registered in Supabase PostgreSQL
-    const dbRes = await pool.query("SELECT anime, title, type, url FROM music_tracks ORDER BY id DESC");
-    const tracks = dbRes.rows;
+    const dbRes = await pool.query("SELECT anime, title, type, url, COALESCE(plays, 0) as plays FROM music_tracks ORDER BY id DESC");
+    const tracks = dbRes.rows.map(t => ({
+      ...t,
+      plays: Number(t.plays)
+    }));
 
     // 2. Fetch and merge any local files on disk
     if (fs.existsSync(musicDir)) {
       const files = fs.readdirSync(musicDir);
-      files.forEach(filename => {
+      for (const filename of files) {
         const match = filename.match(/^\[(.*?)\]\s*-\s*(.*?)\s*\[(.*?)\]\.(mp3|webm|mp4|ogg|wav|m4a)$/i);
         const localUrl = `/music/${filename}`;
         
         if (match) {
           const alreadyListed = tracks.some(t => t.url === localUrl || t.url === encodeURI(localUrl));
           if (!alreadyListed) {
+            try {
+              // Auto-register local track in DB so we can track its play count
+              await pool.query(
+                "INSERT INTO music_tracks (anime, title, type, url, plays) VALUES ($1, $2, $3, $4, 0)",
+                [match[1], match[2], match[3], localUrl]
+              );
+            } catch (dbErr) {
+              console.error("Error auto-registering local track:", dbErr);
+            }
             tracks.push({
               anime: match[1],
               title: match[2],
               type: match[3],
               filename: filename,
-              url: localUrl
+              url: localUrl,
+              plays: 0
             });
           }
         } else {
@@ -890,23 +909,54 @@ app.get("/api/music", async (req, res) => {
             const alreadyListed = tracks.some(t => t.url === localUrl || t.url === encodeURI(localUrl));
             if (!alreadyListed) {
               const nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
+              try {
+                // Auto-register generic local track in DB
+                await pool.query(
+                  "INSERT INTO music_tracks (anime, title, type, url, plays) VALUES ($1, $2, 'Local', $3, 0)",
+                  ["Local Library", nameWithoutExt, localUrl]
+                );
+              } catch (dbErr) {
+                console.error("Error auto-registering generic local track:", dbErr);
+              }
               tracks.push({
                 anime: "Local Library",
                 title: nameWithoutExt,
                 type: "Local",
                 filename: filename,
-                url: localUrl
+                url: localUrl,
+                plays: 0
               });
             }
           }
         }
-      });
+      }
     }
 
     res.json(tracks);
   } catch (err) {
     console.error("Error loading music tracks:", err);
     res.status(500).json({ message: "Error listing music tracks" });
+  }
+});
+
+app.post("/api/music/play", async (req, res) => {
+  const { url } = req.body;
+  if (!url) return res.status(400).json({ message: "URL is required" });
+  
+  try {
+    let cleanUrl = url;
+    if (cleanUrl.startsWith("https://anicrunch-backend.onrender.com")) {
+      cleanUrl = cleanUrl.replace("https://anicrunch-backend.onrender.com", "");
+    }
+    // Handles local relative path and exact match
+    await pool.query(
+      "UPDATE music_tracks SET plays = COALESCE(plays, 0) + 1 WHERE url = $1 OR url = $2",
+      [cleanUrl, url]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error logging play count:", err);
+    res.status(500).json({ message: "Error logging play" });
   }
 });
 
