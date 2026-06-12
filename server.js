@@ -868,14 +868,11 @@ app.get("/api/quiz/leaderboard", async (req, res) => {
 ===================== */
 app.get("/api/music", async (req, res) => {
   try {
-    // 1. Fetch tracks registered in Supabase PostgreSQL
-    const dbRes = await pool.query("SELECT anime, title, type, url, COALESCE(plays, 0) as plays FROM music_tracks ORDER BY id DESC");
-    const tracks = dbRes.rows.map(t => ({
-      ...t,
-      plays: Number(t.plays)
-    }));
+    // 1. Fetch all registered URLs from Supabase PostgreSQL first to check for duplicates
+    const urlRes = await pool.query("SELECT url FROM music_tracks");
+    const registeredUrls = new Set(urlRes.rows.map(r => r.url));
 
-    // 2. Fetch and merge any local files on disk
+    // 2. Scan disk files and auto-register any missing ones
     if (fs.existsSync(musicDir)) {
       const files = fs.readdirSync(musicDir);
       for (const filename of files) {
@@ -883,54 +880,46 @@ app.get("/api/music", async (req, res) => {
         const localUrl = `/music/${filename}`;
         
         if (match) {
-          const alreadyListed = tracks.some(t => t.url === localUrl || t.url === encodeURI(localUrl));
-          if (!alreadyListed) {
+          const isRegistered = registeredUrls.has(localUrl) || registeredUrls.has(encodeURI(localUrl));
+          if (!isRegistered) {
             try {
-              // Auto-register local track in DB so we can track its play count
               await pool.query(
                 "INSERT INTO music_tracks (anime, title, type, url, plays) VALUES ($1, $2, $3, $4, 0)",
                 [match[1], match[2], match[3], localUrl]
               );
+              registeredUrls.add(localUrl);
             } catch (dbErr) {
               console.error("Error auto-registering local track:", dbErr);
             }
-            tracks.push({
-              anime: match[1],
-              title: match[2],
-              type: match[3],
-              filename: filename,
-              url: localUrl,
-              plays: 0
-            });
           }
         } else {
           const extMatch = filename.match(/\.(mp3|webm|mp4|ogg|wav|m4a)$/i);
           if (extMatch) {
-            const alreadyListed = tracks.some(t => t.url === localUrl || t.url === encodeURI(localUrl));
-            if (!alreadyListed) {
+            const isRegistered = registeredUrls.has(localUrl) || registeredUrls.has(encodeURI(localUrl));
+            if (!isRegistered) {
               const nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
               try {
-                // Auto-register generic local track in DB
                 await pool.query(
                   "INSERT INTO music_tracks (anime, title, type, url, plays) VALUES ($1, $2, 'Local', $3, 0)",
                   ["Local Library", nameWithoutExt, localUrl]
                 );
+                registeredUrls.add(localUrl);
               } catch (dbErr) {
                 console.error("Error auto-registering generic local track:", dbErr);
               }
-              tracks.push({
-                anime: "Local Library",
-                title: nameWithoutExt,
-                type: "Local",
-                filename: filename,
-                url: localUrl,
-                plays: 0
-              });
             }
           }
         }
       }
     }
+
+    // 3. Fetch all tracks including newly registered ones, with their IDs and counts
+    const dbRes = await pool.query("SELECT id, anime, title, type, url, COALESCE(plays, 0) as plays FROM music_tracks ORDER BY id DESC");
+    const tracks = dbRes.rows.map(t => ({
+      ...t,
+      id: Number(t.id),
+      plays: Number(t.plays)
+    }));
 
     res.json(tracks);
   } catch (err) {

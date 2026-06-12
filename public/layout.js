@@ -476,19 +476,24 @@ window.API_BASE = (location.hostname === "localhost" || location.hostname === "1
         
         container.appendChild(audio);
         
-        // Re-attach event listeners
+        // Re-attach event listeners with custom state-change events
         audio.addEventListener("timeupdate", debouncedSavePlayerState);
         audio.addEventListener("play", () => {
           if (needWebAudio && audioContext && audioContext.state === "suspended") {
             audioContext.resume();
           }
           savePlayerState();
+          window.dispatchEvent(new CustomEvent("anicrunch_player_change"));
         });
-        audio.addEventListener("pause", savePlayerState);
+        audio.addEventListener("pause", () => {
+          savePlayerState();
+          window.dispatchEvent(new CustomEvent("anicrunch_player_change"));
+        });
         audio.addEventListener("volumechange", savePlayerState);
         audio.addEventListener("ended", () => {
           localStorage.removeItem("anicrunch_player_state");
           if (player) player.classList.remove("active");
+          window.dispatchEvent(new CustomEvent("anicrunch_player_change"));
         });
         
         if (needWebAudio) {
@@ -641,7 +646,7 @@ window.API_BASE = (location.hostname === "localhost" || location.hostname === "1
           fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(track.anime)}&limit=1`)
             .then(res => res.json())
             .then(d => {
-              const p = d.data?.[0]?.images?.jpg?.small_image_url || d.data?.[0]?.images?.jpg?.image_url;
+              const p = d.data?.[0]?.images?.jpg?.large_image_url || d.data?.[0]?.images?.jpg?.image_url;
               if (p) {
                 localStorage.setItem(cacheKey, p);
                 poster.src = p;
@@ -681,6 +686,7 @@ window.API_BASE = (location.hostname === "localhost" || location.hostname === "1
         audio.src = "";
       }
       localStorage.removeItem("anicrunch_player_state");
+      window.dispatchEvent(new CustomEvent("anicrunch_player_change"));
     };
 
     // Debounced version for frequent events like timeupdate
