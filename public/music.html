@@ -38,8 +38,8 @@
     </div>
   </div>
 
-  <div id="localMusicGrid" class="music-grid">
-    <div style="grid-column: 1/-1; padding: 40px 0; text-align: center; color: var(--muted);">
+  <div id="localMusicGrid" style="display: flex; flex-direction: column; gap: 35px; width: 100%;">
+    <div style="padding: 40px 0; text-align: center; color: var(--muted); width: 100%;">
       ⏳ Tuning frequencies and loading library...
     </div>
   </div>
@@ -102,40 +102,101 @@
     }
   }
 
-  // Render track cards in the grid
+  // Render track cards grouped by anime
   function renderTracks(tracks) {
     const list = document.getElementById("localMusicGrid");
     list.innerHTML = "";
     
     if (!tracks.length) {
-      list.innerHTML = `<div style="grid-column: 1/-1; padding: 40px 0; text-align: center; color: var(--muted);">📂 No matching tracks found in library. Use the CLI sync script or upload above!</div>`;
+      list.innerHTML = `<div style="padding: 40px 0; text-align: center; color: var(--muted); width: 100%;">📂 No matching tracks found in library. Use the CLI sync script or upload above!</div>`;
       return;
     }
 
+    // Group tracks by anime name
+    const grouped = {};
     tracks.forEach(track => {
-      const card = document.createElement("div");
-      card.className = "music-card";
-
-      card.innerHTML = `
-        <img src="/favicon.png" alt="${escapeHtml(track.anime)}" class="music-card-poster">
-        <div class="music-card-info">
-          <h4 class="music-card-title">${escapeHtml(track.anime)}</h4>
-          <span class="music-track-name" title="${escapeHtml(track.title)}">🎵 [${escapeHtml(track.type)}] ${escapeHtml(track.title)}</span>
-        </div>
-        <button class="music-play-btn" aria-label="Play Track" title="Play Track">▶</button>
-      `;
-
-      // Load poster asynchronously
-      const img = card.querySelector(".music-card-poster");
-      loadCardPoster(track.anime, img);
-
-      const playBtn = card.querySelector(".music-play-btn");
-      playBtn.onclick = () => {
-        playLocalSong(track);
-      };
-
-      list.appendChild(card);
+      const animeName = track.anime || "Local Library";
+      if (!grouped[animeName]) {
+        grouped[animeName] = [];
+      }
+      grouped[animeName].push(track);
     });
+
+    // Render each group as a separate section
+    for (const [animeName, animeTracks] of Object.entries(grouped)) {
+      const section = document.createElement("div");
+      section.className = "music-anime-section";
+      section.style.cssText = "width: 100%; display: flex; flex-direction: column; gap: 16px;";
+      
+      // Header row
+      const headerRow = document.createElement("div");
+      headerRow.style.cssText = "display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 4px;";
+      
+      const title = document.createElement("h3");
+      title.style.cssText = "margin: 0; font-size: 18px; font-weight: 800; color: white; display: flex; align-items: center; gap: 10px;";
+      title.textContent = animeName;
+      
+      const trackCount = document.createElement("span");
+      trackCount.style.cssText = "font-size: 11px; color: var(--primary); background: rgba(236, 72, 153, 0.1); padding: 3px 8px; border-radius: 12px; font-weight: 700;";
+      trackCount.textContent = `${animeTracks.length} ${animeTracks.length === 1 ? 'Track' : 'Tracks'}`;
+      
+      headerRow.appendChild(title);
+      headerRow.appendChild(trackCount);
+      section.appendChild(headerRow);
+      
+      // Grid container for this anime's cards
+      const grid = document.createElement("div");
+      grid.className = "music-grid";
+      
+      animeTracks.forEach(track => {
+        const card = document.createElement("div");
+        card.className = "music-card";
+        card.style.cursor = "pointer";
+        card.style.transition = "transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease";
+        
+        card.innerHTML = `
+          <img src="/favicon.png" alt="${escapeHtml(track.anime)}" class="music-card-poster">
+          <div class="music-card-info">
+            <span class="music-track-name" title="${escapeHtml(track.title)}" style="font-size: 13px; font-weight: 700; color: white; display: block; margin-bottom: 4px;">${escapeHtml(track.title)}</span>
+            <span style="font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; display: inline-block;">${escapeHtml(track.type)}</span>
+          </div>
+          <button class="music-play-btn" aria-label="Play Track" title="Play Track">▶</button>
+        `;
+
+        // Card hover animations
+        card.addEventListener("mouseenter", () => {
+          card.style.transform = "translateY(-3px)";
+          card.style.borderColor = "var(--primary)";
+          card.style.boxShadow = "0 8px 20px rgba(236, 72, 153, 0.15)";
+        });
+        card.addEventListener("mouseleave", () => {
+          card.style.transform = "translateY(0)";
+          card.style.borderColor = "var(--border)";
+          card.style.boxShadow = "none";
+        });
+
+        // Load poster asynchronously
+        const img = card.querySelector(".music-card-poster");
+        loadCardPoster(track.anime, img);
+
+        // Play handler on click
+        const playAction = () => {
+          playLocalSong(track);
+        };
+        card.onclick = playAction;
+        
+        const playBtn = card.querySelector(".music-play-btn");
+        playBtn.onclick = (e) => {
+          e.stopPropagation();
+          playAction();
+        };
+
+        grid.appendChild(card);
+      });
+      
+      section.appendChild(grid);
+      list.appendChild(section);
+    }
   }
 
   // Real-time track search filter
