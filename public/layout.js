@@ -307,7 +307,10 @@ window.API_BASE = (location.hostname === "localhost" || location.hostname === "1
       <div id="floatingMusicPlayer" class="floating-music-player">
         <img id="playerPoster" src="/favicon.png" alt="" class="player-poster">
         <div class="player-info">
-          <div id="playerTrack" class="player-track">Not Playing</div>
+          <div style="display: flex; align-items: center; gap: 6px; min-width: 0;">
+            <div id="playerTrack" class="player-track">Not Playing</div>
+            <span id="hdAudioBadge" class="hd-badge" style="display: none;">HD</span>
+          </div>
           <div id="playerAnime" class="player-anime">-</div>
         </div>
         <div class="player-audio-container" style="width: 220px; flex-shrink: 0;">
@@ -369,6 +372,20 @@ window.API_BASE = (location.hostname === "localhost" || location.hostname === "1
         overflow: hidden;
         text-overflow: ellipsis;
       }
+      .hd-badge {
+        display: inline-block;
+        font-size: 9px;
+        background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 8px rgba(236, 72, 153, 0.3);
+        cursor: help;
+        flex-shrink: 0;
+      }
       .player-close {
         background: none;
         border: none;
@@ -402,20 +419,187 @@ window.API_BASE = (location.hostname === "localhost" || location.hostname === "1
     playerWrapper.innerHTML = playerHtml;
     document.body.appendChild(playerWrapper.firstElementChild);
 
-    const audio = document.getElementById("playerAudio");
     const player = document.getElementById("floatingMusicPlayer");
     const poster = document.getElementById("playerPoster");
     const trackEl = document.getElementById("playerTrack");
     const animeTitleEl = document.getElementById("playerAnime");
 
+    /* =====================
+       WEB AUDIO API OPTIMIZATION ENGINE
+    ===================== */
+    let audioContext = null;
+    let audioSource = null;
+    let eqLowNode = null;
+    let eqHighNode = null;
+    let compressorNode = null;
+    let gainNode = null;
+
+    // Checks if a URL is CORS safe so we can safely enable the Web Audio API
+    function isCorsSafe(url) {
+      if (!url) return true;
+      if (url.startsWith("/") && !url.startsWith("//")) return true;
+      try {
+        const parsed = new URL(url);
+        const host = parsed.hostname;
+        if (host === window.location.hostname || 
+            host === "localhost" || 
+            host === "127.0.0.1" || 
+            host.includes("onrender.com")) {
+          return true;
+        }
+      } catch (e) {}
+      return false;
+    }
+
+    // Dynamic audio element manager to prevent Web Audio CORS noise/silence bugs
+    function getAudioElement(isSafe) {
+      const container = document.querySelector(".player-audio-container");
+      if (!container) return null;
+      
+      let audio = document.getElementById("playerAudio");
+      const currentIsWebAudio = audio && audio.dataset.webAudio === "true";
+      const needWebAudio = isSafe;
+      
+      if (!audio || currentIsWebAudio !== needWebAudio) {
+        if (audio) {
+          audio.pause();
+          audio.remove();
+        }
+        
+        audio = document.createElement("audio");
+        audio.id = "playerAudio";
+        audio.controls = true;
+        audio.style.width = "100%";
+        audio.style.height = "32px";
+        audio.style.outline = "none";
+        audio.style.borderRadius = "4px";
+        
+        container.appendChild(audio);
+        
+        // Re-attach event listeners
+        audio.addEventListener("timeupdate", debouncedSavePlayerState);
+        audio.addEventListener("play", () => {
+          if (needWebAudio && audioContext && audioContext.state === "suspended") {
+            audioContext.resume();
+          }
+          savePlayerState();
+        });
+        audio.addEventListener("pause", savePlayerState);
+        audio.addEventListener("volumechange", savePlayerState);
+        audio.addEventListener("ended", () => {
+          localStorage.removeItem("anicrunch_player_state");
+          if (player) player.classList.remove("active");
+        });
+        
+        if (needWebAudio) {
+          audio.dataset.webAudio = "true";
+          audio.crossOrigin = "anonymous";
+          try {
+            setupAudioPipeline(audio);
+          } catch (e) {
+            console.error("Failed to setup Web Audio API pipeline:", e);
+          }
+        } else {
+          audio.dataset.webAudio = "false";
+          audio.removeAttribute("crossorigin");
+        }
+      }
+      
+      return audio;
+    }
+
+    function setupAudioPipeline(audioElement) {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      
+      // Always create a new MediaElementAudioSourceNode for the recreated audio element
+      audioSource = audioContext.createMediaElementSource(audioElement);
+      
+      // Low Shelf Filter (Bass Enhancer / Highpass filter on mobile)
+      eqLowNode = audioContext.createBiquadFilter();
+      
+      // High Shelf Filter (Treble / Speech presence enhancer)
+      eqHighNode = audioContext.createBiquadFilter();
+      
+      // Dynamic compressor to maximize average volume and punchiness without clipping
+      compressorNode = audioContext.createDynamicsCompressor();
+      
+      // Gain node for clean amplification
+      gainNode = audioContext.createGain();
+      
+      // Connect pipeline
+      audioSource.connect(eqLowNode);
+      eqLowNode.connect(eqHighNode);
+      eqHighNode.connect(compressorNode);
+      compressorNode.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Apply profile
+      applyAudioProfile();
+    }
+
+    function applyAudioProfile() {
+      if (!audioContext || !eqLowNode || !eqHighNode || !compressorNode || !gainNode) return;
+      
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        // --- MOBILE PRESET ---
+        // 1. Cut sub-bass (below 90Hz) to prevent speaker rumble & distortion at high volumes
+        eqLowNode.type = "highpass";
+        eqLowNode.frequency.value = 90;
+        
+        // 2. Peaking filter to boost presence/clarity range where vocals and instruments reside
+        eqHighNode.type = "peaking";
+        eqHighNode.frequency.value = 2500;
+        eqHighNode.Q.value = 1.0;
+        eqHighNode.gain.value = 3.5; // +3.5dB
+        
+        // 3. Heavy compression to maximize volume on tiny speakers
+        compressorNode.threshold.value = -24;
+        compressorNode.knee.value = 30;
+        compressorNode.ratio.value = 5.0;
+        compressorNode.attack.value = 0.003;
+        compressorNode.release.value = 0.25;
+        
+        // 4. Boost overall gain
+        gainNode.gain.value = 1.4; // +40% volume boost
+        console.log("🔊 AniCrunch Audio Engine: Applied Mobile Speaker Optimization");
+      } else {
+        // --- PC / HEADPHONES PRESET ---
+        // 1. Warm Bass Boost (below 120Hz)
+        eqLowNode.type = "lowshelf";
+        eqLowNode.frequency.value = 120;
+        eqLowNode.gain.value = 4.0; // +4.0dB bass boost
+        
+        // 2. High-end presence boost (above 6kHz)
+        eqHighNode.type = "highshelf";
+        eqHighNode.frequency.value = 6000;
+        eqHighNode.gain.value = 2.0; // +2.0dB treble clarity boost
+        
+        // 3. Light compression for professional studio dynamic smoothing
+        compressorNode.threshold.value = -16;
+        compressorNode.knee.value = 20;
+        compressorNode.ratio.value = 2.5;
+        compressorNode.attack.value = 0.005;
+        compressorNode.release.value = 0.15;
+        
+        // 4. Normal gain
+        gainNode.gain.value = 1.0;
+        console.log("🔊 AniCrunch Audio Engine: Applied PC / Headphone Studio Optimization");
+      }
+    }
+
     // Save player state to localStorage
     function savePlayerState() {
+      const audio = document.getElementById("playerAudio");
       if (!audio || !audio.src) return;
       const state = {
         url: audio.src,
-        title: trackEl.textContent,
-        anime: animeTitleEl.textContent,
-        poster: poster.src,
+        title: trackEl ? trackEl.textContent : "",
+        anime: animeTitleEl ? animeTitleEl.textContent : "",
+        poster: poster ? poster.src : "",
         currentTime: audio.currentTime,
         volume: audio.volume,
         isPlaying: !audio.paused,
@@ -426,31 +610,54 @@ window.API_BASE = (location.hostname === "localhost" || location.hostname === "1
 
     // Expose persistent controls on window
     window.playLocalSong = function(track) {
+      let finalUrl = track.url;
+      if (finalUrl.startsWith("/music/")) {
+        finalUrl = API_BASE + finalUrl;
+      }
+      
+      const isSafe = isCorsSafe(finalUrl);
+      const audio = getAudioElement(isSafe);
       if (!audio) return;
-      audio.src = track.url;
-      trackEl.textContent = track.title;
-      animeTitleEl.textContent = track.anime;
+      
+      audio.src = finalUrl;
+      if (trackEl) trackEl.textContent = track.title;
+      if (animeTitleEl) animeTitleEl.textContent = track.anime;
       
       // Load poster
-      poster.src = "/favicon.png";
-      const cacheKey = `poster_cache_${encodeURIComponent(track.anime)}`;
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) {
-        poster.src = cached;
-      } else {
-        fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(track.anime)}&limit=1`)
-          .then(res => res.json())
-          .then(d => {
-            const p = d.data?.[0]?.images?.jpg?.small_image_url || d.data?.[0]?.images?.jpg?.image_url;
-            if (p) {
-              localStorage.setItem(cacheKey, p);
-              poster.src = p;
-              savePlayerState();
-            }
-          }).catch(() => {});
+      if (poster) {
+        poster.src = "/favicon.png";
+        const cacheKey = `poster_cache_${encodeURIComponent(track.anime)}`;
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          poster.src = cached;
+        } else {
+          fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(track.anime)}&limit=1`)
+            .then(res => res.json())
+            .then(d => {
+              const p = d.data?.[0]?.images?.jpg?.small_image_url || d.data?.[0]?.images?.jpg?.image_url;
+              if (p) {
+                localStorage.setItem(cacheKey, p);
+                poster.src = p;
+                savePlayerState();
+              }
+            }).catch(() => {});
+        }
       }
 
-      player.classList.add("active");
+      // Update HD Badge display and tooltip
+      const hdBadge = document.getElementById("hdAudioBadge");
+      if (hdBadge) {
+        if (isSafe) {
+          const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+          hdBadge.style.display = "inline-block";
+          hdBadge.textContent = "HD";
+          hdBadge.title = isMobile ? "Audio optimized for Mobile Speakers" : "Audio optimized for PC/Headphones";
+        } else {
+          hdBadge.style.display = "none";
+        }
+      }
+
+      if (player) player.classList.add("active");
       audio.play()
         .then(() => savePlayerState())
         .catch(e => {
@@ -460,6 +667,7 @@ window.API_BASE = (location.hostname === "localhost" || location.hostname === "1
     };
 
     window.closeMusicPlayer = function() {
+      const audio = document.getElementById("playerAudio");
       if (player) player.classList.remove("active");
       if (audio) {
         audio.pause();
@@ -478,39 +686,43 @@ window.API_BASE = (location.hostname === "localhost" || location.hostname === "1
       }, 5000);
     }
 
-    // Attach listeners
-    if (audio) {
-      audio.addEventListener("timeupdate", debouncedSavePlayerState);
-      audio.addEventListener("play", savePlayerState);
-      audio.addEventListener("pause", savePlayerState);
-      audio.addEventListener("volumechange", savePlayerState);
-      audio.addEventListener("ended", () => {
-        localStorage.removeItem("anicrunch_player_state");
-        if (player) player.classList.remove("active");
-      });
-    }
-
     // Restore music playback state
     try {
       const saved = localStorage.getItem("anicrunch_player_state");
       if (saved) {
         const state = JSON.parse(saved);
         if (state.url) {
-          audio.src = state.url;
-          trackEl.textContent = state.title;
-          animeTitleEl.textContent = state.anime;
-          poster.src = state.poster || "/favicon.png";
-          audio.currentTime = state.currentTime || 0;
-          audio.volume = state.volume !== undefined ? state.volume : 1;
-          player.classList.add("active");
+          const isSafe = isCorsSafe(state.url);
+          const restoredAudio = getAudioElement(isSafe);
+          if (restoredAudio) {
+            restoredAudio.src = state.url;
+            if (trackEl) trackEl.textContent = state.title;
+            if (animeTitleEl) animeTitleEl.textContent = state.anime;
+            if (poster) poster.src = state.poster || "/favicon.png";
+            restoredAudio.currentTime = state.currentTime || 0;
+            restoredAudio.volume = state.volume !== undefined ? state.volume : 1;
+            
+            const hdBadge = document.getElementById("hdAudioBadge");
+            if (hdBadge) {
+              if (isSafe) {
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                hdBadge.style.display = "inline-block";
+                hdBadge.textContent = "HD";
+                hdBadge.title = isMobile ? "Audio optimized for Mobile Speakers" : "Audio optimized for PC/Headphones";
+              } else {
+                hdBadge.style.display = "none";
+              }
+            }
+            
+            if (player) player.classList.add("active");
 
-          if (state.isPlaying) {
-            // Attempt to restore play (requires user click or interaction)
-            audio.play().catch(() => {
-              // Mark as paused in saved state if blocked
-              state.isPlaying = false;
-              localStorage.setItem("anicrunch_player_state", JSON.stringify(state));
-            });
+            if (state.isPlaying) {
+              // Attempt to restore play (requires user click or interaction)
+              restoredAudio.play().catch(() => {
+                state.isPlaying = false;
+                localStorage.setItem("anicrunch_player_state", JSON.stringify(state));
+              });
+            }
           }
         }
       }
@@ -529,3 +741,4 @@ window.API_BASE = (location.hostname === "localhost" || location.hostname === "1
     initLayout();
   }
 })();
+
