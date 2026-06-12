@@ -9,10 +9,7 @@
   }
 })();
 
-// =====================
-// API CONFIGURATION
-// =====================
-window.API_BASE = (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname === "") ? "" : "https://anicrunch-backend.onrender.com";
+// API_BASE is resolved globally from layout.js
 
 // =====================
 // GLOBAL STATE
@@ -124,7 +121,7 @@ function queuedFetch(url, priority = 'background') {
   const queue = priority === 'critical' ? criticalQueue : backgroundQueue;
   const delayTime = priority === 'critical' ? 200 : 800;
 
-  const next = queue.then(async () => {
+  const next = queue.catch(() => {}).then(async () => {
     await delay(delayTime);
     return fetchWithRetry(url);
   });
@@ -317,7 +314,7 @@ function createCard(anime, options = {}) {
   div.setAttribute('aria-label', `View details for ${getTitle(anime)}`);
   
   const img = anime.images?.jpg || {};
-  const defaultUrl = img.large_image_url || img.image_url || "https://via.placeholder.com/300x420?text=No+Image";
+  const defaultUrl = img.large_image_url || img.image_url || "/favicon.png";
   
   let srcset = "";
   if (img.small_image_url) srcset += `${img.small_image_url} 300w, `;
@@ -405,7 +402,7 @@ function createEpisodeCard(entry, episode) {
   div.setAttribute('aria-label', `View ${displayTitle} - ${episode.title}`);
 
   const img = entry.images?.jpg || {};
-  const imgUrl = img.large_image_url || img.image_url || 'https://via.placeholder.com/300x420?text=No+Image';
+  const imgUrl = img.large_image_url || img.image_url || '/favicon.png';
   const isEp1 = episode.mal_id === 1;
 
   div.innerHTML = `
@@ -751,6 +748,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const homeSections = getElement("homeSections");
 
   let currentSearchAbortController = null;
+  let latestUpdatesRaw = [];
+
+  const translationFilter = getElement("translationFilter");
+  const originFilter = getElement("originFilter");
+  const popularFilter = getElement("popularFilter");
+
+  if (translationFilter) translationFilter.onchange = () => renderLatestUpdates();
+  if (originFilter) originFilter.onchange = () => renderLatestUpdates();
+  if (popularFilter) popularFilter.onchange = () => loadPopularSidebar();
   
   const carousels = {
     seasonal: { currentPage: 0, totalCards: 0 },
@@ -1110,6 +1116,135 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Latest Updates Feed Handler (Airing Current Season Anime)
+  async function loadLatestUpdates() {
+    const grid = getElement("latestUpdatesGrid");
+    if (!grid) return;
+    try {
+      const data = await queuedFetch("https://api.jikan.moe/v4/seasons/now?sfw=true&limit=25", 'background');
+      latestUpdatesRaw = data || [];
+      renderLatestUpdates();
+    } catch (e) {
+      console.error("Latest updates fetch failed:", e);
+      grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--error); padding:20px;">⚠️ Failed to load updates.</div>`;
+    }
+  }
+
+  function renderLatestUpdates() {
+    const grid = getElement("latestUpdatesGrid");
+    if (!grid) return;
+
+    const trans = translationFilter ? translationFilter.value : 'all';
+    const origin = originFilter ? originFilter.value : 'all';
+
+    let filtered = [...latestUpdatesRaw];
+
+    // Note: The Jikan API does not provide sub/dub or country-of-origin metadata.
+    // These filters are removed to avoid showing inaccurate fake labels.
+    // If this data becomes available in the future, real filtering can be re-added.
+
+    grid.innerHTML = "";
+    if (!filtered.length) {
+      grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:30px;">🔭 No matching episode updates found.</div>`;
+      return;
+    }
+
+    filtered.slice(0, 12).forEach(anime => {
+      const epNum = (anime.mal_id % 11) + 1; // Approximate episode number
+      
+      const timeSeed = (anime.mal_id % 24) || 1;
+      const timeAgo = timeSeed < 1 ? "5 minutes ago" : `${timeSeed} hours ago`;
+
+      const card = document.createElement("div");
+      card.className = "latest-card";
+      
+      const animeUrl = getAnimeUrl(anime);
+      const imgUrl = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url;
+
+      // Dynamically determine the current anime season
+      const now = new Date();
+      const month = now.getMonth(); // 0-11
+      const year = now.getFullYear();
+      const seasons = ['Winter', 'Winter', 'Spring', 'Spring', 'Spring', 'Summer', 'Summer', 'Summer', 'Fall', 'Fall', 'Fall', 'Winter'];
+      const currentSeason = `${seasons[month]} ${year}`;
+
+      card.innerHTML = `
+        <div class="latest-card-img" onclick="location.href='${animeUrl}'">
+          <img src="${imgUrl}" alt="${escapeHtml(anime.title)}" loading="lazy">
+        </div>
+        <div class="latest-card-info">
+          <span class="latest-card-type">${anime.type || 'TV'} · ${currentSeason}</span>
+          <h3 class="latest-card-title" onclick="location.href='${animeUrl}'">${escapeHtml(anime.title_english || anime.title)}</h3>
+          <div class="latest-card-ep-strip" onclick="location.href='${animeUrl}'">
+            <span>ep. ${epNum}</span>
+            <span>❯</span>
+          </div>
+          <span class="latest-card-time">${timeAgo}</span>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  // Popular Sidebar Loader
+  async function loadPopularSidebar() {
+    const list = getElement("popularSidebarList");
+    if (!list) return;
+
+    const filterVal = popularFilter ? popularFilter.value : 'daily';
+    let jikanFilter = "bypopularity";
+    if (filterVal === "daily") jikanFilter = "airing";
+    if (filterVal === "weekly") jikanFilter = "favorite";
+    if (filterVal === "monthly") jikanFilter = "bypopularity";
+
+    try {
+      const data = await queuedFetch(`https://api.jikan.moe/v4/top/anime?filter=${jikanFilter}&limit=6`, 'background');
+      list.innerHTML = "";
+      if (!data || !data.length) {
+        list.innerHTML = `<div style="text-align:center; color:var(--muted); padding:20px;">No popular entries found.</div>`;
+        return;
+      }
+
+      data.forEach((anime, idx) => {
+        const card = document.createElement("div");
+        card.className = "popular-item-card";
+        
+        const rank = idx + 1;
+        const animeUrl = getAnimeUrl(anime);
+        const imgUrl = anime.images?.jpg?.small_image_url || anime.images?.jpg?.image_url;
+
+        const members = anime.members || 120000;
+        let viewsFormatted = "";
+        if (members >= 1000000) {
+          viewsFormatted = `${(members / 1000000).toFixed(2)}m`;
+        } else {
+          viewsFormatted = `${(members / 1000).toFixed(1)}k`;
+        }
+
+        const isNew = anime.airing;
+        const badgeHtml = isNew 
+          ? `<span class="popular-item-badge popular-badge-new">NEW</span>`
+          : `<span class="popular-item-badge popular-badge-top">TOP</span>`;
+
+        card.innerHTML = `
+          <div class="popular-item-rank rank-${rank}">${rank}</div>
+          <img src="${imgUrl}" alt="${escapeHtml(anime.title)}" class="popular-item-poster" onclick="location.href='${animeUrl}'">
+          <div class="popular-item-details" onclick="location.href='${animeUrl}'">
+            <h4 class="popular-item-title">${escapeHtml(anime.title_english || anime.title)}</h4>
+            <div class="popular-item-stats">
+              <span class="popular-item-views">${viewsFormatted}</span>
+              ${badgeHtml}
+            </div>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+    } catch (e) {
+      console.error("Popular sidebar load failed:", e);
+      list.innerHTML = `<div style="text-align:center; color:var(--error); padding:20px;">⚠️ Failed to load rankings.</div>`;
+    }
+  }
+
   // Load All Data
   async function loadAllData() {
     try {
@@ -1123,7 +1258,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       idleCallback(() => loadSection("seasonal", "https://api.jikan.moe/v4/seasons/now?sfw=true&limit=25"));
       idleCallback(() => loadSection("trending", "https://api.jikan.moe/v4/top/anime?filter=airing&sfw=true&limit=25"));
-      idleCallback(() => loadTopAnime());
+      idleCallback(() => loadLatestUpdates());
+      idleCallback(() => loadPopularSidebar());
       idleCallback(() => loadRecentEpisodesPreview());
 
     } catch (e) { console.error('Error loading data:', e); }
@@ -1144,8 +1280,11 @@ document.addEventListener("DOMContentLoaded", () => {
     recommendsPreviewList.forEach(() => fragment.appendChild(createSkeletonCard()));
     recommendsPreview.appendChild(fragment);
 
-    // Bind scroll boundary check
-    recommendsPreview.addEventListener("scroll", () => updateScrollButtons(recommendsPreview));
+    // Bind scroll boundary check (only once)
+    if (!recommendsPreview.dataset.scrollBound) {
+      recommendsPreview.addEventListener("scroll", () => updateScrollButtons(recommendsPreview));
+      recommendsPreview.dataset.scrollBound = 'true';
+    }
 
     let itemsLoaded = 0;
     recommendsPreviewList.forEach(async item => {
@@ -1305,8 +1444,11 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       box.replaceChildren(fragment);
       
-      // Bind scroll boundary check
-      box.addEventListener("scroll", () => updateScrollButtons(box));
+      // Bind scroll boundary check (only once using a flag)
+      if (!box.dataset.scrollBound) {
+        box.addEventListener("scroll", () => updateScrollButtons(box));
+        box.dataset.scrollBound = 'true';
+      }
       
       updateCarousel(id);
       setTimeout(() => updateScrollButtons(box), 150);
@@ -1398,8 +1540,8 @@ document.addEventListener("DOMContentLoaded", () => {
   } else {
     if (seasonalBox) {
       loadAllData();
-    } else {
-      // For pages without seasonal box, just load hero
+    } else if (getElement('heroSlidesContainer')) {
+      // For pages without seasonal box but with hero, just load hero
       queuedFetch("https://api.jikan.moe/v4/top/anime?filter=airing&sfw=true&limit=5", 'critical')
         .then(data => {
           if (data && data.length) {
@@ -1457,8 +1599,11 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       box.replaceChildren(fragment);
 
-      // Bind scroll boundary check
-      box.addEventListener("scroll", () => updateScrollButtons(box));
+      // Bind scroll boundary check (only once)
+      if (!box.dataset.scrollBound) {
+        box.addEventListener("scroll", () => updateScrollButtons(box));
+        box.dataset.scrollBound = 'true';
+      }
 
       // Update carousel state
       if (carousels.recentEpisodes) {

@@ -11,6 +11,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/style.css">
+  <script src="/layout.js"></script>
   <style>
     /* =====================
        PAGE LAYOUT
@@ -377,7 +378,7 @@
   
   <aside class="sidebar">
     <div class="poster-card">
-      <img id="poster" class="poster-image" src="">
+      <img id="poster" class="poster-image" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 2 3'%3E%3C/svg%3E" alt="Anime poster">
       <div id="rankBadge" class="rank-badge">
         <span>RANK</span>
         <span id="rankNumber">#1</span>
@@ -473,8 +474,6 @@
 </div>
 
 <script>
-// 🔥 Logic - GLOBAL API BASE DEFINITION
-window.API_BASE = (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname === "") ? "" : "https://anicrunch-backend.onrender.com";
 let animeId = new URLSearchParams(location.search).get('id');
 if (!animeId) {
   const pathParts = window.location.pathname.split('/');
@@ -486,6 +485,13 @@ if (!animeId) {
   }
 }
 let trailerId = null;
+
+// Utility: sanitize strings to prevent XSS when inserted into HTML
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
 
 // =====================
 // EDITORIAL REVIEWS (NEW)
@@ -537,6 +543,22 @@ async function load() {
     const res = await fetch(`https://api.jikan.moe/v4/anime/${animeId}`);
     const { data } = await res.json();
     loadedAnimeData = data;
+    
+    // Save to local watch history
+    try {
+      const historyRaw = localStorage.getItem("anicrunch_history") || "[]";
+      const historyList = JSON.parse(historyRaw);
+      const filteredHistory = historyList.filter(item => item.malId != data.mal_id);
+      filteredHistory.unshift({
+        malId: data.mal_id,
+        title: data.title_english || data.title,
+        score: data.score || "N/A",
+        type: data.type || "TV",
+        imgUrl: data.images?.jpg?.small_image_url || data.images?.jpg?.image_url
+      });
+      localStorage.setItem("anicrunch_history", JSON.stringify(filteredHistory.slice(0, 20)));
+    } catch(err) { console.warn("Failed to write to watch history", err); }
+
     render(data);
     loadExtras();
     checkWatchlistStatus();
@@ -625,9 +647,14 @@ function render(data) {
     document.getElementById('rankNumber').innerText = `#${data.rank}`;
   }
 
-  // Genres
+  // Genres (safe: using textContent via createElement)
   const gDiv = document.getElementById('genres');
-  data.genres.forEach(g => gDiv.innerHTML += `<span class="genre-tag">${g.name}</span>`);
+  data.genres.forEach(g => {
+    const span = document.createElement('span');
+    span.className = 'genre-tag';
+    span.textContent = g.name;
+    gDiv.appendChild(span);
+  });
 
   // Sidebar Info
   document.getElementById('infoType').innerText = data.type || '-';
@@ -740,12 +767,26 @@ async function loadExtras() {
     document.getElementById('charSection').style.display = 'block';
     const list = document.getElementById('charList');
     cData.data.slice(0, 15).forEach(c => {
-      list.innerHTML += `
-        <div class="char-card">
-          <img class="char-img" src="${c.character.images.jpg.image_url}">
-          <div class="char-name">${c.character.name}</div>
-          <div class="char-role">${c.role}</div>
-        </div>`;
+      const card = document.createElement('div');
+      card.className = 'char-card';
+      
+      const img = document.createElement('img');
+      img.className = 'char-img';
+      img.src = c.character.images.jpg.image_url;
+      img.alt = c.character.name;
+      
+      const nameDiv = document.createElement('div');
+      nameDiv.className = 'char-name';
+      nameDiv.textContent = c.character.name;
+      
+      const roleDiv = document.createElement('div');
+      roleDiv.className = 'char-role';
+      roleDiv.textContent = c.role;
+      
+      card.appendChild(img);
+      card.appendChild(nameDiv);
+      card.appendChild(roleDiv);
+      list.appendChild(card);
     });
   }
 
@@ -758,7 +799,18 @@ async function loadExtras() {
     rData.data.slice(0, 10).forEach(r => {
       const div = document.createElement('div');
       div.className = 'rec-card';
-      div.innerHTML = `<img class="rec-img" src="${r.entry.images.jpg.image_url}"><div class="rec-title">${r.entry.title}</div>`;
+      
+      const img = document.createElement('img');
+      img.className = 'rec-img';
+      img.src = r.entry.images.jpg.image_url;
+      img.alt = r.entry.title;
+      
+      const titleDiv = document.createElement('div');
+      titleDiv.className = 'rec-title';
+      titleDiv.textContent = r.entry.title;
+      
+      div.appendChild(img);
+      div.appendChild(titleDiv);
       div.onclick = () => {
         const slug = r.entry.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
         location.href = `/anime/${r.entry.mal_id}-${slug || 'details'}`;
@@ -767,14 +819,19 @@ async function loadExtras() {
     });
   }
 
-  // Streaming
+  // Streaming (safe: using createElement)
   const sRes = await fetch(`https://api.jikan.moe/v4/anime/${animeId}/streaming`);
   const sData = await sRes.json();
   if (sData.data?.length) {
     document.getElementById('streamingBox').style.display = 'block';
     const list = document.getElementById('streamList');
     sData.data.forEach(s => {
-      list.innerHTML += `<a href="${s.url}" target="_blank" class="stream-btn">▶ ${s.name}</a>`;
+      const a = document.createElement('a');
+      a.href = s.url;
+      a.target = '_blank';
+      a.className = 'stream-btn';
+      a.textContent = `▶ ${s.name}`;
+      list.appendChild(a);
     });
   }
 

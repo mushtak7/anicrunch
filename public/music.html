@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AniCrunch – Music Lounge</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/layout.js"></script>
+</head>
+<body>
+
+<header>
+  <h1 class="logo" onclick="location.href='/'">anicrunch</h1>
+  <div class="search-container" style="display:none;"></div>
+  <div id="authArea"></div>
+</header>
+
+<section class="watchlist-hero" style="min-height: auto; padding: 40px 20px; background: linear-gradient(135deg, rgba(236, 72, 153, 0.08) 0%, rgba(120, 75, 160, 0.08) 100%);">
+  <div class="watchlist-hero-content" style="text-align: center;">
+    <h1>🎵 OST Lounge</h1>
+    <p>Discover theme songs and openings/endings of popular anime!</p>
+  </div>
+</section>
+
+<main class="page-container">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; gap: 15px; flex-wrap: wrap;">
+    <h2 style="margin: 0; font-size: 24px; font-weight: 800;">🎧 Library Tracks</h2>
+    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+      <!-- Real-time Filter Input -->
+      <input type="text" id="musicSearchInput" oninput="filterLocalTracks()" placeholder="Search local tracks..." style="padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border); background: rgba(255,255,255,0.05); color: var(--text); font-size: 14px; width: 200px; outline: none; transition: border 0.3s;" onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'">
+      
+      <button id="openUploadBtn" onclick="openUploadModal()" class="action-btn" style="background: var(--primary); color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; box-shadow: 0 4px 12px rgba(236, 72, 153, 0.2); transition: all 0.2s;">
+        📤 Upload Track
+      </button>
+    </div>
+  </div>
+
+  <div id="localMusicGrid" class="music-grid">
+    <div style="grid-column: 1/-1; padding: 40px 0; text-align: center; color: var(--muted);">
+      ⏳ Tuning frequencies and loading library...
+    </div>
+  </div>
+</main>
+
+<script>
+  let allLocalTracks = [];
+
+  // Upload modal controls
+  window.openUploadModal = function() {
+    document.getElementById("uploadModal").style.display = "flex";
+  };
+
+  window.closeUploadModal = function() {
+    document.getElementById("uploadModal").style.display = "none";
+    document.getElementById("uploadForm").reset();
+  };
+
+  // Dynamic anime poster loader using cache and Jikan
+  async function loadCardPoster(animeName, imgElement) {
+    if (!animeName || animeName === "Local Library") {
+      imgElement.src = "/favicon.png";
+      return;
+    }
+    const cacheKey = `poster_cache_${encodeURIComponent(animeName)}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      imgElement.src = cached;
+      return;
+    }
+    try {
+      await new Promise(r => setTimeout(r, 600)); // prevent Jikan rate limit issues
+      const res = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(animeName)}&limit=1`);
+      if (res.ok) {
+        const d = await res.json();
+        const poster = d.data?.[0]?.images?.jpg?.small_image_url || d.data?.[0]?.images?.jpg?.image_url;
+        if (poster) {
+          localStorage.setItem(cacheKey, poster);
+          imgElement.src = poster;
+          return;
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch poster for", animeName, err);
+    }
+    imgElement.src = "/favicon.png";
+  }
+
+  // Load local music list
+  async function loadLocalMusic() {
+    const list = document.getElementById("localMusicGrid");
+    try {
+      const res = await fetch("/api/music");
+      if (!res.ok) throw new Error("Failed to load tracks");
+      allLocalTracks = await res.json();
+      renderTracks(allLocalTracks);
+    } catch (e) {
+      console.error(e);
+      list.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--error);">⚠️ Failed to load local tracks. Make sure the server is running.</div>`;
+    }
+  }
+
+  // Render track cards in the grid
+  function renderTracks(tracks) {
+    const list = document.getElementById("localMusicGrid");
+    list.innerHTML = "";
+    
+    if (!tracks.length) {
+      list.innerHTML = `<div style="grid-column: 1/-1; padding: 40px 0; text-align: center; color: var(--muted);">📂 No matching tracks found in library. Use the CLI sync script or upload above!</div>`;
+      return;
+    }
+
+    tracks.forEach(track => {
+      const card = document.createElement("div");
+      card.className = "music-card";
+
+      card.innerHTML = `
+        <img src="/favicon.png" alt="${escapeHtml(track.anime)}" class="music-card-poster">
+        <div class="music-card-info">
+          <h4 class="music-card-title">${escapeHtml(track.anime)}</h4>
+          <span class="music-track-name" title="${escapeHtml(track.title)}">🎵 [${escapeHtml(track.type)}] ${escapeHtml(track.title)}</span>
+        </div>
+        <button class="music-play-btn" aria-label="Play Track" title="Play Track">▶</button>
+      `;
+
+      // Load poster asynchronously
+      const img = card.querySelector(".music-card-poster");
+      loadCardPoster(track.anime, img);
+
+      const playBtn = card.querySelector(".music-play-btn");
+      playBtn.onclick = () => {
+        playLocalSong(track);
+      };
+
+      list.appendChild(card);
+    });
+  }
+
+  // Real-time track search filter
+  window.filterLocalTracks = function() {
+    const query = document.getElementById("musicSearchInput").value.toLowerCase().trim();
+    if (!query) {
+      renderTracks(allLocalTracks);
+      return;
+    }
+    const filtered = allLocalTracks.filter(t => 
+      t.anime.toLowerCase().includes(query) || 
+      t.title.toLowerCase().includes(query) || 
+      t.type.toLowerCase().includes(query)
+    );
+    renderTracks(filtered);
+  };
+
+  // Handle track upload submission
+  window.handleUpload = async function(e) {
+    e.preventDefault();
+    const submitBtn = document.getElementById("submitBtn");
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Uploading...";
+
+    const animeTitle = document.getElementById("uploadAnime").value;
+    const songTitle = document.getElementById("uploadSong").value;
+    const type = document.getElementById("uploadType").value;
+    const fileInput = document.getElementById("uploadFile");
+    const remoteUrl = document.getElementById("uploadUrl").value.trim();
+
+    if (fileInput.files.length === 0 && !remoteUrl) {
+      alert("Please select a file to upload OR provide a direct streaming track URL.");
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Upload";
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("animeTitle", animeTitle);
+    formData.append("songTitle", songTitle);
+    formData.append("type", type);
+    
+    if (fileInput.files.length > 0) {
+      formData.append("musicFile", fileInput.files[0]);
+    }
+    if (remoteUrl) {
+      formData.append("remoteUrl", remoteUrl);
+    }
+
+    try {
+      const res = await fetch("/api/music/upload", {
+        method: "POST",
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert(`Successfully registered "${songTitle}"!`);
+        closeUploadModal();
+        loadLocalMusic();
+      } else {
+        if (res.status === 401) {
+          alert("Unauthorized! Please log in first to upload or add tracks.");
+        } else {
+          alert(`Registration failed: ${data.message || "Unknown error"}`);
+        }
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+      alert("Error registering track. Ensure you are signed in.");
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Upload";
+    }
+  };
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    loadLocalMusic();
+  });
+</script>
+
+<!-- Upload Modal Overlay -->
+<div id="uploadModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 15, 25, 0.75); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); z-index: 20000; justify-content: center; align-items: center; transition: all 0.3s ease;">
+  <div class="modal-content" style="background: rgba(25, 25, 45, 0.95); border: 1px solid var(--border); border-radius: 20px; width: 90%; max-width: 460px; padding: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative; color: white;">
+    <h3 style="margin-top: 0; margin-bottom: 20px; font-size: 22px; font-weight: 700; color: white; display: flex; align-items: center; gap: 8px;">📤 Register Theme Track</h3>
+    <form id="uploadForm" onsubmit="handleUpload(event)">
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--muted);">Anime Title</label>
+        <input type="text" id="uploadAnime" required placeholder="e.g. Naruto, Frieren, One Piece" style="width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: rgba(10, 10, 20, 0.5); color: white; box-sizing: border-box; font-size: 14px;">
+      </div>
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--muted);">Track/Song Name</label>
+        <input type="text" id="uploadSong" required placeholder="e.g. Blue Bird, Haruka Kanata, Yuusha" style="width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: rgba(10, 10, 20, 0.5); color: white; box-sizing: border-box; font-size: 14px;">
+      </div>
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--muted);">Type</label>
+        <select id="uploadType" style="width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: rgba(10, 10, 20, 0.8); color: white; box-sizing: border-box; font-size: 14px; cursor: pointer;">
+          <option value="OP">Opening (OP)</option>
+          <option value="ED">Ending (ED)</option>
+          <option value="OST">Original Soundtrack (OST)</option>
+          <option value="Insert">Insert Song</option>
+        </select>
+      </div>
+      
+      <!-- Direct Streaming URL Input -->
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--muted);">Direct Audio/Video URL</label>
+        <input type="url" id="uploadUrl" placeholder="e.g. https://domain.com/song.mp3" style="width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: rgba(10, 10, 20, 0.5); color: white; box-sizing: border-box; font-size: 14px;">
+        <span style="font-size: 11px; color: var(--muted); margin-top: 4px; display: block;">Stream directly from public URL (Recommended for production)</span>
+      </div>
+
+      <div style="text-align: center; color: var(--muted); font-size: 12px; margin: 10px 0; font-weight: 700;">— OR —</div>
+
+      <!-- File Upload Input -->
+      <div style="margin-bottom: 24px;">
+        <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--muted);">Upload Audio/Video File</label>
+        <input type="file" id="uploadFile" accept=".mp3,.ogg,.wav,.webm,.mp4,.m4a" style="width: 100%; padding: 12px; border: 1px dashed var(--border); border-radius: 10px; cursor: pointer; color: white; box-sizing: border-box; background: rgba(10, 10, 20, 0.3); font-size: 13px;">
+        <span style="font-size: 11px; color: var(--muted); margin-top: 6px; display: block;">Max file size: 100MB</span>
+      </div>
+
+      <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 25px;">
+        <button type="button" onclick="closeUploadModal()" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: white; padding: 12px 20px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.2s;">Cancel</button>
+        <button type="submit" id="submitBtn" style="background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 14px; transition: all 0.2s; box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);">Register</button>
+      </div>
+    </form>
+    <button onclick="closeUploadModal()" style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 20px; transition: color 0.2s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='var(--muted)'">✕</button>
+  </div>
+</div>
+</body>
+</html>

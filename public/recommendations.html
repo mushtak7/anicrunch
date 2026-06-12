@@ -15,11 +15,16 @@
   <link rel="manifest" href="/manifest.json">
 
   <link rel="stylesheet" href="/style.css" />
+  <script src="/layout.js" defer></script>
 </head>
 <body>
 
 <header>
   <h1 onclick="location.href='/'" style="cursor:pointer">anicrunch</h1>
+  <div class="search-container">
+    <input id="search" placeholder="Search anime..." autocomplete="off" aria-label="Search anime" />
+  </div>
+  <div id="authArea"></div>
 </header>
 
 <main style="max-width: 1100px; margin: 40px auto; padding: 0 20px;">

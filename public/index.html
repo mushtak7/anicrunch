@@ -28,6 +28,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="/style.css">
+  <script src="/layout.js" defer></script>
   
   <style>
     /* Critical CSS - Loads immediately */
@@ -309,19 +310,44 @@
   </div>
 </section>
 
-<section class="genre-filter-section" id="genreFilterSection">
-  <div class="genre-filter-content">
-    <h2>🎭 Browse by Genre</h2>
-    <div class="genre-chips" id="genreChips"></div>
-  </div>
-</section>
-
 <main class="layout">
 
   <section class="left">
 
     <div id="homeSections">
       
+      <!-- NEW LATEST UPDATES SECTION WITH CUSTOM FILTERS -->
+      <div class="block">
+        <div class="updates-section">
+          <h2 style="margin:0;">LATEST UPDATES</h2>
+          <div class="updates-filters">
+            <div class="filter-select-wrapper">
+              <span>Translation</span>
+              <select id="translationFilter" class="filter-select">
+                <option value="all">All</option>
+                <option value="sub">Sub</option>
+                <option value="dub">Dub</option>
+              </select>
+            </div>
+            <div class="filter-select-wrapper">
+              <span>Anime Origin</span>
+              <select id="originFilter" class="filter-select">
+                <option value="all">All</option>
+                <option value="japan">Japan</option>
+                <option value="china">China</option>
+                <option value="korea">Korea</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <div id="latestUpdatesGrid" class="responsive-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 20px;">
+          <div style="grid-column: 1/-1; padding: 40px 0; text-align: center; color: var(--muted);">
+            ⏳ Loading latest updates...
+          </div>
+        </div>
+      </div>
+
       <div class="block">
         <h2>🌸 Seasonal</h2>
         <div class="row-wrapper">
@@ -382,8 +408,20 @@
       <button style="width: 100%; padding: 10px; background: var(--gradient); border: none; border-radius: 8px; color: white; font-weight: 700; cursor: pointer; font-size: 13px; box-shadow: 0 4px 12px rgba(255, 60, 172, 0.25);">Play Today's Quiz</button>
     </div>
 
-    <h2>🏆 Top Anime</h2>
-    <div id="topAnime" class="top-list"></div>
+    <!-- POPULAR SIDEBAR COMPONENT -->
+    <div class="popular-sidebar-title">
+      <h2 style="margin:0;">POPULAR</h2>
+      <select id="popularFilter" class="filter-select" style="padding: 4px 10px; font-size:12px;">
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+      </select>
+    </div>
+    <div id="popularSidebarList" style="margin-top: 15px;">
+      <div style="padding: 20px 0; text-align: center; color: var(--muted); font-size:13px;">
+        ⏳ Loading rankings...
+      </div>
+    </div>
   </aside>
 
 </main>

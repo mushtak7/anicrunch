@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AniCrunch – Anime Tier Lists</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/layout.js"></script>
+</head>
+<body>
+
+<header>
+  <h1 class="logo" onclick="location.href='/'">anicrunch</h1>
+  <div class="search-container" style="display:none;"></div>
+  <div id="authArea"></div>
+</header>
+
+<section class="watchlist-hero" style="min-height: auto; padding: 40px 20px; background: linear-gradient(135deg, rgba(255, 127, 127, 0.08) 0%, rgba(120, 75, 160, 0.08) 100%);">
+  <div class="watchlist-hero-content" style="text-align: center;">
+    <h1>📊 Anime Tier Builder</h1>
+    <p>Rank your favorite anime titles into custom tiers and export your setup!</p>
+  </div>
+</section>
+
+<main class="page-container">
+  
+  <div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 20px;">
+    <button class="btn-action" style="padding: 10px 20px;" onclick="resetTierList()">🔄 Reset List</button>
+    <button class="btn-action" style="padding: 10px 20px;" onclick="exportTierList()">📸 Copy Share Text</button>
+  </div>
+
+  <div class="tier-list-container" id="tierWorkspace">
+    <!-- Tier Rows -->
+    <div class="tier-row" data-tier="S">
+      <div class="tier-label tier-s">S</div>
+      <div class="tier-items-dropzone" ondragover="allowDrop(event)" ondrop="handleDrop(event)"></div>
+    </div>
+    <div class="tier-row" data-tier="A">
+      <div class="tier-label tier-a">A</div>
+      <div class="tier-items-dropzone" ondragover="allowDrop(event)" ondrop="handleDrop(event)"></div>
+    </div>
+    <div class="tier-row" data-tier="B">
+      <div class="tier-label tier-b">B</div>
+      <div class="tier-items-dropzone" ondragover="allowDrop(event)" ondrop="handleDrop(event)"></div>
+    </div>
+    <div class="tier-row" data-tier="C">
+      <div class="tier-label tier-c">C</div>
+      <div class="tier-items-dropzone" ondragover="allowDrop(event)" ondrop="handleDrop(event)"></div>
+    </div>
+    <div class="tier-row" data-tier="D">
+      <div class="tier-label tier-d">D</div>
+      <div class="tier-items-dropzone" ondragover="allowDrop(event)" ondrop="handleDrop(event)"></div>
+    </div>
+    <div class="tier-row" data-tier="E">
+      <div class="tier-label tier-e">E</div>
+      <div class="tier-items-dropzone" ondragover="allowDrop(event)" ondrop="handleDrop(event)"></div>
+    </div>
+  </div>
+
+  <!-- Search & Add Panel -->
+  <div class="tier-search-panel">
+    <h3>🔍 Find Anime to Rank</h3>
+    <input type="text" class="tier-search-input" id="tierSearchInput" placeholder="Type anime title (e.g. Naruto, Bleach, Attack on Titan)...">
+    <div id="tierSearchResults" class="tier-search-results"></div>
+  </div>
+
+</main>
+
+<script>
+  let searchTimeout;
+  
+  document.addEventListener("DOMContentLoaded", () => {
+    // Auth Check
+    fetch(`${API_BASE}/api/me`, { credentials: "include" })
+      .then(r => r.json())
+      .then(d => {
+        const authArea = document.getElementById("authArea");
+        if (d.user && authArea) {
+          authArea.innerHTML = `<span style="color:var(--muted)">👤 ${escapeHtml(d.user.username)}</span>`;
+        }
+      }).catch(() => {});
+
+    // Bind Search Input
+    const input = document.getElementById("tierSearchInput");
+    input.oninput = (e) => {
+      const q = e.target.value.trim();
+      clearTimeout(searchTimeout);
+      if (q.length < 3) {
+        document.getElementById("tierSearchResults").innerHTML = "";
+        return;
+      }
+
+      searchTimeout = setTimeout(async () => {
+        const resultsBox = document.getElementById("tierSearchResults");
+        resultsBox.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--muted);">Searching...</div>`;
+        try {
+          const res = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(q)}&limit=10`);
+          const json = await res.json();
+          renderSearchResults(json.data || []);
+        } catch(e) {
+          resultsBox.innerHTML = `<div style="grid-column:1/-1; color:var(--error);">Failed to search.</div>`;
+        }
+      }, 500);
+    };
+
+    // Load saved layout if any
+    loadSavedTiers();
+  });
+
+  function renderSearchResults(list) {
+    const resultsBox = document.getElementById("tierSearchResults");
+    resultsBox.innerHTML = "";
+    if (!list.length) {
+      resultsBox.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--muted);">No results.</div>`;
+      return;
+    }
+
+    list.forEach(anime => {
+      const img = document.createElement("img");
+      img.src = anime.images?.jpg?.small_image_url || anime.images?.jpg?.image_url;
+      img.className = "tier-item-poster";
+      img.alt = anime.title_english || anime.title;
+      img.draggable = true;
+      img.id = `anime-${anime.mal_id}`;
+      
+      // Store poster data attributes
+      img.dataset.malId = anime.mal_id;
+      img.dataset.title = anime.title_english || anime.title;
+      img.dataset.imgUrl = img.src;
+
+      img.ondragstart = (e) => {
+        e.dataTransfer.setData("text/plain", e.target.id);
+      };
+
+      // Support click to add as fallback for touch devices
+      img.onclick = () => {
+        const targetDropzone = document.querySelector(".tier-items-dropzone"); // Default S tier
+        if (targetDropzone) {
+          // Clone and add to S tier
+          const clone = img.cloneNode(true);
+          clone.onclick = () => clone.remove(); // Click placed poster to remove it
+          clone.ondragstart = (ev) => {
+            ev.dataTransfer.setData("text/plain", ev.target.id);
+          };
+          targetDropzone.appendChild(clone);
+          saveTiersState();
+        }
+      };
+
+      resultsBox.appendChild(img);
+    });
+  }
+
+  // Drag and Drop implementation
+  function allowDrop(e) {
+    e.preventDefault();
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    const data = e.dataTransfer.getData("text/plain");
+    const el = document.getElementById(data);
+    
+    // Find closest dropzone
+    let dropzone = e.target;
+    if (!dropzone.classList.contains("tier-items-dropzone")) {
+      dropzone = dropzone.closest(".tier-items-dropzone");
+    }
+
+    if (dropzone && el) {
+      // If dragged from search results, clone it. Otherwise, move the node.
+      if (el.parentElement.id === "tierSearchResults") {
+        const clone = el.cloneNode(true);
+        // Clean unique ID for clone
+        clone.id = `ranked-${Date.now()}`;
+        clone.onclick = () => { clone.remove(); saveTiersState(); };
+        clone.ondragstart = (ev) => {
+          ev.dataTransfer.setData("text/plain", ev.target.id);
+        };
+        dropzone.appendChild(clone);
+      } else {
+        dropzone.appendChild(el);
+      }
+      saveTiersState();
+    }
+  }
+
+  // Save tier state to local storage
+  function saveTiersState() {
+    const state = {};
+    document.querySelectorAll(".tier-row").forEach(row => {
+      const tier = row.dataset.tier;
+      const items = [];
+      row.querySelectorAll(".tier-item-poster").forEach(item => {
+        items.push({
+          malId: item.dataset.malId,
+          title: item.dataset.title,
+          imgUrl: item.dataset.imgUrl
+        });
+      });
+      state[tier] = items;
+    });
+    localStorage.setItem("anicrunch_tierlist", JSON.stringify(state));
+  }
+
+  // Load saved state from local storage
+  function loadSavedTiers() {
+    const saved = localStorage.getItem("anicrunch_tierlist");
+    if (!saved) return;
+    try {
+      const state = JSON.parse(saved);
+      document.querySelectorAll(".tier-row").forEach(row => {
+        const tier = row.dataset.tier;
+        const items = state[tier] || [];
+        const dropzone = row.querySelector(".tier-items-dropzone");
+        dropzone.innerHTML = "";
+        
+        items.forEach(item => {
+          const img = document.createElement("img");
+          img.src = item.imgUrl;
+          img.className = "tier-item-poster";
+          img.alt = item.title;
+          img.draggable = true;
+          img.id = `ranked-${item.malId}-${Math.random()}`;
+          img.dataset.malId = item.malId;
+          img.dataset.title = item.title;
+          img.dataset.imgUrl = item.imgUrl;
+
+          img.onclick = () => { img.remove(); saveTiersState(); };
+          img.ondragstart = (e) => {
+            e.dataTransfer.setData("text/plain", e.target.id);
+          };
+          dropzone.appendChild(img);
+        });
+      });
+    } catch(e) { console.warn("Failed to load tier state", e); }
+  }
+
+  function resetTierList() {
+    if (confirm("Reset current tier list ranks?")) {
+      document.querySelectorAll(".tier-items-dropzone").forEach(zone => zone.innerHTML = "");
+      localStorage.removeItem("anicrunch_tierlist");
+    }
+  }
+
+  function exportTierList() {
+    const listState = localStorage.getItem("anicrunch_tierlist");
+    if (!listState) {
+      alert("Add some anime to your tiers first!");
+      return;
+    }
+    
+    try {
+      const state = JSON.parse(listState);
+      let text = "🎌 My AniCrunch Anime Tier List Rankings! 🎌\n\n";
+      let totalRanked = 0;
+      
+      ["S", "A", "B", "C", "D", "E"].forEach(tier => {
+        const items = state[tier] || [];
+        if (items.length) {
+          text += `[Tier ${tier}]: ${items.map(i => i.title).join(", ")}\n`;
+          totalRanked += items.length;
+        }
+      });
+      
+      if (totalRanked === 0) {
+        alert("Your tier list is currently empty!");
+        return;
+      }
+
+      navigator.clipboard.writeText(text).then(() => {
+        alert("📋 Rankings share text copied to clipboard! Share it with your friends.");
+      });
+    } catch (e) {
+      alert("Failed to export.");
+    }
+  }
+
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+</script>
+</body>
+</html>

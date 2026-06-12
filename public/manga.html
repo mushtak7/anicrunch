@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AniCrunch – Explore Manga</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/layout.js"></script>
+</head>
+<body>
+
+<header>
+  <!-- Main layout placeholder: layout.js automatically converts this into the new shell -->
+  <h1 class="logo" onclick="location.href='/'">anicrunch</h1>
+  <div class="search-container">
+    <input id="search" placeholder="Search manga..." autocomplete="off" aria-label="Search manga" />
+  </div>
+  <div id="authArea"></div>
+</header>
+
+<section class="watchlist-hero" style="min-height: auto; padding: 40px 20px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(120, 75, 160, 0.08) 100%);">
+  <div class="watchlist-hero-content" style="text-align: center;">
+    <h1>📖 Manga Vault</h1>
+    <p>Discover top rated manga, light novels, and manhwa!</p>
+  </div>
+</section>
+
+<!-- Search Result Block -->
+<div class="block" id="mangaSearchBlock" style="display: none; padding: 30px 0;">
+  <h2 id="mangaSearchTitle">Search Results</h2>
+  <div id="mangaSearchGrid" class="responsive-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 20px; margin-top: 20px;"></div>
+</div>
+
+<!-- Main Discovery Block -->
+<div id="mangaDiscoveryBlock">
+  <section style="margin: 40px 0;">
+    <h2>🔥 Popular Manga</h2>
+    <div id="popularMangaGrid" class="responsive-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 20px; margin-top: 20px;">
+      <div style="grid-column: 1/-1; padding: 40px 0; text-align: center; color: var(--muted);">
+        ⏳ Fetching popular titles...
+      </div>
+    </div>
+  </section>
+
+  <section style="margin: 40px 0;">
+    <h2>⭐ Top Light Novels</h2>
+    <div id="topNovelsGrid" class="responsive-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 20px; margin-top: 20px;">
+      <div style="grid-column: 1/-1; padding: 40px 0; text-align: center; color: var(--muted);">
+        ⏳ Fetching light novels...
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+  // Rate limited fetch queue helper
+  let requestQueue = Promise.resolve();
+  function queuedMangaFetch(url) {
+    const next = requestQueue.then(async () => {
+      await new Promise(r => setTimeout(r, 400));
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      return json.data || [];
+    });
+    requestQueue = next;
+    return next;
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // Auth Check
+    fetch(`${API_BASE}/api/me`, { credentials: "include" })
+      .then(r => r.json())
+      .then(d => {
+        const authArea = document.getElementById("authArea");
+        if (d.user && authArea) {
+          authArea.innerHTML = `<span style="color:var(--muted)">👤 ${escapeHtml(d.user.username)}</span>`;
+        }
+      }).catch(() => {});
+
+    loadDiscoveryManga();
+
+    // Bind manga search input
+    const searchInput = document.getElementById("search");
+    if (searchInput) {
+      searchInput.placeholder = "Search manga and light novels...";
+      let searchTimeout;
+      searchInput.oninput = (e) => {
+        const query = e.target.value.trim();
+        clearTimeout(searchTimeout);
+        if (query.length < 3) {
+          document.getElementById("mangaSearchBlock").style.display = "none";
+          document.getElementById("mangaDiscoveryBlock").style.display = "block";
+          return;
+        }
+
+        searchTimeout = setTimeout(async () => {
+          document.getElementById("mangaSearchBlock").style.display = "block";
+          document.getElementById("mangaDiscoveryBlock").style.display = "none";
+          const grid = document.getElementById("mangaSearchGrid");
+          grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:30px;">⏳ Searching manga vault...</div>`;
+          document.getElementById("mangaSearchTitle").textContent = `🔍 Results for "${query}"`;
+          
+          try {
+            const data = await queuedMangaFetch(`https://api.jikan.moe/v4/manga?q=${encodeURIComponent(query)}&limit=12`);
+            renderMangaGrid(grid, data);
+          } catch (err) {
+            grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--error); padding:20px;">⚠️ Search failed. Please retry.</div>`;
+          }
+        }, 500);
+      };
+    }
+  });
+
+  async function loadDiscoveryManga() {
+    try {
+      const popManga = await queuedMangaFetch("https://api.jikan.moe/v4/top/manga?filter=bypopularity&limit=6");
+      renderMangaGrid(document.getElementById("popularMangaGrid"), popManga);
+    } catch (e) {
+      document.getElementById("popularMangaGrid").innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--error);">Failed to load popular manga.</div>`;
+    }
+
+    try {
+      const novels = await queuedMangaFetch("https://api.jikan.moe/v4/top/manga?type=novel&limit=6");
+      renderMangaGrid(document.getElementById("topNovelsGrid"), novels);
+    } catch (e) {
+      document.getElementById("topNovelsGrid").innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--error);">Failed to load light novels.</div>`;
+    }
+  }
+
+  function renderMangaGrid(container, list) {
+    container.innerHTML = "";
+    if (!list.length) {
+      container.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:20px;">No matching titles found.</div>`;
+      return;
+    }
+
+    list.forEach(manga => {
+      const card = document.createElement("div");
+      card.className = "anime-card";
+      
+      const title = manga.title_english || manga.title;
+      const score = manga.score || "N/A";
+      const chapters = manga.chapters ? `${manga.chapters} chs` : "Ongoing";
+      const type = manga.type || "Manga";
+      const imgUrl = manga.images?.jpg?.large_image_url || manga.images?.jpg?.image_url;
+
+      card.innerHTML = `
+        <div class="anime-card-poster">
+          <img src="${imgUrl}" alt="${escapeHtml(title)}" loading="lazy">
+          <div class="anime-card-rating">⭐ ${score}</div>
+        </div>
+        <div class="anime-card-content">
+          <h3 style="font-size:14px; line-height:1.4; height:38px; display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical; overflow:hidden;">${escapeHtml(title)}</h3>
+          <div class="anime-card-meta">
+            <span>${chapters}</span>
+            <span>•</span>
+            <span>${type}</span>
+          </div>
+        </div>
+      `;
+      // Manga card clicks redirect to MAL page
+      card.onclick = () => window.open(manga.url, "_blank");
+      container.appendChild(card);
+    });
+  }
+</script>
+</body>
+</html>

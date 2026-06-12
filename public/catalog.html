@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AniCrunch – Anime Catalog</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/layout.js"></script>
+</head>
+<body>
+
+<header>
+  <h1 class="logo" onclick="location.href='/'">anicrunch</h1>
+  <div class="search-container" style="display:none;"></div>
+  <div id="authArea"></div>
+</header>
+
+<section class="watchlist-hero" style="min-height: auto; padding: 40px 20px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(120, 75, 160, 0.08) 100%);">
+  <div class="watchlist-hero-content" style="text-align: center;">
+    <h1>📺 Anime Database</h1>
+    <p>Filter, sort, and browse through the entire catalog of anime titles!</p>
+  </div>
+</section>
+
+<main class="page-container">
+  <!-- Catalog Filtering Panel -->
+  <div style="background: var(--glass); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 30px;">
+    
+    <div class="filter-select-wrapper" style="flex: 1; min-width: 200px;">
+      <span>Keyword Search</span>
+      <input type="text" id="catalogSearch" class="filter-select" style="width: 100%;" placeholder="Search title...">
+    </div>
+
+    <div class="filter-select-wrapper">
+      <span>Genre</span>
+      <select id="genreSelect" class="filter-select">
+        <option value="">All Genres</option>
+        <option value="1">Action</option>
+        <option value="2">Adventure</option>
+        <option value="5">Avant Garde</option>
+        <option value="46">Award Winning</option>
+        <option value="28">Boys Love</option>
+        <option value="4">Comedy</option>
+        <option value="8">Drama</option>
+        <option value="10">Fantasy</option>
+        <option value="26">Girls Love</option>
+        <option value="47">Gourmet</option>
+        <option value="14">Horror</option>
+        <option value="7">Mystery</option>
+        <option value="22">Romance</option>
+        <option value="24">Sci-Fi</option>
+        <option value="36">Slice of Life</option>
+        <option value="30">Sports</option>
+        <option value="37">Supernatural</option>
+        <option value="41">Suspense</option>
+        <option value="9">Ecchi</option>
+      </select>
+    </div>
+
+    <div class="filter-select-wrapper">
+      <span>Tag / Theme</span>
+      <select id="tagSelect" class="filter-select">
+        <option value="">All Tags</option>
+        <option value="50">Adult Cast</option>
+        <option value="51">Anthropomorphic</option>
+        <option value="52">CGDCT</option>
+        <option value="53">Childcare</option>
+        <option value="54">Combat Sports</option>
+        <option value="81">Crossdressing</option>
+        <option value="55">Delinquents</option>
+        <option value="39">Detective</option>
+        <option value="56">Educational</option>
+        <option value="57">Gag Humor</option>
+        <option value="58">Gore</option>
+        <option value="35">Harem</option>
+        <option value="59">High Stakes Game</option>
+        <option value="13">Historical</option>
+        <option value="60">Idols (Female)</option>
+        <option value="61">Idols (Male)</option>
+        <option value="62">Isekai</option>
+        <option value="63">Iyashikei</option>
+        <option value="43">Josei</option>
+        <option value="15">Kids</option>
+        <option value="64">Love Polygon</option>
+        <option value="74">Love Status Quo</option>
+        <option value="65">Magical Sex Shift</option>
+        <option value="66">Mahou Shoujo</option>
+        <option value="17">Martial Arts</option>
+        <option value="18">Mecha</option>
+        <option value="67">Medical</option>
+        <option value="38">Military</option>
+        <option value="19">Music</option>
+        <option value="6">Mythology</option>
+        <option value="68">Organized Crime</option>
+        <option value="69">Otaku Culture</option>
+        <option value="20">Parody</option>
+        <option value="70">Performing Arts</option>
+        <option value="71">Pets</option>
+        <option value="40">Psychological</option>
+        <option value="3">Racing</option>
+        <option value="72">Reincarnation</option>
+        <option value="73">Reverse Harem</option>
+        <option value="21">Samurai</option>
+        <option value="23">School</option>
+        <option value="42">Seinen</option>
+        <option value="75">Showbiz</option>
+        <option value="25">Shoujo</option>
+        <option value="27">Shounen</option>
+        <option value="29">Space</option>
+        <option value="11">Strategy Game</option>
+        <option value="31">Super Power</option>
+        <option value="76">Survival</option>
+        <option value="77">Team Sports</option>
+        <option value="78">Time Travel</option>
+        <option value="32">Vampire</option>
+        <option value="79">Video Game</option>
+        <option value="80">Visual Arts</option>
+        <option value="48">Workplace</option>
+        <option value="82">Urban Fantasy</option>
+        <option value="83">Villainess</option>
+      </select>
+    </div>
+
+    <div class="filter-select-wrapper">
+      <span>Format</span>
+      <select id="formatSelect" class="filter-select">
+        <option value="">All Formats</option>
+        <option value="tv">TV Series</option>
+        <option value="movie">Movie</option>
+        <option value="ova">OVA</option>
+        <option value="ona">ONA (Donghua/Web)</option>
+      </select>
+    </div>
+
+    <div class="filter-select-wrapper">
+      <span>Status</span>
+      <select id="statusSelect" class="filter-select">
+        <option value="">All Status</option>
+        <option value="airing">Airing</option>
+        <option value="complete">Completed</option>
+        <option value="upcoming">Upcoming</option>
+      </select>
+    </div>
+
+    <div class="filter-select-wrapper">
+      <span>Sort By</span>
+      <select id="sortSelect" class="filter-select">
+        <option value="popularity">Popularity</option>
+        <option value="score">Score</option>
+        <option value="title">Title</option>
+      </select>
+    </div>
+
+    <button class="btn-action" style="padding: 10px 24px; font-size:13px; height: 40px;" onclick="applyCatalogFilters()">Apply Filters</button>
+  </div>
+
+  <!-- Catalog Results Grid -->
+  <div id="catalogGrid" class="responsive-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 20px;">
+    <div style="grid-column: 1/-1; padding: 40px 0; text-align: center; color: var(--muted);">
+      ⏳ Loading catalog catalog entries...
+    </div>
+  </div>
+
+  <div id="catalogLoadMoreContainer" style="display: flex; justify-content: center; margin-top: 40px; margin-bottom: 60px;">
+    <!-- Dynamic load more button will render here -->
+  </div>
+</main>
+
+<script>
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+  let currentPage = 1;
+  let hasMore = true;
+  let isLoading = false;
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // Auth Check
+    fetch(`${API_BASE}/api/me`, { credentials: "include" })
+      .then(r => r.json())
+      .then(d => {
+        const authArea = document.getElementById("authArea");
+        if (d.user && authArea) {
+          authArea.innerHTML = `<span style="color:var(--muted)">👤 ${escapeHtml(d.user.username)}</span>`;
+        }
+      }).catch(() => {});
+
+    // Initial load
+    applyCatalogFilters();
+  });
+
+  function applyCatalogFilters() {
+    currentPage = 1;
+    hasMore = true;
+    document.getElementById("catalogGrid").innerHTML = `
+      <div style="grid-column: 1/-1; padding: 40px 0; text-align: center; color: var(--muted);">
+        ⏳ Loading filter results...
+      </div>
+    `;
+    document.getElementById("catalogLoadMoreContainer").innerHTML = "";
+    loadCatalogPage();
+  }
+
+  async function loadCatalogPage() {
+    if (isLoading || !hasMore) return;
+    isLoading = true;
+
+    const grid = document.getElementById("catalogGrid");
+    const q = document.getElementById("catalogSearch").value.trim();
+    const genre = document.getElementById("genreSelect").value;
+    const tag = document.getElementById("tagSelect").value;
+    const format = document.getElementById("formatSelect").value;
+    const status = document.getElementById("statusSelect").value;
+    const sort = document.getElementById("sortSelect").value;
+
+    let url = `https://api.jikan.moe/v4/anime?page=${currentPage}&limit=18&sfw=true`;
+    if (q) url += `&q=${encodeURIComponent(q)}`;
+    
+    let genresParam = [];
+    if (genre) genresParam.push(genre);
+    if (tag) genresParam.push(tag);
+    if (genresParam.length > 0) {
+      url += `&genres=${genresParam.join(',')}`;
+    }
+    if (format) url += `&type=${format}`;
+    if (status) url += `&status=${status}`;
+    if (sort) {
+      url += `&order_by=${sort}`;
+      url += (sort === 'title') ? `&sort=asc` : `&sort=desc`;
+    } else {
+      url += `&order_by=popularity&sort=desc`;
+    }
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Catalog fetch failed");
+      const json = await res.json();
+      const data = json.data || [];
+      const pagination = json.pagination || { has_next_page: false };
+
+      if (currentPage === 1) {
+        grid.innerHTML = "";
+      }
+
+      // Remove load indicators
+      const loader = grid.querySelector('.catalog-loader');
+      if (loader) loader.remove();
+
+      if (data.length === 0 && currentPage === 1) {
+        grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--muted); padding: 40px 0;">No matching catalog entries found. Try broadening your criteria.</div>`;
+        hasMore = false;
+        isLoading = false;
+        return;
+      }
+
+      data.forEach(anime => {
+        const card = document.createElement("div");
+        card.className = "anime-card";
+        
+        const title = anime.title_english || anime.title;
+        const score = anime.score || "N/A";
+        const year = anime.year || "N/A";
+        const type = anime.type || "TV";
+        const imgUrl = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url;
+
+        const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        const animeUrl = `/anime/${anime.mal_id}-${slug || 'details'}`;
+
+        card.innerHTML = `
+          <div class="anime-card-poster">
+            <img src="${imgUrl}" alt="${escapeHtml(title)}" loading="lazy">
+            <div class="anime-card-rating">⭐ ${score}</div>
+          </div>
+          <div class="anime-card-content">
+            <h3 style="font-size:14px; line-height:1.4; height:38px; display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical; overflow:hidden;">${escapeHtml(title)}</h3>
+            <div class="anime-card-meta">
+              <span>${year}</span>
+              <span>•</span>
+              <span>${type}</span>
+            </div>
+          </div>
+        `;
+        card.onclick = () => location.href = animeUrl;
+        grid.appendChild(card);
+      });
+
+      hasMore = pagination.has_next_page;
+      currentPage++;
+      isLoading = false;
+
+      // Render load more button if pagination has next page
+      if (hasMore) {
+        renderLoadMoreButton();
+      } else {
+        document.getElementById("catalogLoadMoreContainer").innerHTML = "";
+      }
+
+    } catch (e) {
+      console.error(e);
+      isLoading = false;
+      if (currentPage === 1) {
+        grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--error); padding: 40px 0;">⚠️ Failed to load catalog data.</div>`;
+      }
+    }
+  }
+
+  function renderLoadMoreButton() {
+    const container = document.getElementById("catalogLoadMoreContainer");
+    container.innerHTML = "";
+
+    const btn = document.createElement("button");
+    btn.className = "btn-action";
+    btn.style.padding = "12px 30px";
+    btn.textContent = "Load More Anime";
+    btn.onclick = () => {
+      btn.textContent = "Loading...";
+      btn.disabled = true;
+      loadCatalogPage();
+    };
+    container.appendChild(btn);
+  }
+</script>
+</body>
+</html>

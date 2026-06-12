@@ -7,6 +7,51 @@ const bcrypt = require("bcryptjs");
 const cors = require("cors");
 const rateLimit = require("express-rate-limit");
 const { Pool } = require("pg");
+const fs = require("fs");
+const multer = require("multer");
+
+// Ensure public/music directory exists
+const musicDir = path.join(__dirname, "public", "music");
+if (!fs.existsSync(musicDir)) {
+  fs.mkdirSync(musicDir, { recursive: true });
+}
+
+// Multer storage configuration for manual music uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, musicDir);
+  },
+  filename: function (req, file, cb) {
+    const animeTitle = req.body.animeTitle?.trim() || "Local Library";
+    const songTitle = req.body.songTitle?.trim() || "Uploaded Track";
+    const type = req.body.type?.trim() || "Local";
+    const ext = path.extname(file.originalname).toLowerCase();
+    
+    // Sanitize string to remove illegal path/filename characters
+    const sanitize = (str) => str.replace(/[\\/:*?"<>|]/g, "").replace(/\s+/g, " ");
+    const finalName = `[${sanitize(animeTitle)}] - ${sanitize(songTitle)} [${sanitize(type)}]${ext}`;
+    cb(null, finalName);
+  }
+});
+// Only allow audio file types
+const allowedAudioMimeTypes = [
+  'audio/mpeg', 'audio/mp3', 'audio/ogg', 'audio/wav', 'audio/webm',
+  'audio/mp4', 'audio/x-m4a', 'audio/aac', 'video/webm', 'video/mp4'
+];
+const allowedAudioExtensions = ['.mp3', '.ogg', '.wav', '.webm', '.mp4', '.m4a', '.aac'];
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 100 * 1024 * 1024 }, // Limit: 100MB
+  fileFilter: function (req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowedAudioMimeTypes.includes(file.mimetype) || allowedAudioExtensions.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only audio files are allowed (mp3, ogg, wav, webm, mp4, m4a, aac)'), false);
+    }
+  }
+});
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,6 +65,41 @@ app.set("trust proxy", 1);
    BASIC MIDDLEWARE
 ===================== */
 app.use(express.json());
+
+// Log 404 status codes to server console for easier debugging
+app.use((req, res, next) => {
+  res.on("finish", () => {
+    if (res.statusCode === 404) {
+      console.warn(`⚠️ [HTTP 404] ${req.method} ${req.originalUrl}`);
+    }
+  });
+  next();
+});
+
+/* =====================
+   CORS SETUP (Secured)
+===================== */
+const allowedOrigins = [
+  'https://anicrunch.page',
+  'https://www.anicrunch.page',
+  'https://anicrunch-backend.onrender.com',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (mobile apps, curl, server-to-server)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true
+  })
+);
 
 /* =====================
    SEO DYNAMIC SITEMAP
@@ -77,16 +157,6 @@ app.get("/anime/:id-:slug", (req, res) => {
 });
 
 app.use(express.static(path.join(__dirname, "public")));
-
-/* =====================
-   CORS SETUP (FIXED)
-===================== */
-app.use(
-  cors({
-    origin: true, // ⚠️ Allows ALL origins (Fixes the CORS Blocked error)
-    credentials: true // Allows cookies/sessions to work
-  })
-);
 
 /* =====================
    SESSION SETUP
@@ -174,6 +244,18 @@ async function initDB() {
         played_date DATE NOT NULL,
         score INTEGER NOT NULL,
         UNIQUE(user_id, played_date)
+      );
+    `);
+
+    // Create music_tracks table for Supabase persistent storage
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS music_tracks (
+        id SERIAL PRIMARY KEY,
+        anime VARCHAR(255) NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        type VARCHAR(50) NOT NULL,
+        url TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
     
@@ -461,6 +543,20 @@ app.post("/api/signup", authLimiter, async (req, res) => {
     return res.status(400).json({ message: "Missing fields" });
   }
 
+  // Server-side validation
+  if (username.length < 3 || username.length > 30) {
+    return res.status(400).json({ message: "Username must be 3-30 characters" });
+  }
+  if (!/^[a-z0-9_]+$/.test(username)) {
+    return res.status(400).json({ message: "Username can only contain letters, numbers, and underscores" });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ message: "Password must be at least 6 characters" });
+  }
+  if (password.length > 128) {
+    return res.status(400).json({ message: "Password is too long" });
+  }
+
   try {
     const hash = await bcrypt.hash(password, 10);
 
@@ -544,8 +640,10 @@ app.post("/api/watchlist/add", requireAuth, async (req, res) => {
   const { animeId, genres, title } = req.body;
 
   try {
+    // NOTE: This requires a UNIQUE constraint on (user_id, anime_id) in the watchlists table.
+    // Run this if not already done: ALTER TABLE watchlists ADD CONSTRAINT watchlists_user_anime_unique UNIQUE (user_id, anime_id);
     await pool.query(
-      "INSERT INTO watchlists (user_id, anime_id, status, progress, genres, anime_title) VALUES ($1, $2, 'plan', 0, $3, $4) ON CONFLICT DO NOTHING",
+      "INSERT INTO watchlists (user_id, anime_id, status, progress, genres, anime_title) VALUES ($1, $2, 'plan', 0, $3, $4) ON CONFLICT (user_id, anime_id) DO NOTHING",
       [req.session.user.id, animeId, genres || '', title || '']
     );
     res.json({ success: true });
@@ -620,6 +718,11 @@ app.get("/api/profile", requireAuth, async (req, res) => {
 
 app.post("/api/profile/update", requireAuth, async (req, res) => {
   const { avatarUrl, bio } = req.body;
+  
+  if (avatarUrl && !/^https?:\/\//i.test(avatarUrl)) {
+    return res.status(400).json({ message: "Invalid avatar URL. Only http:// and https:// protocols are allowed." });
+  }
+
   try {
     await pool.query(
       "UPDATE users SET avatar_url=$1, bio=$2 WHERE id=$3",
@@ -751,6 +854,108 @@ app.get("/api/quiz/leaderboard", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Error loading leaderboard" });
+  }
+});
+
+/* =====================
+   MANUAL MUSIC ROUTES
+===================== */
+app.get("/api/music", async (req, res) => {
+  try {
+    // 1. Fetch tracks registered in Supabase PostgreSQL
+    const dbRes = await pool.query("SELECT anime, title, type, url FROM music_tracks ORDER BY id DESC");
+    const tracks = dbRes.rows;
+
+    // 2. Fetch and merge any local files on disk
+    if (fs.existsSync(musicDir)) {
+      const files = fs.readdirSync(musicDir);
+      files.forEach(filename => {
+        const match = filename.match(/^\[(.*?)\]\s*-\s*(.*?)\s*\[(.*?)\]\.(mp3|webm|mp4|ogg|wav|m4a)$/i);
+        const localUrl = `/music/${filename}`;
+        
+        if (match) {
+          const alreadyListed = tracks.some(t => t.url === localUrl || t.url === encodeURI(localUrl));
+          if (!alreadyListed) {
+            tracks.push({
+              anime: match[1],
+              title: match[2],
+              type: match[3],
+              filename: filename,
+              url: localUrl
+            });
+          }
+        } else {
+          const extMatch = filename.match(/\.(mp3|webm|mp4|ogg|wav|m4a)$/i);
+          if (extMatch) {
+            const alreadyListed = tracks.some(t => t.url === localUrl || t.url === encodeURI(localUrl));
+            if (!alreadyListed) {
+              const nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
+              tracks.push({
+                anime: "Local Library",
+                title: nameWithoutExt,
+                type: "Local",
+                filename: filename,
+                url: localUrl
+              });
+            }
+          }
+        }
+      });
+    }
+
+    res.json(tracks);
+  } catch (err) {
+    console.error("Error loading music tracks:", err);
+    res.status(500).json({ message: "Error listing music tracks" });
+  }
+});
+
+app.post("/api/music/upload", requireAuth, upload.single("musicFile"), async (req, res) => {
+  try {
+    const anime = req.body.animeTitle?.trim() || "Local Library";
+    const title = req.body.songTitle?.trim() || "Uploaded Track";
+    const type = req.body.type?.trim() || "Local";
+    
+    let trackUrl = "";
+    if (req.file) {
+      trackUrl = `/music/${req.file.filename}`;
+    } else if (req.body.remoteUrl?.trim()) {
+      trackUrl = req.body.remoteUrl.trim();
+    } else {
+      return res.status(400).json({ message: "Please upload an audio file or provide a direct track URL." });
+    }
+
+    // Save mapping directly in the Supabase PostgreSQL database
+    await pool.query(
+      "INSERT INTO music_tracks (anime, title, type, url) VALUES ($1, $2, $3, $4)",
+      [anime, title, type, trackUrl]
+    );
+
+    res.json({ success: true, url: trackUrl });
+  } catch (err) {
+    console.error("Music registration error:", err);
+    res.status(500).json({ message: "Error saving track to database." });
+  }
+});
+
+/* =====================
+   SEARCH PROXY ROUTE
+===================== */
+app.get("/api/search", async (req, res) => {
+  const query = req.query.q;
+  if (!query || query.trim().length < 2) {
+    return res.json({ data: [] });
+  }
+  try {
+    const response = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=24&sfw=true`);
+    if (!response.ok) {
+      return res.json({ data: [] });
+    }
+    const json = await response.json();
+    res.json({ data: json.data || [] });
+  } catch (err) {
+    console.error("Search proxy error:", err);
+    res.json({ data: [] });
   }
 });
 

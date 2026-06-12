@@ -11,6 +11,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/style.css">
+  <script src="/layout.js"></script>
   <style>
     .watchlist-page { 
       min-height: 100vh;
@@ -521,9 +522,21 @@
 
 <script>
 // =====================
-// API CONFIGURATION (FIXED)
+// SHARED UTILITY — getAnimeUrl & escapeHtml
 // =====================
-window.API_BASE = (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname === "") ? "" : "https://anicrunch-backend.onrender.com";
+function getAnimeUrl(anime) {
+  if (!anime || !anime.mal_id) return '/';
+  const title = anime.title_english || anime.title || 'Untitled';
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  return `/anime/${anime.mal_id}-${slug || 'details'}`;
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
 
 // =====================
 // STATE MANAGEMENT
@@ -542,7 +555,7 @@ document.addEventListener("DOMContentLoaded", () => {
     .then(r => r.json())
     .then(d => {
       if (d.user) {
-        authArea.innerHTML = `<span style="color:var(--muted)">👤 ${d.user.username}</span> <button class="auth-link" onclick="logout()">Logout</button>`;
+        authArea.innerHTML = `<span style="color:var(--muted)">👤 ${escapeHtml(d.user.username)}</span> <button class="auth-link" onclick="logout()">Logout</button>`;
       } else {
         showLoginState();
       }
@@ -574,14 +587,25 @@ async function loadWatchlist() {
 
     document.getElementById("watchlistGrid").innerHTML = "";
 
-    // Load Cards
+    // Store backend data
     for (const item of items) {
       userAnimeData[item.anime_id] = { 
         status: item.status || 'plan', 
         progress: item.progress || 0, 
         score: item.score 
       };
-      await fetchAndRenderCard(item.anime_id);
+    }
+
+    // Load Cards with concurrency limit of 3 for faster loading
+    const ids = items.map(item => item.anime_id);
+    const concurrencyLimit = 3;
+    for (let i = 0; i < ids.length; i += concurrencyLimit) {
+      const batch = ids.slice(i, i + concurrencyLimit);
+      await Promise.all(batch.map(id => fetchAndRenderCard(id)));
+      // Small delay between batches to respect Jikan rate limits
+      if (i + concurrencyLimit < ids.length) {
+        await new Promise(r => setTimeout(r, 350));
+      }
     }
     
     updateStats();
@@ -624,7 +648,7 @@ function renderCardContent(card, anime) {
   card.innerHTML = `
     <span class="card-badge ${badgeClass}">${statusLabels[anime.userStatus]}</span>
     <div class="card-image">
-      <img src="${anime.images.jpg.large_image_url}" alt="${anime.title}">
+      <img src="${anime.images.jpg.large_image_url}" alt="${escapeHtml(anime.title)}">
       <div class="card-actions-overlay">
         <select class="status-select" onchange="updateAnimeStatus(${anime.mal_id}, this.value)">
           <option value="watching" ${anime.userStatus === 'watching' ? 'selected' : ''}>📺 Watching</option>
@@ -639,7 +663,7 @@ function renderCardContent(card, anime) {
     </div>
     
     <div class="card-info">
-      <div class="card-title" onclick="location.href = '${getAnimeUrl(anime)}'">${anime.title}</div>
+      <div class="card-title" onclick="location.href = '${getAnimeUrl(anime)}'">${escapeHtml(anime.title)}</div>
       
       <div class="progress-wrapper">
         <div class="progress-text">

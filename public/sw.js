@@ -1,9 +1,11 @@
-const CACHE_NAME = "anicrunch-v1";
+// IMPORTANT: Bump this version string on every release to bust the cache
+const CACHE_NAME = "anicrunch-v2";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
   "/style.css",
   "/script.js",
+  "/layout.js",
   "/favicon.png",
   "/apple-touch-icon.png",
   "/manifest.json"

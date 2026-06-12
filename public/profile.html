@@ -8,6 +8,7 @@
   <link rel="manifest" href="/manifest.json">
   <title>anicrunch · My Profile</title>
   <link rel="stylesheet" href="/style.css">
+  <script src="/layout.js"></script>
   <style>
     .profile-page { min-height: 100vh; background: #0f0f1a; }
 
@@ -260,7 +261,12 @@
 </div>
 
 <script>
-window.API_BASE = (location.hostname === "localhost" || location.hostname === "127.0.0.1" || location.hostname === "") ? "" : "https://anicrunch-backend.onrender.com";
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   const authArea = document.getElementById("authArea");
@@ -269,7 +275,7 @@ document.addEventListener("DOMContentLoaded", () => {
     .then(r => r.json())
     .then(d => {
       if (d.user) {
-        authArea.innerHTML = `<span style="color:var(--muted)">👤 ${d.user.username}</span> <button class="auth-link" style="background: none; border: none; color: var(--accent); cursor: pointer; margin-left: 10px;" onclick="logout()">Logout</button>`;
+        authArea.innerHTML = `<span style="color:var(--muted)">👤 ${escapeHtml(d.user.username)}</span> <button class="auth-link" style="background: none; border: none; color: var(--accent); cursor: pointer; margin-left: 10px;" onclick="logout()">Logout</button>`;
         loadProfile();
       } else {
         location.href = '/login.html';
@@ -294,9 +300,16 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.innerText = 'Saving...';
     btn.disabled = true;
     
-    const avatarUrl = document.getElementById('avatarUrl').value;
+    const avatarUrl = document.getElementById('avatarUrl').value.trim();
     const bio = document.getElementById('bio').value;
     const theme = document.getElementById('siteTheme').value;
+    
+    if (avatarUrl && !/^https?:\/\//i.test(avatarUrl)) {
+      alert("Invalid avatar URL. Only http:// and https:// protocols are allowed.");
+      btn.innerText = 'Save Changes';
+      btn.disabled = false;
+      return;
+    }
     
     try {
       const res = await fetch(`${API_BASE}/api/profile/update`, {
@@ -320,10 +333,14 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => document.getElementById('saveStatus').style.display = 'none', 3000);
         
         // Update display
-        if (avatarUrl) {
-          document.getElementById('avatarDisplay').innerHTML = `<img src="${avatarUrl}" alt="Avatar">`;
+        const avatarDisplay = document.getElementById('avatarDisplay');
+        if (avatarUrl && /^https?:\/\//i.test(avatarUrl)) {
+          const img = document.createElement('img');
+          img.src = avatarUrl;
+          img.alt = 'Avatar';
+          avatarDisplay.replaceChildren(img);
         } else {
-          document.getElementById('avatarDisplay').innerHTML = `👤`;
+          avatarDisplay.textContent = '👤';
         }
         document.getElementById('bioDisplay').innerText = bio || 'No bio set.';
       }
@@ -347,9 +364,15 @@ async function loadProfile() {
     document.getElementById('usernameDisplay').innerText = data.user.username;
     document.getElementById('bioDisplay').innerText = data.user.bio || 'No bio set.';
     
-    if (data.user.avatar_url) {
-      document.getElementById('avatarDisplay').innerHTML = `<img src="${data.user.avatar_url}" alt="Avatar">`;
+    const avatarDisplay = document.getElementById('avatarDisplay');
+    if (data.user.avatar_url && /^https?:\/\//i.test(data.user.avatar_url)) {
+      const img = document.createElement('img');
+      img.src = data.user.avatar_url;
+      img.alt = 'Avatar';
+      avatarDisplay.replaceChildren(img);
       document.getElementById('avatarUrl').value = data.user.avatar_url;
+    } else {
+      avatarDisplay.textContent = '👤';
     }
     
     if (data.user.bio) {

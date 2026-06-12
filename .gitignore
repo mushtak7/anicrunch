@@ -137,3 +137,12 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Audio/Video media assets
+public/music/*.webm
+public/music/*.mp3
+public/music/*.mp4
+public/music/*.ogg
+public/music/*.wav
+public/music/*.m4a
+public/music/*.aac
