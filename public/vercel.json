@@ -1,0 +1,17 @@
+{
+  "routes": [
+    {
+      "src": "/anime/.*",
+      "dest": "/anime.html"
+    },
+    {
+      "src": "/sitemap.xml",
+      "headers": {
+        "Content-Type": "application/xml"
+      }
+    },
+    {
+      "handle": "filesystem"
+    }
+  ]
+}
