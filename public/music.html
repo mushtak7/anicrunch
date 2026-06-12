@@ -9,6 +9,39 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/style.css">
   <script src="/layout.js"></script>
+  <style>
+    .filter-chips-container {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+    .filter-chip {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      outline: none;
+      user-select: none;
+    }
+    .filter-chip:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: white;
+      border-color: var(--border-glow);
+    }
+    .filter-chip.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      box-shadow: 0 4px 12px rgba(236, 72, 153, 0.25);
+    }
+  </style>
 </head>
 <body>
 
@@ -36,6 +69,14 @@
         📤 Upload Track
       </button>
     </div>
+  </div>
+
+  <!-- Filter chips section -->
+  <div class="filter-chips-container" id="musicFilterChips">
+    <button class="filter-chip active" data-filter="all" onclick="setMusicFilter('all')">All</button>
+    <button class="filter-chip" data-filter="popular" onclick="setMusicFilter('popular')">🔥 Popular & Trending</button>
+    <button class="filter-chip" data-filter="op" onclick="setMusicFilter('op')">📺 Openings</button>
+    <button class="filter-chip" data-filter="ed" onclick="setMusicFilter('ed')">🎵 Endings</button>
   </div>
 
   <div id="localMusicGrid" style="display: flex; flex-direction: column; gap: 35px; width: 100%;">
@@ -199,18 +240,51 @@
     }
   }
 
-  // Real-time track search filter
+  let currentFilter = 'all';
+
+  window.setMusicFilter = function(filterVal) {
+    currentFilter = filterVal;
+    
+    // Update active class on chips
+    const chips = document.querySelectorAll("#musicFilterChips .filter-chip");
+    chips.forEach(chip => {
+      chip.classList.toggle("active", chip.dataset.filter === filterVal);
+    });
+    
+    filterLocalTracks();
+  };
+
+  // Real-time track filter combining category chips and search query
   window.filterLocalTracks = function() {
     const query = document.getElementById("musicSearchInput").value.toLowerCase().trim();
-    if (!query) {
-      renderTracks(allLocalTracks);
-      return;
+    
+    let filtered = allLocalTracks;
+    
+    // 1. Filter by category chip
+    if (currentFilter === 'op') {
+      filtered = filtered.filter(t => t.type && t.type.toUpperCase().includes('OP'));
+    } else if (currentFilter === 'ed') {
+      filtered = filtered.filter(t => t.type && t.type.toUpperCase().includes('ED'));
+    } else if (currentFilter === 'popular') {
+      const popularAnimeList = [
+        "one piece", "naruto", "sousou no frieren", "steins;gate", 
+        "shingeki no kyojin", "attack on titan", "fullmetal alchemist", 
+        "hunter x hunter", "chainsaw man", "gintama", "jojo"
+      ];
+      filtered = filtered.filter(t => 
+        popularAnimeList.some(p => t.anime && t.anime.toLowerCase().includes(p))
+      );
     }
-    const filtered = allLocalTracks.filter(t => 
-      t.anime.toLowerCase().includes(query) || 
-      t.title.toLowerCase().includes(query) || 
-      t.type.toLowerCase().includes(query)
-    );
+    
+    // 2. Filter by search query
+    if (query) {
+      filtered = filtered.filter(t => 
+        t.anime.toLowerCase().includes(query) || 
+        t.title.toLowerCase().includes(query) || 
+        (t.type && t.type.toLowerCase().includes(query))
+      );
+    }
+    
     renderTracks(filtered);
   };
 
