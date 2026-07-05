@@ -115,11 +115,22 @@ app.get("/sitemap.xml", async (req, res) => {
     // Static main paths
     const staticUrls = [
       "",
-      "/blog/",
+      "/catalog.html",
+      "/manga.html",
+      "/music.html",
+      "/tier-list.html",
+      "/recommendations.html",
+      "/reviews.html",
       "/recent-episodes.html",
       "/schedule.html",
       "/vibe-mixer.html",
-      "/recommendations.html"
+      "/quiz.html",
+      "/blog/",
+      "/blog/anime-better-on-rewatch.html",
+      "/blog/anime-overrated-but-still-good.html",
+      "/blog/how-aot-changed-anime-forever.html",
+      "/blog/one-piece-2026.html",
+      "/blog/underrated-anime-of-all-time.html"
     ];
     
     staticUrls.forEach(url => {

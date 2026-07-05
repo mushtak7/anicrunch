@@ -1,46 +1,180 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
+  <!-- Core Pages -->
   <url>
     <loc>https://anicrunch.page/</loc>
-    <lastmod>2026-01-18</lastmod>
+    <lastmod>2026-07-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
 
   <url>
-    <loc>https://anicrunch.page/blog/</loc>
+    <loc>https://anicrunch.page/catalog.html</loc>
+    <lastmod>2026-07-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://anicrunch.page/schedule.html</loc>
-    <changefreq>daily</changefreq>
+    <loc>https://anicrunch.page/manga.html</loc>
+    <lastmod>2026-07-05</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://anicrunch.page/recommendations.html</loc>
+    <loc>https://anicrunch.page/music.html</loc>
+    <lastmod>2026-07-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://anicrunch.page/tier-list.html</loc>
+    <lastmod>2026-07-05</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
 
   <url>
-    <loc>https://anicrunch.page/login.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.3</priority>
+    <loc>https://anicrunch.page/recommendations.html</loc>
+    <lastmod>2026-07-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
 
   <url>
-    <loc>https://anicrunch.page/signup.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.3</priority>
+    <loc>https://anicrunch.page/reviews.html</loc>
+    <lastmod>2026-07-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
+
   <url>
     <loc>https://anicrunch.page/recent-episodes.html</loc>
+    <lastmod>2026-07-05</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://anicrunch.page/schedule.html</loc>
+    <lastmod>2026-07-05</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://anicrunch.page/vibe-mixer.html</loc>
+    <lastmod>2026-07-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://anicrunch.page/quiz.html</loc>
+    <lastmod>2026-07-05</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Blog Index and Posts -->
+  <url>
+    <loc>https://anicrunch.page/blog/</loc>
+    <lastmod>2026-07-05</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://anicrunch.page/blog/anime-better-on-rewatch.html</loc>
+    <lastmod>2026-07-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://anicrunch.page/blog/anime-overrated-but-still-good.html</loc>
+    <lastmod>2026-07-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://anicrunch.page/blog/how-aot-changed-anime-forever.html</loc>
+    <lastmod>2026-07-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://anicrunch.page/blog/one-piece-2026.html</loc>
+    <lastmod>2026-07-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://anicrunch.page/blog/underrated-anime-of-all-time.html</loc>
+    <lastmod>2026-07-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Popular Anime Details Seeds (Dynamic routes rendered statically) -->
+  <url>
+    <loc>https://anicrunch.page/anime/21-one-piece</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://anicrunch.page/anime/20-naruto</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://anicrunch.page/anime/16498-attack-on-titan</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://anicrunch.page/anime/38000-demon-slayer</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://anicrunch.page/anime/40748-jujutsu-kaisen</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://anicrunch.page/anime/9253-steins-gate</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://anicrunch.page/anime/52991-frieren</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://anicrunch.page/anime/44511-chainsaw-man</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://anicrunch.page/anime/31964-my-hero-academia</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
 
 </urlset>

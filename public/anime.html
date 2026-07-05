@@ -476,7 +476,7 @@
 <script>
 let animeId = new URLSearchParams(location.search).get('id');
 if (!animeId) {
-  const pathParts = window.location.pathname.split('/');
+  const pathParts = window.location.pathname.split('/').filter(Boolean);
   const lastPart = pathParts[pathParts.length - 1];
   if (lastPart && lastPart.includes('-')) {
     animeId = lastPart.split('-')[0];

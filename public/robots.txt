@@ -1,4 +1,9 @@
 User-agent: *
 Allow: /
+Disallow: /profile.html
+Disallow: /watchlist.html
+Disallow: /history.html
+Disallow: /login.html
+Disallow: /signup.html
 
 Sitemap: https://anicrunch.page/sitemap.xml
