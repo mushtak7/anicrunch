@@ -29,6 +29,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="/style.css">
+  <script src="/api-client.js"></script>
   <script src="/layout.js" defer></script>
   
   <style>
@@ -317,37 +318,7 @@
 
     <div id="homeSections">
       
-      <!-- NEW LATEST UPDATES SECTION WITH CUSTOM FILTERS -->
-      <div class="block">
-        <div class="updates-section">
-          <h2 style="margin:0;">LATEST UPDATES</h2>
-          <div class="updates-filters">
-            <div class="filter-select-wrapper">
-              <span>Translation</span>
-              <select id="translationFilter" class="filter-select">
-                <option value="all">All</option>
-                <option value="sub">Sub</option>
-                <option value="dub">Dub</option>
-              </select>
-            </div>
-            <div class="filter-select-wrapper">
-              <span>Anime Origin</span>
-              <select id="originFilter" class="filter-select">
-                <option value="all">All</option>
-                <option value="japan">Japan</option>
-                <option value="china">China</option>
-                <option value="korea">Korea</option>
-              </select>
-            </div>
-          </div>
-        </div>
-        
-        <div id="latestUpdatesGrid" class="responsive-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 20px;">
-          <div style="grid-column: 1/-1; padding: 40px 0; text-align: center; color: var(--muted);">
-            ⏳ Loading latest updates...
-          </div>
-        </div>
-      </div>
+
 
       <div class="block">
         <h2>🌸 Seasonal</h2>

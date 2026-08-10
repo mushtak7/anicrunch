@@ -13,6 +13,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/style.css">
+  <script src="/api-client.js"></script>
   <script src="/layout.js"></script>
 </head>
 <body>
@@ -244,10 +245,10 @@ function escapeHtml(text) {
     }
 
     try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Catalog fetch failed");
-      const json = await res.json();
-      const data = json.data || [];
+      const fetchFn = window.safeJikanFetch || fetch;
+      const resData = await fetchFn(url);
+      const json = resData.data ? resData : { data: resData, pagination: { has_next_page: false } };
+      const data = Array.isArray(json.data) ? json.data : [];
       const pagination = json.pagination || { has_next_page: false };
 
       if (currentPage === 1) {
@@ -273,14 +274,14 @@ function escapeHtml(text) {
         const score = anime.score || "N/A";
         const year = anime.year || "N/A";
         const type = anime.type || "TV";
-        const imgUrl = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url;
+        const imgUrl = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || window.DEFAULT_POSTER_SVG;
 
         const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
         const animeUrl = `/anime/${anime.mal_id}-${slug || 'details'}`;
 
         card.innerHTML = `
           <div class="anime-card-poster">
-            <img src="${imgUrl}" alt="${escapeHtml(title)}" loading="lazy">
+            <img src="${imgUrl}" alt="${escapeHtml(title)}" loading="lazy" onerror="handleImageError(this)">
             <div class="anime-card-rating">⭐ ${score}</div>
           </div>
           <div class="anime-card-content">

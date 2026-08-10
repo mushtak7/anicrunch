@@ -13,6 +13,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/style.css">
+  <script src="/api-client.js"></script>
   <script src="/layout.js"></script>
 </head>
 <body>
@@ -102,9 +103,10 @@
         const resultsBox = document.getElementById("tierSearchResults");
         resultsBox.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--muted);">Searching...</div>`;
         try {
-          const res = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(q)}&limit=10`);
-          const json = await res.json();
-          renderSearchResults(json.data || []);
+          const fetchFn = window.safeJikanFetch || fetch;
+          const res = await fetchFn(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(q)}&limit=10`);
+          const data = res.data ? res.data : res;
+          renderSearchResults(Array.isArray(data) ? data : []);
         } catch(e) {
           resultsBox.innerHTML = `<div style="grid-column:1/-1; color:var(--error);">Failed to search.</div>`;
         }

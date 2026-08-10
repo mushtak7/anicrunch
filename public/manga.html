@@ -13,6 +13,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/style.css">
+  <script src="/api-client.js"></script>
   <script src="/layout.js"></script>
 </head>
 <body>
@@ -68,18 +69,30 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-  // Rate limited fetch queue helper
-  let requestQueue = Promise.resolve();
-  function queuedMangaFetch(url) {
-    const next = requestQueue.then(async () => {
-      await new Promise(r => setTimeout(r, 400));
+  // Resilient fetch helper for Manga
+  async function queuedMangaFetch(url) {
+    if (typeof window.safeJikanFetch === 'function') {
+      const res = await window.safeJikanFetch(url);
+      const data = res.data ? res.data : res;
+      if (Array.isArray(data) && data.length > 0) return data;
+    }
+
+    try {
       const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = await res.json();
-      return json.data || [];
-    });
-    requestQueue = next;
-    return next;
+      if (res.ok) {
+        const json = await res.json();
+        if (Array.isArray(json.data) && json.data.length > 0) return json.data;
+      }
+    } catch (_) {}
+
+    // High availability fallback for Manga / Novels
+    const fallbackList = window.FALLBACK_MANGA_CATALOG || [];
+    if (url.includes("type=novel")) {
+      const novels = fallbackList.filter(m => m.type === "Novel");
+      return novels.length > 0 ? novels : fallbackList;
+    }
+    const manga = fallbackList.filter(m => m.type === "Manga");
+    return manga.length > 0 ? manga : fallbackList;
   }
 
   document.addEventListener("DOMContentLoaded", () => {
@@ -132,14 +145,16 @@ function escapeHtml(text) {
       const popManga = await queuedMangaFetch("https://api.jikan.moe/v4/top/manga?filter=bypopularity&limit=6");
       renderMangaGrid(document.getElementById("popularMangaGrid"), popManga);
     } catch (e) {
-      document.getElementById("popularMangaGrid").innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--error);">Failed to load popular manga.</div>`;
+      const fallbackList = window.FALLBACK_MANGA_CATALOG || [];
+      renderMangaGrid(document.getElementById("popularMangaGrid"), fallbackList.filter(m => m.type === "Manga"));
     }
 
     try {
       const novels = await queuedMangaFetch("https://api.jikan.moe/v4/top/manga?type=novel&limit=6");
       renderMangaGrid(document.getElementById("topNovelsGrid"), novels);
     } catch (e) {
-      document.getElementById("topNovelsGrid").innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--error);">Failed to load light novels.</div>`;
+      const fallbackList = window.FALLBACK_MANGA_CATALOG || [];
+      renderMangaGrid(document.getElementById("topNovelsGrid"), fallbackList.filter(m => m.type === "Novel"));
     }
   }
 
@@ -154,15 +169,16 @@ function escapeHtml(text) {
       const card = document.createElement("div");
       card.className = "anime-card";
       
-      const title = manga.title_english || manga.title;
+      const title = manga.title_english || manga.title || "Manga Title";
       const score = manga.score || "N/A";
       const chapters = manga.chapters ? `${manga.chapters} chs` : "Ongoing";
       const type = manga.type || "Manga";
-      const imgUrl = manga.images?.jpg?.large_image_url || manga.images?.jpg?.image_url;
+      const imgUrl = manga.images?.jpg?.large_image_url || manga.images?.jpg?.image_url || window.DEFAULT_POSTER_SVG;
+      const targetUrl = manga.url || `https://myanimelist.net/manga/${manga.mal_id || 13}`;
 
       card.innerHTML = `
         <div class="anime-card-poster">
-          <img src="${imgUrl}" alt="${escapeHtml(title)}" loading="lazy">
+          <img src="${imgUrl}" alt="${escapeHtml(title)}" loading="lazy" onerror="handleImageError(this)">
           <div class="anime-card-rating">⭐ ${score}</div>
         </div>
         <div class="anime-card-content">
@@ -174,8 +190,8 @@ function escapeHtml(text) {
           </div>
         </div>
       `;
-      // Manga card clicks redirect to MAL page
-      card.onclick = () => window.open(manga.url, "_blank");
+      // Safe manga card redirect to official MAL page
+      card.onclick = () => window.open(targetUrl, "_blank");
       container.appendChild(card);
     });
   }

@@ -114,15 +114,15 @@ function escapeHtml(text) {
 }
 
 // Global Rate Limiter for Jikan API
+// Note: safeJikanFetch already has internal queueing (queueChain with 350ms intervals).
+// This wrapper just serializes critical vs background priority to avoid burst flooding.
 let criticalQueue = Promise.resolve();
 let backgroundQueue = Promise.resolve();
 
 function queuedFetch(url, priority = 'background') {
   const queue = priority === 'critical' ? criticalQueue : backgroundQueue;
-  const delayTime = priority === 'critical' ? 200 : 800;
 
-  const next = queue.catch(() => {}).then(async () => {
-    await delay(delayTime);
+  const next = queue.catch(() => {}).then(() => {
     return fetchWithRetry(url);
   });
 
@@ -226,8 +226,15 @@ function renderLoadMoreButton(container, onClick) {
 // FETCH (Smart Retry)
 // =====================
 async function fetchWithRetry(url, retries = 3, backoff = 1000) {
+  if (typeof window.safeJikanFetch === 'function') {
+    const res = await window.safeJikanFetch(url, { retries });
+    if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+      return res.data;
+    }
+  }
+
   const cached = getCached(url);
-  if (cached) return cached;
+  if (cached && cached.length > 0) return cached;
 
   for (let i = 0; i < retries; i++) {
     try {
@@ -238,30 +245,23 @@ async function fetchWithRetry(url, retries = 3, backoff = 1000) {
       }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       
-      const text = await res.text();
-      let json;
-      try {
-        json = JSON.parse(text);
-      } catch (parseError) {
-        throw new Error('Invalid JSON response');
-      }
-      
-      if (Array.isArray(json.data)) {
-        const data = json.data;
-        if (data.length > 0) cacheResponse(url, data);
+      const json = await res.json();
+      const data = json.data || [];
+      if (Array.isArray(data) && data.length > 0) {
+        cacheResponse(url, data);
         return data;
-      } else if (json.data) {
-        cacheResponse(url, json.data);
-        return json.data;
       }
-      
-      return [];
     } catch (e) {
-      if (i === retries - 1) throw e;
+      if (i === retries - 1) break;
       await delay(backoff);
     }
   }
-  return [];
+
+  // High-availability fallback data
+  if (url.includes("top/anime") || url.includes("airing")) {
+    return window.FALLBACK_TRENDING_CATALOG || window.FALLBACK_ANIME_CATALOG || [];
+  }
+  return window.FALLBACK_ANIME_CATALOG || [];
 }
 
 // =====================
@@ -313,14 +313,8 @@ function createCard(anime, options = {}) {
   div.setAttribute('role', 'button');
   div.setAttribute('aria-label', `View details for ${getTitle(anime)}`);
   
-  const img = anime.images?.jpg || {};
-  const defaultUrl = img.large_image_url || img.image_url || "/favicon.png";
-  
-  let srcset = "";
-  if (img.small_image_url) srcset += `${img.small_image_url} 300w, `;
-  if (img.image_url) srcset += `${img.image_url} 600w, `;
-  if (img.large_image_url) srcset += `${img.large_image_url} 900w`;
-  srcset = srcset.replace(/,\s*$/, ""); 
+  const imgObj = anime.images?.jpg || anime.images?.webp || {};
+  const posterUrl = imgObj.large_image_url || imgObj.image_url || imgObj.small_image_url || anime.imgUrl || window.DEFAULT_POSTER_SVG;
 
   const title = getTitle(anime);
   const score = anime.score || 'N/A';
@@ -329,14 +323,10 @@ function createCard(anime, options = {}) {
   
   div.innerHTML = `
     <div class="anime-card-poster">
-      <img data-src="${defaultUrl}" 
-           ${srcset ? `data-srcset="${srcset}"` : ''}
-           sizes="(max-width: 768px) 45vw, (max-width: 1200px) 220px, 280px"
-           width="300" height="420"
+      <img src="${posterUrl}" 
+           alt="${escapeHtml(title)}" 
            loading="lazy"
-           src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 3 4'%3E%3C/svg%3E" 
-           alt="${title}" 
-           class="lazy-img">
+           onerror="handleImageError(this)">
       <div class="anime-card-overlay">
         <button class="anime-card-play-btn" aria-label="Play"></button>
       </div>
@@ -345,7 +335,7 @@ function createCard(anime, options = {}) {
       </div>
     </div>
     <div class="anime-card-content">
-      <h3>${title}</h3>
+      <h3>${escapeHtml(title)}</h3>
       <div class="anime-card-meta">
         <span>${year}</span>
         <span>•</span>
@@ -375,19 +365,6 @@ function createCard(anime, options = {}) {
     }
   };
   
-  const imageEl = div.querySelector('img');
-  if (imageEl) {
-    if (imageObserver && !options.disableLazy) {
-      imageObserver.observe(imageEl);
-    } else {
-      imageEl.src = imageEl.dataset.src;
-      if (imageEl.dataset.srcset) imageEl.srcset = imageEl.dataset.srcset;
-      imageEl.removeAttribute('data-src');
-      imageEl.removeAttribute('data-srcset');
-      imageEl.classList.add('loaded');
-    }
-  }
-  
   return div;
 }
 // =====================
@@ -399,20 +376,21 @@ function createEpisodeCard(entry, episode) {
   div.setAttribute('tabindex', '0');
   div.setAttribute('role', 'button');
   const displayTitle = entry.title_english || entry.title || 'Unknown';
-  div.setAttribute('aria-label', `View ${displayTitle} - ${episode.title}`);
+  div.setAttribute('aria-label', `View ${displayTitle} - ${episode.title || 'Airing Episode'}`);
 
   const img = entry.images?.jpg || {};
   const imgUrl = img.large_image_url || img.image_url || '/favicon.png';
   const isEp1 = episode.mal_id === 1;
+  const epText = (episode.mal_id && episode.mal_id !== '?') ? `EP ${episode.mal_id}` : 'AIRING';
 
   div.innerHTML = `
     <div class="episode-card-poster">
-      <img src="${imgUrl}" alt="${displayTitle}" loading="lazy" width="300" height="420">
-      <span class="episode-badge ${isEp1 ? 'new' : ''}">EP ${episode.mal_id}</span>
+      <img src="${imgUrl}" alt="${escapeHtml(displayTitle)}" loading="lazy" width="300" height="420">
+      <span class="episode-badge ${isEp1 ? 'new' : ''}">${epText}</span>
     </div>
     <div class="episode-card-content">
-      <h3>${displayTitle}</h3>
-      <span class="episode-title">${episode.title || 'Episode ' + episode.mal_id}</span>
+      <h3>${escapeHtml(displayTitle)}</h3>
+      <span class="episode-title">${episode.title || 'Broadcast Today'}</span>
     </div>
   `;
 
@@ -886,8 +864,12 @@ document.addEventListener("DOMContentLoaded", () => {
       searchInput.oninput = (e) => {
         const query = e.target.value.trim();
         resetVibeSliders();
-        if (resultsBox) {
-          handleSearch(query);
+        if (searchClear) searchClear.style.display = query.length > 0 ? 'block' : 'none';
+        if (query.length < 3) {
+          dropdown.classList.remove("active");
+          dropdown.innerHTML = "";
+          if (appState.viewState.mode === 'search') resetToHome();
+          return;
         }
         runAutocomplete(query);
       };
@@ -1258,7 +1240,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       idleCallback(() => loadSection("seasonal", "https://api.jikan.moe/v4/seasons/now?sfw=true&limit=25"));
       idleCallback(() => loadSection("trending", "https://api.jikan.moe/v4/top/anime?filter=airing&sfw=true&limit=25"));
-      idleCallback(() => loadLatestUpdates());
       idleCallback(() => loadPopularSidebar());
       idleCallback(() => loadRecentEpisodesPreview());
 
@@ -1563,21 +1544,17 @@ document.addEventListener("DOMContentLoaded", () => {
       const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
       const today = days[new Date().getDay()];
 
-      const res = await fetch(`https://api.jikan.moe/v4/schedules?filter=${today}&sfw=true&limit=25`);
-      const json = await res.json();
-      let items = json.data || [];
+      const items = await queuedFetch(`https://api.jikan.moe/v4/schedules?filter=${today}&sfw=true&limit=25`, 'background');
+      let validItems = Array.isArray(items) ? items.filter(a => a && (a.title || a.title_english)) : [];
 
-      // Filter: only show anime with a score or decent popularity (skip obscure kids shows)
-      items = items.filter(a => (a.score && a.score > 0) || a.members > 5000);
+      // Sort by score descending if present, then popularity
+      validItems.sort((a, b) => (b.score || 0) - (a.score || 0) || (a.popularity || 99999) - (b.popularity || 99999));
 
-      // Sort by score descending, then popularity
-      items.sort((a, b) => (b.score || 0) - (a.score || 0) || (a.popularity || 99999) - (b.popularity || 99999));
-
-      // Show up to 18 cards (3 pages of 6)
-      const limited = items.slice(0, 18);
+      // Show up to 18 cards
+      const limited = validItems.slice(0, 18);
 
       if (!limited.length) {
-        box.innerHTML = '<div class="empty-state"><p>No popular anime airing today</p></div>';
+        box.innerHTML = '<div class="empty-state"><p>No anime scheduled for today</p></div>';
         return;
       }
 
@@ -1647,10 +1624,20 @@ function updateCountdowns() {
     const targetDayName = badge.getAttribute('data-broadcast-day');
     const targetTimeStr = badge.getAttribute('data-broadcast-time');
     const malId = badge.getAttribute('data-mal-id');
-    if (!targetTimeStr) return;
+    if (!targetTimeStr) {
+      badge.innerHTML = `<span style="color: var(--muted);">⏰ Broadcast TBA</span>`;
+      return;
+    }
 
     const targetDay = dayMap[targetDayName];
-    const [hours, minutes] = targetTimeStr.split(':').map(Number);
+    const timeMatch = targetTimeStr.match(/(\d{1,2}):(\d{2})/);
+    if (!timeMatch) {
+      badge.innerHTML = `<span style="color: var(--muted);">⏰ Broadcast ${escapeHtml(targetTimeStr)}</span>`;
+      return;
+    }
+
+    const hours = parseInt(timeMatch[1], 10);
+    const minutes = parseInt(timeMatch[2], 10);
 
     // Create target date in JST
     let targetDate = new Date(nowJST);
@@ -1887,15 +1874,11 @@ async function loadAllRecentEpisodes(page = 1, append = false) {
   }
 
   try {
-    const res = await fetch(`https://api.jikan.moe/v4/schedules?filter=${today}&sfw=true&page=${page}&limit=25`);
-    const json = await res.json();
-    let items = json.data || [];
-    const hasNext = json.pagination?.has_next_page || false;
+    const itemsRaw = await queuedFetch(`https://api.jikan.moe/v4/schedules?filter=${today}&sfw=true&page=${page}&limit=25`, 'background');
+    let items = Array.isArray(itemsRaw) ? itemsRaw.filter(a => a && (a.title || a.title_english)) : [];
+    const hasNext = items.length >= 25;
 
-    // Filter out very obscure entries
-    items = items.filter(a => (a.score && a.score > 0) || a.members > 1000);
-
-    // Sort by score descending
+    // Sort by score descending if present
     items.sort((a, b) => (b.score || 0) - (a.score || 0));
 
     if (!append) grid.innerHTML = '';
@@ -1905,7 +1888,7 @@ async function loadAllRecentEpisodes(page = 1, append = false) {
     if (existingBtn) existingBtn.remove();
 
     if (!items.length && !append) {
-      grid.innerHTML = '<div class="empty-state"><div class="empty-icon">📺</div><h3>No popular anime airing today</h3><p>Check back on another day!</p></div>';
+      grid.innerHTML = '<div class="empty-state"><div class="empty-icon">📺</div><h3>No anime scheduled for today</h3><p>Check back on another day!</p></div>';
       recentEpisodesLoading = false;
       return;
     }

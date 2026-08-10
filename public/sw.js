@@ -49,7 +49,7 @@ self.addEventListener("fetch", (e) => {
         fetch(e.request).then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             caches.open(CACHE_NAME).then((cache) => {
-              cache.put(e.request, networkResponse);
+              cache.put(e.request, networkResponse.clone());
             });
           }
         }).catch(() => {}); // Suppress background fetch errors
