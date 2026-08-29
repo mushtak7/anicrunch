@@ -1422,72 +1422,100 @@ app.get("/api/stream", (req, res) => {
 /* =====================
    THEMES CATALOG & RESOLVER ENDPOINTS
 ===================== */
-// 1. Get themes for an Anime by MAL ID (Jikan metadata + AnimeThemes catalog)
-app.get("/api/music/themes/:malId", async (req, res) => {
-  const malId = req.params.malId;
+/* =====================
+   THEMES CATALOG & RESOLVER ENDPOINTS
+===================== */
+// 1. Get themes for an Anime by MAL ID or AnimeThemes Slug
+app.get("/api/music/themes/:identifier", async (req, res) => {
+  const identifier = req.params.identifier;
+  const isNumeric = /^\d+$/.test(identifier);
+  
   try {
-    // 1. Fetch Anime detail from Jikan / MAL
+    let malId = isNumeric ? Number(identifier) : null;
+    let atSlug = isNumeric ? null : identifier;
     let animeData = null;
-    const jikanCached = getMemCache(musicCache.jikan, `anime_${malId}`);
-    if (jikanCached) {
-      animeData = jikanCached;
-    } else {
-      const jikanRes = await fetch(`https://api.jikan.moe/v4/anime/${malId}/full`);
-      if (jikanRes.ok) {
-        const jikanJson = await jikanRes.json();
-        animeData = jikanJson.data;
-        if (animeData) setMemCache(musicCache.jikan, `anime_${malId}`, animeData, 3600); // 1h
-      }
-    }
-    
-    // 2. Resolve AnimeThemes Catalog
-    const atSlug = await getAnimeThemesSlugByMalId(malId);
     let atCatalog = null;
+
+    // A. If numeric MAL ID, fetch Jikan info + map to AnimeThemes slug
+    if (malId) {
+      const jikanCached = getMemCache(musicCache.jikan, `anime_${malId}`);
+      if (jikanCached) {
+        animeData = jikanCached;
+      } else {
+        const jikanRes = await fetch(`https://api.jikan.moe/v4/anime/${malId}/full`, {
+          headers: { "User-Agent": "AniCrunch/2.0 (Theme Resolver; contact@anicrunch.page)" }
+        });
+        if (jikanRes.ok) {
+          const jikanJson = await jikanRes.json();
+          animeData = jikanJson.data;
+          if (animeData) setMemCache(musicCache.jikan, `anime_${malId}`, animeData, 3600);
+        }
+      }
+      atSlug = await getAnimeThemesSlugByMalId(malId);
+    }
+
+    // B. Resolve AnimeThemes Catalog
     if (atSlug) {
       atCatalog = await getAnimeThemesBySlug(atSlug);
     }
-    
-    // 3. Parse Jikan theme strings
+
+    // If we only have slug and no Jikan data, build fallback anime info from AnimeThemes catalog
+    if (!animeData && atCatalog) {
+      const art = atCatalog.images?.find(i => i.facet === 'Large Cover' || i.facet === 'Small Cover') || atCatalog.images?.[0];
+      animeData = {
+        title: atCatalog.name,
+        title_english: atCatalog.name,
+        images: { jpg: { large_image_url: art?.link || "/favicon.png", image_url: art?.link || "/favicon.png" } },
+        synopsis: "",
+        score: null,
+        episodes: null,
+        studios: [],
+        genres: [],
+        season: "",
+        year: null
+      };
+    }
+
+    // C. Parse Jikan theme strings
     const openings = animeData?.theme?.openings || [];
     const endings = animeData?.theme?.endings || [];
-    
     const parsedJikanOPs = openings.map(s => parseThemeString(s, "OP")).filter(Boolean);
     const parsedJikanEDs = endings.map(s => parseThemeString(s, "ED")).filter(Boolean);
     const allParsedJikan = [...parsedJikanOPs, ...parsedJikanEDs];
-    
-    // 4. Merge AnimeThemes full tracks with Jikan list
+
+    // D. Merge AnimeThemes full tracks with Jikan list
     const finalTracks = [];
     const atTracks = atCatalog?.tracks || [];
-    
-    // A. Add matched / full AnimeThemes tracks
+
     if (atTracks.length > 0) {
       atTracks.forEach(atTrack => {
-        // Look up corresponding Jikan parsed entry for episode ranges & clean data
         const jikanMatch = allParsedJikan.find(j => 
           j.themeLabel.toLowerCase() === atTrack.themeLabel.toLowerCase() ||
           j.title.toLowerCase().includes(atTrack.title.toLowerCase()) ||
           atTrack.title.toLowerCase().includes(j.title.toLowerCase())
         );
-        
+
         finalTracks.push({
           ...atTrack,
-          malId: Number(malId),
+          malId: malId || null,
+          animeSlug: atSlug,
           animeTitle: animeData?.title || atTrack.animeTitle,
           animeEnglish: animeData?.title_english || "",
-          artwork: animeData?.images?.jpg?.large_image_url || animeData?.images?.jpg?.image_url || "/favicon.png",
+          artwork: animeData?.images?.jpg?.large_image_url || animeData?.images?.jpg?.image_url || atTrack.artwork || "/favicon.png",
           episodes: jikanMatch?.episodes || "",
           source: "animethemes"
         });
       });
     }
-    
-    // B. If Jikan has themes missing from AnimeThemes, include them as fallback items
+
+    // Add remaining Jikan entries
     for (const jikanTheme of allParsedJikan) {
       const alreadyHas = finalTracks.some(t => t.themeLabel.toLowerCase() === jikanTheme.themeLabel.toLowerCase());
       if (!alreadyHas) {
         finalTracks.push({
           key: `jikan:${malId}:${jikanTheme.themeLabel}`,
-          malId: Number(malId),
+          malId: malId || null,
+          animeSlug: atSlug,
           animeTitle: animeData?.title || "Anime Theme",
           animeEnglish: animeData?.title_english || "",
           title: jikanTheme.title,
@@ -1495,20 +1523,21 @@ app.get("/api/music/themes/:malId", async (req, res) => {
           themeType: jikanTheme.themeType,
           themeLabel: jikanTheme.themeLabel,
           episodes: jikanTheme.episodes,
-          audioUrl: "", // to be resolved on-demand via /api/music/match
+          audioUrl: "",
           videoUrl: "",
           artwork: animeData?.images?.jpg?.large_image_url || animeData?.images?.jpg?.image_url || "/favicon.png",
-          resolution: "Needs Match",
+          resolution: "30s Preview",
           isCreditless: false,
           source: "pending"
         });
       }
     }
-    
+
     res.json({
       anime: {
-        mal_id: Number(malId),
-        title: animeData?.title || atCatalog?.name || "Anime",
+        mal_id: malId,
+        slug: atSlug,
+        title: animeData?.title || atCatalog?.name || "Anime Themes",
         title_english: animeData?.title_english || "",
         images: animeData?.images || {},
         synopsis: animeData?.synopsis || "",
@@ -1524,27 +1553,24 @@ app.get("/api/music/themes/:malId", async (req, res) => {
       tracks: finalTracks
     });
   } catch (err) {
-    console.error(`Error loading themes for MAL ID ${malId}:`, err);
+    console.error(`Error loading themes for identifier ${identifier}:`, err);
     res.status(500).json({ message: "Error fetching anime themes", error: err.message });
   }
 });
 
-// 2. On-demand single theme matcher (matches song title + artist + anime to full AnimeThemes track or iTunes preview)
+// 2. On-demand single theme matcher
 app.get("/api/music/match", async (req, res) => {
   const { animeId, animeTitle, songTitle, artist, themeLabel, themeType } = req.query;
-  
   if (!songTitle && !themeLabel) {
     return res.status(400).json({ message: "songTitle or themeLabel required" });
   }
-  
+
   try {
-    // 1. Try AnimeThemes first if MAL ID is available
     if (animeId) {
       const slug = await getAnimeThemesSlugByMalId(animeId);
       if (slug) {
         const catalog = await getAnimeThemesBySlug(slug);
         if (catalog && catalog.tracks.length > 0) {
-          // Look for exact theme label match (e.g. OP1, ED1)
           let match = null;
           if (themeLabel) {
             match = catalog.tracks.find(t => t.themeLabel.toLowerCase() === themeLabel.toLowerCase() || t.themeLabel.toLowerCase().startsWith(themeLabel.toLowerCase()));
@@ -1566,8 +1592,7 @@ app.get("/api/music/match", async (req, res) => {
         }
       }
     }
-    
-    // 2. Fallback to iTunes preview
+
     const itunesMatch = await searchItunesTrack(songTitle || themeLabel, artist || animeTitle);
     if (itunesMatch) {
       return res.json({
@@ -1583,7 +1608,7 @@ app.get("/api/music/match", async (req, res) => {
         }
       });
     }
-    
+
     res.json({ success: false, message: "No stream available" });
   } catch (err) {
     console.error("Theme match error:", err);
@@ -1591,21 +1616,68 @@ app.get("/api/music/match", async (req, res) => {
   }
 });
 
-// 3. Unified Search across Anime & Songs
+// 3. Unified Search across Anime & Songs (AnimeThemes + Jikan + iTunes)
 app.get("/api/music/search", async (req, res) => {
   const query = req.query.q;
   if (!query || query.trim().length < 2) {
     return res.json({ anime: [], songs: [] });
   }
-  
+
+  const cleanQ = query.trim();
+  const atHeaders = {
+    "User-Agent": "AniCrunch/2.0 (AnimeThemes Resolver; contact@anicrunch.page)",
+    "Accept": "application/json"
+  };
+
   try {
-    const cleanQ = query.trim();
-    
-    // A. Search anime from Jikan
-    const animePromise = fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(cleanQ)}&limit=12&sfw=true`)
+    // 1. AnimeThemes Direct Theme Search (Finds exact OP/ED tracks)
+    const atThemePromise = fetch(`https://api.animethemes.moe/animetheme?q=${encodeURIComponent(cleanQ)}&include=song.artists,anime.images,animethemeentries.videos.audio&page[size]=12`, { headers: atHeaders })
+      .then(r => r.ok ? r.json() : { animethemes: [] })
+      .then(j => (j.animethemes || []).map(at => {
+        const bestEntry = at.animethemeentries?.[0];
+        const bestVideo = bestEntry?.videos?.[0];
+        const art = at.anime?.images?.find(i => i.facet === 'Large Cover' || i.facet === 'Small Cover') || at.anime?.images?.[0];
+        return {
+          title: at.song?.title || at.slug || "Theme",
+          artist: (at.song?.artists || []).map(a => a.name).join(", ") || "Unknown Artist",
+          animeTitle: at.anime?.name || "Anime",
+          animeSlug: at.anime?.slug,
+          themeLabel: at.slug || at.type,
+          themeType: at.type || "OP",
+          audioUrl: bestVideo?.audio?.link || "",
+          videoUrl: bestVideo?.link || "",
+          resolution: bestVideo ? `${bestVideo.resolution}p` : "1080p",
+          isCreditless: bestVideo ? Boolean(bestVideo.nc) : false,
+          artwork: art ? art.link : "/favicon.png",
+          source: "animethemes"
+        };
+      }))
+      .catch(() => []);
+
+    // 2. AnimeThemes Direct Anime Search
+    const atAnimePromise = fetch(`https://api.animethemes.moe/anime?q=${encodeURIComponent(cleanQ)}&include=images,resources&fields[anime]=id,name,slug,year,season&page[size]=10`, { headers: atHeaders })
+      .then(r => r.ok ? r.json() : { anime: [] })
+      .then(j => (j.anime || []).map(a => {
+        const art = a.images?.find(i => i.facet === 'Large Cover' || i.facet === 'Small Cover') || a.images?.[0];
+        const malRes = (a.resources || []).find(r => r.site === 'MyAnimeList');
+        return {
+          mal_id: malRes ? Number(malRes.external_id) : null,
+          slug: a.slug,
+          title: a.name,
+          image: art ? art.link : "/favicon.png",
+          year: a.year
+        };
+      }))
+      .catch(() => []);
+
+    // 3. Jikan Anime Search
+    const jikanPromise = fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(cleanQ)}&limit=10&sfw=true`, {
+      headers: { "User-Agent": "AniCrunch/2.0 (Anime Search; contact@anicrunch.page)" }
+    })
       .then(r => r.ok ? r.json() : { data: [] })
       .then(j => (j.data || []).map(a => ({
         mal_id: a.mal_id,
+        slug: null,
         title: a.title,
         title_english: a.title_english,
         image: a.images?.jpg?.large_image_url || a.images?.jpg?.image_url,
@@ -1614,20 +1686,77 @@ app.get("/api/music/search", async (req, res) => {
         year: a.year
       })))
       .catch(() => []);
-    
-    // B. Search songs from iTunes
-    const songsPromise = searchItunesTrack(cleanQ, "")
-      .then(match => match ? [match] : [])
-      .catch(() => []);
-      
-    const [anime, songs] = await Promise.all([animePromise, songsPromise]);
-    
+
+    // 4. iTunes Song Fallback
+    const itunesPromise = searchItunesTracks(cleanQ, 6).catch(() => []);
+
+    const [atThemes, atAnime, jikanAnime, itunesSongs] = await Promise.all([
+      atThemePromise,
+      atAnimePromise,
+      jikanPromise,
+      itunesPromise
+    ]);
+
+    // Merge & Deduplicate Anime
+    const animeMap = new Map();
+    [...jikanAnime, ...atAnime].forEach(item => {
+      const key = (item.mal_id ? `mal:${item.mal_id}` : (item.slug ? `slug:${item.slug}` : item.title)).toLowerCase();
+      if (!animeMap.has(key)) {
+        animeMap.set(key, item);
+      }
+    });
+    const anime = Array.from(animeMap.values()).slice(0, 14);
+
+    // Merge & Deduplicate Songs
+    const songMap = new Map();
+    atThemes.forEach(s => {
+      const key = `${s.title}___${s.artist}`.toLowerCase();
+      songMap.set(key, s);
+    });
+    itunesSongs.forEach(s => {
+      const key = `${s.title}___${s.artist}`.toLowerCase();
+      if (!songMap.has(key)) {
+        songMap.set(key, s);
+      }
+    });
+    const songs = Array.from(songMap.values()).slice(0, 14);
+
     res.json({ anime, songs });
   } catch (err) {
     console.error("Music search error:", err);
     res.status(500).json({ anime: [], songs: [] });
   }
 });
+
+// Helper for multi-track iTunes preview search
+async function searchItunesTracks(query, limit = 6) {
+  if (!query || !query.trim()) return [];
+  try {
+    const term = encodeURIComponent(query.trim());
+    const res = await fetch(`https://itunes.apple.com/search?term=${term}&media=music&entity=song&limit=${limit}`);
+    if (!res.ok) return [];
+    const json = await res.json();
+    const results = json.results || [];
+    return results
+      .filter(r => r.previewUrl)
+      .map(r => ({
+        title: r.trackName,
+        artist: r.artistName,
+        animeTitle: r.collectionName || "Anime Song",
+        themeLabel: "Theme",
+        themeType: "OP",
+        audioUrl: r.previewUrl,
+        videoUrl: "",
+        artwork: r.artworkUrl100?.replace("100x100bb", "600x600bb") || r.artworkUrl100,
+        duration: Math.round((r.trackTimeMillis || 30000) / 1000),
+        source: "itunes",
+        isCreditless: false,
+        resolution: "30s Preview"
+      }));
+  } catch (err) {
+    return [];
+  }
+}
 
 // 4. Radio Mode Stream Pool Generator
 app.get("/api/music/radio", async (req, res) => {

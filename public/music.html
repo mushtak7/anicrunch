@@ -863,15 +863,16 @@
               <div class="anime-card-poster-wrap">
                 <img src="${song.artwork || '/favicon.png'}" class="anime-card-img" alt="">
                 <div class="anime-card-badges">
-                  <span class="badge-theme-count" style="background:#10b981;">🎵 ${song.source === 'itunes' ? 'iTunes 30s' : 'Full Track'}</span>
+                  <span class="badge-theme-count" style="background:#ff7f11;">🎧 ${song.themeLabel || (song.source === 'itunes' ? '30s Preview' : 'Full Theme')}</span>
+                  ${song.resolution ? `<span class="badge-score" style="color:#10b981;">${song.resolution}</span>` : ''}
                 </div>
                 <div class="anime-card-overlay">
-                  <div style="font-size: 11px; color: #10b981; font-weight: 700;">${escapeHtml(song.artist || 'Artist')}</div>
+                  <div style="font-size: 11px; color: #ff7f11; font-weight: 700;">${escapeHtml(song.artist || 'Artist')}</div>
                 </div>
               </div>
               <div class="anime-card-info">
-                <div class="anime-card-title">${escapeHtml(song.title)}</div>
-                <div class="anime-card-sub">${escapeHtml(song.artist || 'Song')}</div>
+                <div class="anime-card-title" title="${escapeHtml(song.title)}">${escapeHtml(song.title)}</div>
+                <div class="anime-card-sub">${escapeHtml(song.animeTitle || song.artist || 'Song')}</div>
               </div>
             `;
             card.onclick = () => window.playThemeTrack(song, [song], 0, false);
@@ -896,11 +897,11 @@
                 </div>
               </div>
               <div class="anime-card-info">
-                <div class="anime-card-title">${escapeHtml(anime.title)}</div>
+                <div class="anime-card-title" title="${escapeHtml(anime.title)}">${escapeHtml(anime.title)}</div>
                 <div class="anime-card-sub">${anime.year || 'Anime'}</div>
               </div>
             `;
-            card.onclick = () => openThemeDrawer(anime.mal_id);
+            card.onclick = () => openThemeDrawer(anime.mal_id || anime.slug);
             grid.appendChild(card);
           });
         }
@@ -911,7 +912,7 @@
   }
 
   // 7. Open Theme Drawer Modal
-  async function openThemeDrawer(malId) {
+  async function openThemeDrawer(identifier) {
     const modal = document.getElementById("themeDrawerModal");
     const opsList = document.getElementById("drawerOpeningsList");
     const edsList = document.getElementById("drawerEndingsList");
@@ -921,7 +922,7 @@
     modal.style.display = "flex";
 
     try {
-      const res = await fetch(`${API_BASE}/api/music/themes/${malId}`);
+      const res = await fetch(`${API_BASE}/api/music/themes/${encodeURIComponent(identifier)}`);
       if (!res.ok) throw new Error("Failed to load themes");
       const data = await res.json();
       const anime = data.anime;
