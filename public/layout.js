@@ -317,463 +317,1027 @@ window.handleImageError = function(img) {
       });
 
     /* =====================
-       PERSISTENT MUSIC PLAYER INJECTION
+       NEXT-GEN PERSISTENT MEDIA ENGINE (AUDIO + VIDEO)
     ===================== */
     const playerHtml = `
+      <!-- Floating Main Music Bar -->
       <div id="floatingMusicPlayer" class="floating-music-player">
-        <img id="playerPoster" src="/favicon.png" alt="" class="player-poster">
-        <div class="player-info">
-          <div style="display: flex; align-items: center; gap: 6px; min-width: 0;">
-            <div id="playerTrack" class="player-track">Not Playing</div>
-            <span id="hdAudioBadge" class="hd-badge" style="display: none;">HD</span>
+        <!-- Visualizer Background Overlay Canvas -->
+        <canvas id="playerVisualizerCanvas" class="player-visualizer-canvas"></canvas>
+
+        <div class="player-left-col">
+          <div class="player-poster-wrap" onclick="toggleVideoMode()">
+            <img id="playerPoster" src="/favicon.png" alt="" class="player-poster">
+            <div class="player-poster-hover">🎬</div>
           </div>
-          <div id="playerAnime" class="player-anime">-</div>
+          <div class="player-info">
+            <div class="player-title-row">
+              <span id="playerTrack" class="player-track">Not Playing</span>
+              <span id="playerThemeBadge" class="player-theme-badge" style="display:none;">OP1</span>
+            </div>
+            <div id="playerAnime" class="player-anime">-</div>
+          </div>
         </div>
-        <div class="player-audio-container" style="width: 220px; flex-shrink: 0;">
-          <audio id="playerAudio" controls style="width: 100%; height: 32px; outline: none; border-radius: 4px;"></audio>
+
+        <!-- Center Controls & Scrubbing Bar -->
+        <div class="player-center-col">
+          <div class="player-btn-row">
+            <button id="playerShuffleBtn" class="player-btn-icon" title="Shuffle" onclick="togglePlayerShuffle()">🔀</button>
+            <button id="playerPrevBtn" class="player-btn-icon" title="Previous Track" onclick="playPrevTrack()">⏮</button>
+            <button id="playerPlayPauseBtn" class="player-btn-play" title="Play / Pause" onclick="togglePlayerPlay()">▶</button>
+            <button id="playerNextBtn" class="player-btn-icon" title="Next Track" onclick="playNextTrack()">⏭</button>
+            <button id="playerRepeatBtn" class="player-btn-icon" title="Repeat" onclick="cyclePlayerRepeat()">🔁</button>
+          </div>
+          <div class="player-scrub-row">
+            <span id="playerCurrentTime" class="player-time">0:00</span>
+            <input type="range" id="playerSeek" class="player-seek-slider" min="0" max="100" value="0" step="0.1">
+            <span id="playerTotalTime" class="player-time">0:00</span>
+          </div>
         </div>
-        <button class="player-close" onclick="closeMusicPlayer()" title="Close Player">✕</button>
+
+        <!-- Right Volume & Mode Toggles -->
+        <div class="player-right-col">
+          <button id="playerVideoToggle" class="player-feature-btn" title="Toggle OP/ED Video Mode" onclick="toggleVideoMode()">
+            🎬 <span class="feature-label">Video</span>
+          </button>
+          <button id="playerVisualizerToggle" class="player-feature-btn" title="Toggle Audio Visualizer" onclick="toggleVisualizer()">
+            📊
+          </button>
+          <button id="playerQueueToggle" class="player-feature-btn" title="Queue List" onclick="toggleQueueDrawer()">
+            📋 <span id="playerQueueCount" class="queue-count-badge" style="display:none;">0</span>
+          </button>
+
+          <div class="player-volume-wrap">
+            <button id="playerMuteBtn" class="player-btn-icon" title="Mute/Unmute" onclick="togglePlayerMute()">🔊</button>
+            <input type="range" id="playerVolume" class="player-volume-slider" min="0" max="1" step="0.02" value="1">
+          </div>
+
+          <button class="player-close-btn" onclick="closeMusicPlayer()" title="Close Player">✕</button>
+        </div>
+      </div>
+
+      <!-- Floating OP/ED Video Surface Window -->
+      <div id="floatingVideoSurface" class="floating-video-surface" style="display: none;">
+        <div class="video-surface-header">
+          <div class="video-header-title">
+            <span id="videoHeaderAnime">Anime</span> • <span id="videoHeaderTrack">Opening Theme</span>
+          </div>
+          <div class="video-header-controls">
+            <button class="video-ctrl-btn" onclick="toggleVideoFullscreen()" title="Fullscreen">⛶</button>
+            <button class="video-ctrl-btn" onclick="toggleVideoMode(false)" title="Hide Video (Audio Only)">✕</button>
+          </div>
+        </div>
+        <div class="video-media-host" id="videoMediaHost">
+          <!-- The single persistent <video> element will be mounted here in video mode -->
+        </div>
+      </div>
+
+      <!-- Queue Slide-out Drawer -->
+      <div id="playerQueueDrawer" class="player-queue-drawer" style="display: none;">
+        <div class="queue-drawer-header">
+          <div style="font-weight: 700; font-size: 15px; color: white; display: flex; align-items: center; gap: 6px;">
+            📋 Upcoming Queue (<span id="queueDrawerCount">0</span>)
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="queue-action-btn" onclick="clearPlayerQueue()">Clear</button>
+            <button class="queue-action-btn" onclick="toggleQueueDrawer(false)">✕</button>
+          </div>
+        </div>
+        <div id="queueDrawerList" class="queue-drawer-list">
+          <div style="color: var(--muted); text-align: center; padding: 30px 10px; font-size: 13px;">Queue is empty. Select tracks from the library or start Radio mode!</div>
+        </div>
+      </div>
+
+      <!-- Hidden Media Element Parking Zone -->
+      <div id="mediaElementParking" style="display: none !important;">
+        <video id="sharedMediaVideo" playsinline preload="auto" crossorigin="anonymous"></video>
       </div>
     `;
 
+    // Inject styles
     const playerStyles = `
       .floating-music-player {
         position: fixed;
-        bottom: 30px;
-        right: 30px;
-        width: 440px;
-        background: rgba(15, 15, 30, 0.92);
-        backdrop-filter: blur(25px);
-        -webkit-backdrop-filter: blur(25px);
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        bottom: 24px;
+        left: 50%;
+        transform: translate(-50%, 150%);
+        width: min(960px, calc(100% - 32px));
+        background: rgba(14, 15, 23, 0.96);
+        backdrop-filter: blur(30px);
+        -webkit-backdrop-filter: blur(30px);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 18px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 25px rgba(255, 127, 17, 0.2);
+        display: grid;
+        grid-template-columns: 240px 1fr 240px;
+        align-items: center;
+        gap: 16px;
+        padding: 10px 18px;
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+        z-index: 25000;
+        overflow: hidden;
+      }
+      .floating-music-player.active {
+        transform: translate(-50%, 0);
+      }
+      .player-visualizer-canvas {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        opacity: 0.22;
+        z-index: 0;
+      }
+      .player-left-col, .player-center-col, .player-right-col {
+        position: relative;
+        z-index: 2;
+      }
+      .player-left-col {
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 12px;
-        transform: translateY(150%);
-        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        z-index: 10002;
+        min-width: 0;
       }
-      .floating-music-player.active {
-        transform: translateY(0);
+      .player-poster-wrap {
+        position: relative;
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        overflow: hidden;
+        flex-shrink: 0;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
       }
       .player-poster {
-        width: 45px;
-        height: 65px;
-        border-radius: 6px;
+        width: 100%;
+        height: 100%;
         object-fit: cover;
-        flex-shrink: 0;
+      }
+      .player-poster-hover {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      .player-poster-wrap:hover .player-poster-hover {
+        opacity: 1;
       }
       .player-info {
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 2px;
         min-width: 0;
-        flex-grow: 1;
+      }
+      .player-title-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
       }
       .player-track {
         font-size: 13px;
         font-weight: 700;
-        color: white;
+        color: #ffffff;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+      }
+      .player-theme-badge {
+        font-size: 9px;
+        font-weight: 800;
+        background: #ff7f11;
+        color: #ffffff;
+        padding: 2px 6px;
+        border-radius: 4px;
+        letter-spacing: 0.5px;
+        flex-shrink: 0;
       }
       .player-anime {
         font-size: 11px;
-        color: var(--muted);
+        color: #94a3b8;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      .hd-badge {
-        display: inline-block;
-        font-size: 9px;
-        background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
-        color: white;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        box-shadow: 0 2px 8px rgba(236, 72, 153, 0.3);
-        cursor: help;
-        flex-shrink: 0;
+      .player-center-col {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
       }
-      .player-close {
+      .player-btn-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .player-btn-icon {
         background: none;
         border: none;
-        color: var(--muted);
+        color: #94a3b8;
         cursor: pointer;
-        font-size: 18px;
+        font-size: 15px;
+        padding: 4px;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .player-btn-icon:hover {
+        color: #ffffff;
+        transform: scale(1.1);
+      }
+      .player-btn-icon.active {
+        color: #ff7f11;
+      }
+      .player-btn-play {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #ff7f11;
+        border: none;
+        color: white;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        box-shadow: 0 4px 14px rgba(255, 127, 17, 0.4);
+      }
+      .player-btn-play:hover {
+        transform: scale(1.08);
+      }
+      .player-scrub-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+      }
+      .player-time {
+        font-size: 11px;
+        font-weight: 600;
+        color: #64748b;
+        min-width: 32px;
+        font-variant-numeric: tabular-nums;
+      }
+      .player-seek-slider {
+        flex-grow: 1;
+        height: 4px;
+        -webkit-appearance: none;
+        appearance: none;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 4px;
+        outline: none;
+        cursor: pointer;
+      }
+      .player-seek-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #ff7f11;
+        box-shadow: 0 0 6px rgba(255, 127, 17, 0.6);
+        cursor: pointer;
+      }
+      .player-right-col {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+      .player-feature-btn {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: #e2e8f0;
+        border-radius: 8px;
+        padding: 5px 8px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        position: relative;
+        transition: all 0.2s;
+      }
+      .player-feature-btn:hover, .player-feature-btn.active {
+        background: rgba(255, 127, 17, 0.2);
+        border-color: #ff7f11;
+        color: #ff7f11;
+      }
+      .queue-count-badge {
+        background: #ff7f11;
+        color: white;
+        font-size: 9px;
+        border-radius: 10px;
+        padding: 1px 5px;
+      }
+      .player-volume-wrap {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .player-volume-slider {
+        width: 60px;
+        height: 4px;
+        -webkit-appearance: none;
+        appearance: none;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 4px;
+        outline: none;
+        cursor: pointer;
+      }
+      .player-volume-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #e2e8f0;
+      }
+      .player-close-btn {
+        background: none;
+        border: none;
+        color: #64748b;
+        cursor: pointer;
+        font-size: 16px;
         padding: 4px;
         transition: color 0.2s;
-        flex-shrink: 0;
       }
-      .player-close:hover {
+      .player-close-btn:hover {
         color: white;
       }
-      @media (max-width: 576px) {
+
+      /* Floating Video Surface */
+      .floating-video-surface {
+        position: fixed;
+        bottom: 110px;
+        right: 30px;
+        width: 440px;
+        height: 260px;
+        background: #090a10;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 35px rgba(255, 127, 17, 0.25);
+        z-index: 25005;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        animation: floatVideoIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      @keyframes floatVideoIn {
+        from { opacity: 0; transform: scale(0.9) translateY(20px); }
+        to { opacity: 1; transform: scale(1) translateY(0); }
+      }
+      .video-surface-header {
+        background: rgba(15, 16, 26, 0.95);
+        padding: 8px 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .video-header-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: #e2e8f0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 320px;
+      }
+      .video-header-controls {
+        display: flex;
+        gap: 6px;
+      }
+      .video-ctrl-btn {
+        background: none;
+        border: none;
+        color: #94a3b8;
+        cursor: pointer;
+        font-size: 14px;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      .video-ctrl-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+      }
+      .video-media-host {
+        flex-grow: 1;
+        width: 100%;
+        height: calc(100% - 36px);
+        background: black;
+        position: relative;
+      }
+      .video-media-host video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background: black;
+      }
+
+      /* Queue Slide-out Drawer */
+      .player-queue-drawer {
+        position: fixed;
+        bottom: 110px;
+        right: 30px;
+        width: 360px;
+        max-height: 420px;
+        background: rgba(15, 16, 26, 0.98);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 16px;
+        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.8);
+        z-index: 25006;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .queue-drawer-header {
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .queue-action-btn {
+        background: rgba(255, 255, 255, 0.08);
+        border: none;
+        color: #94a3b8;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .queue-action-btn:hover {
+        background: rgba(255, 255, 255, 0.15);
+        color: white;
+      }
+      .queue-drawer-list {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .queue-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .queue-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 127, 17, 0.3);
+      }
+      .queue-item.active {
+        background: rgba(255, 127, 17, 0.15);
+        border-color: #ff7f11;
+      }
+      .queue-item-thumb {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        object-fit: cover;
+      }
+      .queue-item-info {
+        flex-grow: 1;
+        min-width: 0;
+      }
+      .queue-item-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: white;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .queue-item-sub {
+        font-size: 10px;
+        color: #94a3b8;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      @media (max-width: 768px) {
         .floating-music-player {
-          width: calc(100% - 40px);
-          left: 20px;
-          bottom: 20px;
-          right: 20px;
+          grid-template-columns: 1fr auto;
+          grid-template-rows: auto auto;
+          gap: 10px;
+          padding: 12px;
+          width: calc(100% - 24px);
+          bottom: 12px;
+        }
+        .player-center-col {
+          grid-column: 1 / -1;
+          order: 2;
+        }
+        .player-right-col {
+          order: 1;
+        }
+        .player-volume-wrap, .feature-label {
+          display: none;
+        }
+        .floating-video-surface {
+          width: calc(100% - 24px);
+          right: 12px;
+          bottom: 130px;
+          height: 220px;
+        }
+        .player-queue-drawer {
+          width: calc(100% - 24px);
+          right: 12px;
+          bottom: 130px;
         }
       }
     `;
 
-    // Inject styles
     const styleEl = document.createElement("style");
     styleEl.textContent = playerStyles;
     document.head.appendChild(styleEl);
 
-    // Inject player markup
+    // Inject player markup into DOM
     const playerWrapper = document.createElement("div");
     playerWrapper.innerHTML = playerHtml;
-    document.body.appendChild(playerWrapper.firstElementChild);
-
-    const player = document.getElementById("floatingMusicPlayer");
-    const poster = document.getElementById("playerPoster");
-    const trackEl = document.getElementById("playerTrack");
-    const animeTitleEl = document.getElementById("playerAnime");
+    while (playerWrapper.children.length > 0) {
+      document.body.appendChild(playerWrapper.firstElementChild);
+    }
 
     /* =====================
-       WEB AUDIO API OPTIMIZATION ENGINE
+       PLAYER STATE & CONTROLS
     ===================== */
-    let audioContext = null;
-    let audioSource = null;
-    let eqLowNode = null;
-    let eqHighNode = null;
-    let compressorNode = null;
-    let gainNode = null;
+    const mediaEl = document.getElementById("sharedMediaVideo");
+    const playerEl = document.getElementById("floatingMusicPlayer");
+    const posterEl = document.getElementById("playerPoster");
+    const trackEl = document.getElementById("playerTrack");
+    const animeEl = document.getElementById("playerAnime");
+    const badgeEl = document.getElementById("playerThemeBadge");
+    const playPauseBtn = document.getElementById("playerPlayPauseBtn");
+    const seekSlider = document.getElementById("playerSeek");
+    const currentTimeEl = document.getElementById("playerCurrentTime");
+    const totalTimeEl = document.getElementById("playerTotalTime");
+    const volumeSlider = document.getElementById("playerVolume");
+    const muteBtn = document.getElementById("playerMuteBtn");
+    const repeatBtn = document.getElementById("playerRepeatBtn");
+    const shuffleBtn = document.getElementById("playerShuffleBtn");
+    const videoSurface = document.getElementById("floatingVideoSurface");
+    const videoHost = document.getElementById("videoMediaHost");
+    const videoToggleBtn = document.getElementById("playerVideoToggle");
+    const parkingHost = document.getElementById("mediaElementParking");
+    const visualizerCanvas = document.getElementById("playerVisualizerCanvas");
+    const visualizerToggleBtn = document.getElementById("playerVisualizerToggle");
+    const queueDrawer = document.getElementById("playerQueueDrawer");
+    const queueCountBadge = document.getElementById("playerQueueCount");
+    const queueDrawerCount = document.getElementById("queueDrawerCount");
+    const queueDrawerList = document.getElementById("queueDrawerList");
 
-    // Checks if a URL is CORS safe so we can safely enable the Web Audio API
-    function isCorsSafe(url) {
-      if (!url) return true;
-      if (url.startsWith("/") && !url.startsWith("//")) return true;
+    let currentTrack = null;
+    let playQueue = [];
+    let queueIndex = 0;
+    let isVideoMode = false;
+    let isVisualizerActive = true;
+    let repeatMode = 'off'; // 'off' | 'all' | 'one'
+    let isShuffled = false;
+    let isRadioMode = false;
+
+    // Web Audio API Setup
+    let audioCtx = null;
+    let audioSrcNode = null;
+    let analyserNode = null;
+    let isAudioGraphSetup = false;
+
+    function initAudioGraph() {
+      if (isAudioGraphSetup) return;
       try {
-        const parsed = new URL(url);
-        const host = parsed.hostname;
-        if (host === window.location.hostname || 
-            host === "localhost" || 
-            host === "127.0.0.1" || 
-            host.includes("onrender.com")) {
-          return true;
-        }
-      } catch (e) {}
-      return false;
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        audioCtx = new AudioContextClass();
+        audioSrcNode = audioCtx.createMediaElementSource(mediaEl);
+        analyserNode = audioCtx.createAnalyser();
+        analyserNode.fftSize = 128;
+
+        audioSrcNode.connect(analyserNode);
+        analyserNode.connect(audioCtx.destination);
+        isAudioGraphSetup = true;
+        drawVisualizerLoop();
+      } catch (err) {
+        console.warn("Web Audio API visualizer init skipped (CORS or autoplay constraint):", err.message);
+      }
     }
 
-    // Dynamic audio element manager to prevent Web Audio CORS noise/silence bugs
-    function getAudioElement(isSafe) {
-      const container = document.querySelector(".player-audio-container");
-      if (!container) return null;
+    function drawVisualizerLoop() {
+      if (!visualizerCanvas) return;
+      const ctx = visualizerCanvas.getContext("2d");
       
-      let audio = document.getElementById("playerAudio");
-      const currentIsWebAudio = audio && audio.dataset.webAudio === "true";
-      const needWebAudio = isSafe;
-      
-      if (!audio || currentIsWebAudio !== needWebAudio) {
-        if (audio) {
-          audio.pause();
-          audio.remove();
+      function render() {
+        requestAnimationFrame(render);
+        if (!isVisualizerActive || !analyserNode || mediaEl.paused) {
+          ctx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+          return;
         }
         
-        audio = document.createElement("audio");
-        audio.id = "playerAudio";
-        audio.controls = true;
-        audio.style.width = "100%";
-        audio.style.height = "32px";
-        audio.style.outline = "none";
-        audio.style.borderRadius = "4px";
+        visualizerCanvas.width = visualizerCanvas.offsetWidth;
+        visualizerCanvas.height = visualizerCanvas.offsetHeight;
         
-        container.appendChild(audio);
-        
-        // Re-attach event listeners with custom state-change events
-        audio.addEventListener("timeupdate", debouncedSavePlayerState);
-        audio.addEventListener("play", () => {
-          if (needWebAudio && audioContext && audioContext.state === "suspended") {
-            audioContext.resume();
-          }
-          savePlayerState();
-          window.dispatchEvent(new CustomEvent("anicrunch_player_change"));
-        });
-        audio.addEventListener("pause", () => {
-          savePlayerState();
-          window.dispatchEvent(new CustomEvent("anicrunch_player_change"));
-        });
-        audio.addEventListener("volumechange", savePlayerState);
-        audio.addEventListener("ended", () => {
-          localStorage.removeItem("anicrunch_player_state");
-          if (player) player.classList.remove("active");
-          window.dispatchEvent(new CustomEvent("anicrunch_player_change"));
-        });
-        
-        if (needWebAudio) {
-          audio.dataset.webAudio = "true";
-          audio.crossOrigin = "anonymous";
-          try {
-            setupAudioPipeline(audio);
-          } catch (e) {
-            console.error("Failed to setup Web Audio API pipeline:", e);
-          }
-        } else {
-          audio.dataset.webAudio = "false";
-          audio.removeAttribute("crossorigin");
+        const bufferLength = analyserNode.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        analyserNode.getByteFrequencyData(dataArray);
+
+        ctx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+        const barWidth = (visualizerCanvas.width / bufferLength) * 2;
+        let x = 0;
+
+        for (let i = 0; i < bufferLength; i++) {
+          const barHeight = (dataArray[i] / 255) * visualizerCanvas.height * 0.7;
+          ctx.fillStyle = `rgba(255, 127, 17, ${0.15 + (dataArray[i] / 255) * 0.35})`;
+          ctx.fillRect(x, visualizerCanvas.height - barHeight, barWidth - 1, barHeight);
+          x += barWidth;
         }
       }
-      
-      return audio;
+      render();
     }
 
-    function setupAudioPipeline(audioElement) {
-      if (!audioContext) {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    // Media URL Proxy Resolver
+    window.proxyMediaUrl = function(rawUrl, source) {
+      if (!rawUrl) return "";
+      if (rawUrl.startsWith("/music/") || rawUrl.startsWith("/api/")) {
+        return rawUrl.startsWith("http") ? rawUrl : (window.API_BASE + rawUrl);
       }
-      
-      // Safely disconnect previous audio nodes if existing
-      try {
-        if (audioSource) audioSource.disconnect();
-        if (eqLowNode) eqLowNode.disconnect();
-        if (eqHighNode) eqHighNode.disconnect();
-        if (compressorNode) compressorNode.disconnect();
-        if (gainNode) gainNode.disconnect();
-      } catch (_) {}
+      if (source === "animethemes" || rawUrl.includes("animethemes.moe")) {
+        return `${window.API_BASE}/api/media?u=${encodeURIComponent(rawUrl)}`;
+      }
+      if (source === "itunes" || rawUrl.includes("apple.com") || rawUrl.includes("mzstatic.com")) {
+        return `${window.API_BASE}/api/stream?u=${encodeURIComponent(rawUrl)}`;
+      }
+      return rawUrl;
+    };
 
-      // Reuse source node if attached to this element, otherwise create new
-      if (audioElement._audioSourceNode) {
-        audioSource = audioElement._audioSourceNode;
+    // Format seconds into MM:SS
+    function formatSec(s) {
+      if (isNaN(s) || s < 0) return "0:00";
+      const m = Math.floor(s / 60);
+      const sec = Math.floor(s % 60);
+      return `${m}:${sec.toString().padStart(2, '0')}`;
+    }
+
+    // Expose Global Track Player
+    window.playThemeTrack = function(track, newQueue = null, startIndex = 0, startInVideoMode = false) {
+      if (!track) return;
+      currentTrack = track;
+
+      if (startInVideoMode && track.videoUrl) {
+        isVideoMode = true;
+      }
+
+      if (newQueue && Array.isArray(newQueue) && newQueue.length > 0) {
+        playQueue = [...newQueue];
+        queueIndex = startIndex;
+      } else if (!playQueue.some(t => t.title === track.title && t.animeTitle === track.animeTitle)) {
+        playQueue.push(track);
+        queueIndex = playQueue.length - 1;
+      }
+
+      updateQueueUI();
+
+      // Determine appropriate audio/video source URL
+      const streamSource = isVideoMode && track.videoUrl ? track.videoUrl : (track.audioUrl || track.url || track.videoUrl);
+      const finalUrl = window.proxyMediaUrl(streamSource, track.source);
+
+      if (!finalUrl) {
+        alert("No playable audio or video stream available for this theme.");
+        return;
+      }
+
+      // Update UI elements
+      trackEl.textContent = track.title || "Theme";
+      animeEl.textContent = track.animeTitle || track.anime || "Anime";
+      posterEl.src = track.artwork || track.poster || "/favicon.png";
+
+      if (track.themeLabel) {
+        badgeEl.textContent = track.themeLabel + (track.resolution ? ` • ${track.resolution}` : '');
+        badgeEl.style.display = "inline-block";
       } else {
-        audioSource = audioContext.createMediaElementSource(audioElement);
-        audioElement._audioSourceNode = audioSource;
+        badgeEl.style.display = "none";
       }
-      
-      // Low Shelf Filter (Bass Enhancer / Highpass filter on mobile)
-      eqLowNode = audioContext.createBiquadFilter();
-      
-      // High Shelf Filter (Treble / Speech presence enhancer)
-      eqHighNode = audioContext.createBiquadFilter();
-      
-      // Dynamic compressor to maximize average volume and punchiness without clipping
-      compressorNode = audioContext.createDynamicsCompressor();
-      
-      // Gain node for clean amplification
-      gainNode = audioContext.createGain();
-      
-      // Connect pipeline
-      audioSource.connect(eqLowNode);
-      eqLowNode.connect(eqHighNode);
-      eqHighNode.connect(compressorNode);
-      compressorNode.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      // Apply profile
-      applyAudioProfile();
-    }
 
-    function applyAudioProfile() {
-      if (!audioContext || !eqLowNode || !eqHighNode || !compressorNode || !gainNode) return;
-      
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      
-      if (isMobile) {
-        // --- MOBILE PRESET ---
-        // 1. Cut sub-bass (below 90Hz) to prevent speaker rumble & distortion at high volumes
-        eqLowNode.type = "highpass";
-        eqLowNode.frequency.value = 90;
-        
-        // 2. Peaking filter to boost presence/clarity range where vocals and instruments reside
-        eqHighNode.type = "peaking";
-        eqHighNode.frequency.value = 2500;
-        eqHighNode.Q.value = 1.0;
-        eqHighNode.gain.value = 3.5; // +3.5dB
-        
-        // 3. Heavy compression to maximize volume on tiny speakers
-        compressorNode.threshold.value = -24;
-        compressorNode.knee.value = 30;
-        compressorNode.ratio.value = 5.0;
-        compressorNode.attack.value = 0.003;
-        compressorNode.release.value = 0.25;
-        
-        // 4. Boost overall gain
-        gainNode.gain.value = 1.4; // +40% volume boost
-        console.log("🔊 AniCrunch Audio Engine: Applied Mobile Speaker Optimization");
+      // Update Video Header
+      const vAnime = document.getElementById("videoHeaderAnime");
+      const vTrack = document.getElementById("videoHeaderTrack");
+      if (vAnime) vAnime.textContent = track.animeTitle || "Anime";
+      if (vTrack) vTrack.textContent = track.title || "Theme";
+
+      // Video surface placement
+      if (isVideoMode) {
+        videoHost.appendChild(mediaEl);
+        videoSurface.style.display = "flex";
+        videoToggleBtn.classList.add("active");
       } else {
-        // --- PC / HEADPHONES PRESET ---
-        // 1. Warm Bass Boost (below 120Hz)
-        eqLowNode.type = "lowshelf";
-        eqLowNode.frequency.value = 120;
-        eqLowNode.gain.value = 4.0; // +4.0dB bass boost
-        
-        // 2. High-end presence boost (above 6kHz)
-        eqHighNode.type = "highshelf";
-        eqHighNode.frequency.value = 6000;
-        eqHighNode.gain.value = 2.0; // +2.0dB treble clarity boost
-        
-        // 3. Light compression for professional studio dynamic smoothing
-        compressorNode.threshold.value = -16;
-        compressorNode.knee.value = 20;
-        compressorNode.ratio.value = 2.5;
-        compressorNode.attack.value = 0.005;
-        compressorNode.release.value = 0.15;
-        
-        // 4. Normal gain
-        gainNode.gain.value = 1.0;
-        console.log("🔊 AniCrunch Audio Engine: Applied PC / Headphone Studio Optimization");
+        parkingHost.appendChild(mediaEl);
+        videoSurface.style.display = "none";
+        videoToggleBtn.classList.remove("active");
       }
-    }
 
-    // Save player state to localStorage
-    function savePlayerState() {
-      const audio = document.getElementById("playerAudio");
-      if (!audio || !audio.src) return;
-      const state = {
-        url: audio.src,
-        title: trackEl ? trackEl.textContent : "",
-        anime: animeTitleEl ? animeTitleEl.textContent : "",
-        poster: poster ? poster.src : "",
-        currentTime: audio.currentTime,
-        volume: audio.volume,
-        isPlaying: !audio.paused,
-        timestamp: Date.now()
-      };
-      localStorage.setItem("anicrunch_player_state", JSON.stringify(state));
-    }
+      // Set media source
+      mediaEl.src = finalUrl;
+      playerEl.classList.add("active");
 
-    // Expose persistent controls on window
+      // Auto-unlock Web Audio API context
+      if (audioCtx && audioCtx.state === "suspended") {
+        audioCtx.resume();
+      } else {
+        initAudioGraph();
+      }
+
+      mediaEl.play().catch(e => console.log("Playback interaction required:", e.message));
+
+      // Native MediaSession API integration
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: track.title,
+          artist: track.artist || "AnimeThemes",
+          album: track.animeTitle || "AniCrunch",
+          artwork: [
+            { src: track.artwork || '/favicon.png', sizes: '512x512', type: 'image/png' }
+          ]
+        });
+        navigator.mediaSession.setActionHandler('play', () => mediaEl.play());
+        navigator.mediaSession.setActionHandler('pause', () => mediaEl.pause());
+        navigator.mediaSession.setActionHandler('previoustrack', () => playPrevTrack());
+        navigator.mediaSession.setActionHandler('nexttrack', () => playNextTrack());
+      }
+
+      // Log play count
+      if (track.url || track.key) {
+        fetch(`${API_BASE}/api/music/play`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: track.url || track.key })
+        }).catch(() => {});
+      }
+
+      window.dispatchEvent(new CustomEvent("anicrunch_player_change", { detail: { track, isPlaying: true } }));
+    };
+
+    // Backward-compatible alias
     window.playLocalSong = function(track) {
-      let finalUrl = track.url;
-      if (finalUrl.startsWith("/music/")) {
-        finalUrl = API_BASE + finalUrl;
-      }
-      
-      const isSafe = isCorsSafe(finalUrl);
-      const audio = getAudioElement(isSafe);
-      if (!audio) return;
-      
-      audio.src = finalUrl;
-      if (trackEl) trackEl.textContent = track.title;
-      if (animeTitleEl) animeTitleEl.textContent = track.anime;
+      window.playThemeTrack({
+        ...track,
+        animeTitle: track.anime || "Local Library",
+        audioUrl: track.url,
+        source: track.url?.includes("http") ? "itunes" : "local"
+      });
+    };
 
-      // Log play count dynamically to backend (Popular/Trending tracking)
-      fetch(`${API_BASE}/api/music/play`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: track.url })
-      }).catch(err => console.error("Error logging music play count:", err));
-      
-      // Load poster
-      if (poster) {
-        poster.src = "/favicon.png";
-        const cacheKey = `poster_cache_${encodeURIComponent(track.anime)}`;
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) {
-          poster.src = cached;
-        } else {
-          fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(track.anime)}&limit=1`)
-            .then(res => res.json())
-            .then(d => {
-              const p = d.data?.[0]?.images?.jpg?.large_image_url || d.data?.[0]?.images?.jpg?.image_url;
-              if (p) {
-                localStorage.setItem(cacheKey, p);
-                poster.src = p;
-                savePlayerState();
-              }
-            }).catch(() => {});
+    // Video Mode Toggle (Preserving exact playback timestamp!)
+    window.toggleVideoMode = function(forceState = null) {
+      if (!currentTrack) return;
+      isVideoMode = typeof forceState === "boolean" ? forceState : !isVideoMode;
+
+      videoToggleBtn.classList.toggle("active", isVideoMode);
+
+      if (isVideoMode) {
+        // Move persistent <video> element to visible floating video surface
+        videoHost.appendChild(mediaEl);
+        videoSurface.style.display = "flex";
+
+        // If track has full video, switch src to video with seamless position resume
+        if (currentTrack.videoUrl) {
+          const curTime = mediaEl.currentTime;
+          const wasPlaying = !mediaEl.paused;
+          const videoProxyUrl = window.proxyMediaUrl(currentTrack.videoUrl, "animethemes");
+
+          if (mediaEl.src !== videoProxyUrl) {
+            mediaEl.src = videoProxyUrl;
+            mediaEl.addEventListener('loadedmetadata', function onLoaded() {
+              mediaEl.currentTime = curTime;
+              if (wasPlaying) mediaEl.play().catch(()=>{});
+              mediaEl.removeEventListener('loadedmetadata', onLoaded);
+            });
+          }
+        }
+      } else {
+        // Move persistent <video> element back to parking
+        parkingHost.appendChild(mediaEl);
+        videoSurface.style.display = "none";
+
+        // Switch back to audio stream if available
+        if (currentTrack.audioUrl) {
+          const curTime = mediaEl.currentTime;
+          const wasPlaying = !mediaEl.paused;
+          const audioProxyUrl = window.proxyMediaUrl(currentTrack.audioUrl, currentTrack.source);
+
+          if (mediaEl.src !== audioProxyUrl) {
+            mediaEl.src = audioProxyUrl;
+            mediaEl.addEventListener('loadedmetadata', function onLoaded() {
+              mediaEl.currentTime = curTime;
+              if (wasPlaying) mediaEl.play().catch(()=>{});
+              mediaEl.removeEventListener('loadedmetadata', onLoaded);
+            });
+          }
         }
       }
+    };
 
-      // Update HD Badge display and tooltip
-      const hdBadge = document.getElementById("hdAudioBadge");
-      if (hdBadge) {
-        if (isSafe) {
-          const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-          hdBadge.style.display = "inline-block";
-          hdBadge.textContent = "HD";
-          hdBadge.title = isMobile ? "Audio optimized for Mobile Speakers" : "Audio optimized for PC/Headphones";
-        } else {
-          hdBadge.style.display = "none";
-        }
+    window.toggleVideoFullscreen = function() {
+      if (!mediaEl) return;
+      if (mediaEl.requestFullscreen) {
+        mediaEl.requestFullscreen();
+      } else if (mediaEl.webkitRequestFullscreen) {
+        mediaEl.webkitRequestFullscreen();
+      }
+    };
+
+    window.toggleVisualizer = function(force = null) {
+      isVisualizerActive = typeof force === "boolean" ? force : !isVisualizerActive;
+      visualizerToggleBtn.classList.toggle("active", isVisualizerActive);
+    };
+
+    window.toggleQueueDrawer = function(force = null) {
+      const isVisible = queueDrawer.style.display === "flex";
+      const target = typeof force === "boolean" ? force : !isVisible;
+      queueDrawer.style.display = target ? "flex" : "none";
+      document.getElementById("playerQueueToggle").classList.toggle("active", target);
+    };
+
+    window.clearPlayerQueue = function() {
+      playQueue = currentTrack ? [currentTrack] : [];
+      queueIndex = 0;
+      updateQueueUI();
+    };
+
+    function updateQueueUI() {
+      if (!queueDrawerCount || !queueDrawerList) return;
+      queueDrawerCount.textContent = playQueue.length;
+      queueCountBadge.textContent = playQueue.length;
+      queueCountBadge.style.display = playQueue.length > 0 ? "inline-block" : "none";
+
+      if (playQueue.length === 0) {
+        queueDrawerList.innerHTML = `<div style="color: var(--muted); text-align: center; padding: 30px 10px; font-size: 13px;">Queue is empty.</div>`;
+        return;
       }
 
-      if (player) player.classList.add("active");
-      audio.play()
-        .then(() => savePlayerState())
-        .catch(e => {
-          console.log("Auto-play prevented by browser policy:", e);
-          savePlayerState();
-        });
+      queueDrawerList.innerHTML = "";
+      playQueue.forEach((t, i) => {
+        const item = document.createElement("div");
+        item.className = `queue-item ${i === queueIndex ? 'active' : ''}`;
+        item.innerHTML = `
+          <img src="${t.artwork || '/favicon.png'}" class="queue-item-thumb" alt="">
+          <div class="queue-item-info">
+            <div class="queue-item-title">${t.title || 'Theme'}</div>
+            <div class="queue-item-sub">${t.animeTitle || 'Anime'} ${t.themeLabel ? `• ${t.themeLabel}` : ''}</div>
+          </div>
+        `;
+        item.onclick = () => {
+          queueIndex = i;
+          window.playThemeTrack(t);
+        };
+        queueDrawerList.appendChild(item);
+      });
+    }
+
+    // Media Controls Logic
+    window.togglePlayerPlay = function() {
+      if (!mediaEl.src) return;
+      if (mediaEl.paused) {
+        mediaEl.play().catch(()=>{});
+      } else {
+        mediaEl.pause();
+      }
+    };
+
+    window.playNextTrack = function() {
+      if (playQueue.length === 0) return;
+      if (repeatMode === 'one') {
+        mediaEl.currentTime = 0;
+        mediaEl.play();
+        return;
+      }
+      
+      if (queueIndex < playQueue.length - 1) {
+        queueIndex++;
+        window.playThemeTrack(playQueue[queueIndex]);
+      } else if (repeatMode === 'all') {
+        queueIndex = 0;
+        window.playThemeTrack(playQueue[0]);
+      } else if (isRadioMode) {
+        // Fetch new radio tracks dynamically
+        fetch(`${API_BASE}/api/music/radio`)
+          .then(r => r.json())
+          .then(d => {
+            if (d.tracks && d.tracks.length > 0) {
+              playQueue.push(...d.tracks);
+              queueIndex++;
+              window.playThemeTrack(playQueue[queueIndex]);
+            }
+          });
+      }
+    };
+
+    window.playPrevTrack = function() {
+      if (mediaEl.currentTime > 4) {
+        mediaEl.currentTime = 0;
+        return;
+      }
+      if (queueIndex > 0) {
+        queueIndex--;
+        window.playThemeTrack(playQueue[queueIndex]);
+      }
+    };
+
+    window.cyclePlayerRepeat = function() {
+      if (repeatMode === 'off') {
+        repeatMode = 'all';
+        repeatBtn.textContent = '🔁';
+        repeatBtn.classList.add("active");
+        repeatBtn.title = "Repeat All";
+      } else if (repeatMode === 'all') {
+        repeatMode = 'one';
+        repeatBtn.textContent = '🔂';
+        repeatBtn.classList.add("active");
+        repeatBtn.title = "Repeat Current";
+      } else {
+        repeatMode = 'off';
+        repeatBtn.textContent = '🔁';
+        repeatBtn.classList.remove("active");
+        repeatBtn.title = "Repeat Off";
+      }
+    };
+
+    window.togglePlayerShuffle = function() {
+      isShuffled = !isShuffled;
+      shuffleBtn.classList.toggle("active", isShuffled);
+      if (isShuffled && playQueue.length > 1) {
+        const cur = playQueue[queueIndex];
+        const rest = playQueue.filter((_, i) => i !== queueIndex).sort(() => 0.5 - Math.random());
+        playQueue = [cur, ...rest];
+        queueIndex = 0;
+        updateQueueUI();
+      }
+    };
+
+    window.togglePlayerMute = function() {
+      mediaEl.muted = !mediaEl.muted;
+      muteBtn.textContent = mediaEl.muted ? "🔇" : "🔊";
     };
 
     window.closeMusicPlayer = function() {
-      const audio = document.getElementById("playerAudio");
-      if (player) player.classList.remove("active");
-      if (audio) {
-        audio.pause();
-        audio.src = "";
-      }
-      localStorage.removeItem("anicrunch_player_state");
-      window.dispatchEvent(new CustomEvent("anicrunch_player_change"));
+      mediaEl.pause();
+      mediaEl.src = "";
+      playerEl.classList.remove("active");
+      videoSurface.style.display = "none";
+      queueDrawer.style.display = "none";
+      window.dispatchEvent(new CustomEvent("anicrunch_player_change", { detail: { isPlaying: false } }));
     };
 
-    // Debounced version for frequent events like timeupdate
-    let _saveTimeout = null;
-    function debouncedSavePlayerState() {
-      if (_saveTimeout) return;
-      _saveTimeout = setTimeout(() => {
-        savePlayerState();
-        _saveTimeout = null;
-      }, 5000);
-    }
-
-    // Restore music playback state
-    try {
-      const saved = localStorage.getItem("anicrunch_player_state");
-      if (saved) {
-        const state = JSON.parse(saved);
-        if (state.url) {
-          const isSafe = isCorsSafe(state.url);
-          const restoredAudio = getAudioElement(isSafe);
-          if (restoredAudio) {
-            restoredAudio.src = state.url;
-            if (trackEl) trackEl.textContent = state.title;
-            if (animeTitleEl) animeTitleEl.textContent = state.anime;
-            if (poster) poster.src = state.poster || "/favicon.png";
-            restoredAudio.currentTime = state.currentTime || 0;
-            restoredAudio.volume = state.volume !== undefined ? state.volume : 1;
-            
-            const hdBadge = document.getElementById("hdAudioBadge");
-            if (hdBadge) {
-              if (isSafe) {
-                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                hdBadge.style.display = "inline-block";
-                hdBadge.textContent = "HD";
-                hdBadge.title = isMobile ? "Audio optimized for Mobile Speakers" : "Audio optimized for PC/Headphones";
-              } else {
-                hdBadge.style.display = "none";
-              }
-            }
-            
-            if (player) player.classList.add("active");
-
-            if (state.isPlaying) {
-              // Attempt to restore play (requires user click or interaction)
-              restoredAudio.play().catch(() => {
-                state.isPlaying = false;
-                localStorage.setItem("anicrunch_player_state", JSON.stringify(state));
-              });
-            }
-          }
-        }
+    // Event Listeners on Media Element
+    mediaEl.addEventListener("play", () => {
+      playPauseBtn.textContent = "⏸";
+      window.dispatchEvent(new CustomEvent("anicrunch_player_change", { detail: { isPlaying: true } }));
+    });
+    mediaEl.addEventListener("pause", () => {
+      playPauseBtn.textContent = "▶";
+      window.dispatchEvent(new CustomEvent("anicrunch_player_change", { detail: { isPlaying: false } }));
+    });
+    mediaEl.addEventListener("timeupdate", () => {
+      currentTimeEl.textContent = formatSec(mediaEl.currentTime);
+      if (!isNaN(mediaEl.duration) && mediaEl.duration > 0) {
+        seekSlider.value = (mediaEl.currentTime / mediaEl.duration) * 100;
+        totalTimeEl.textContent = formatSec(mediaEl.duration);
       }
-    } catch (err) {
-      console.error("Failed to restore player state:", err);
-    }
+    });
+    mediaEl.addEventListener("ended", () => {
+      playNextTrack();
+    });
 
-    // Add class to reveal layout
+    seekSlider.addEventListener("input", (e) => {
+      if (!isNaN(mediaEl.duration)) {
+        mediaEl.currentTime = (e.target.value / 100) * mediaEl.duration;
+      }
+    });
+
+    volumeSlider.addEventListener("input", (e) => {
+      mediaEl.volume = e.target.value;
+      mediaEl.muted = false;
+      muteBtn.textContent = e.target.value > 0 ? "🔊" : "🔇";
+    });
+
+    // Add layout-ready class to show layout
     document.body.classList.add('layout-ready');
   }
 
