@@ -93,12 +93,12 @@
   <h1 class="logo" onclick="location.href='/'">anicrunch</h1>
   
   <nav class="nav-links">
-    <a href="/blog/" class="nav-link"><span>📖</span> <span>Blog</span></a>
+    <a href="/blog/" class="nav-link"><span>Blog</span></a>
     <a href="/recent-episodes.html" class="nav-link"><span>🆕</span> <span>New Episodes</span></a>
-    <a href="/schedule.html" class="nav-link"><span>📅</span> <span>Schedule</span></a>
-    <a href="/vibe-mixer.html" class="nav-link active"><span>🧪</span> <span>Vibe Mixer</span></a>
+    <a href="/schedule.html" class="nav-link"><span>Schedule</span></a>
+    <a href="/vibe-mixer.html" class="nav-link active"><span>Vibe Mixer</span></a>
     <button onclick="spinWheel()" class="btn-random" aria-label="Random anime">
-      <span>🎲</span> <span>Random</span>
+      <span>Random</span>
     </button>
   </nav>
 
@@ -111,7 +111,7 @@
 <main class="mixer-page-container">
   
   <div class="mixer-header-text">
-    <h1>🧪 Anime Vibe Mixer</h1>
+    <h1>Anime Vibe Mixer</h1>
     <p>Slide and mix your visual emotions to discover uniquely blended anime recommendations that fit your exact mood.</p>
   </div>
   
@@ -119,7 +119,7 @@
     <div class="vibe-mixer-content" style="background: rgba(255, 255, 255, 0.02);">
       <div class="vibe-mixers-container">
         <div class="vibe-slider-card">
-          <span class="vibe-emoji">🔥</span>
+          
           <div class="vibe-info">
             <label for="hypeSlider">Hype</label>
             <span class="vibe-description">Action & high-energy sports</span>
@@ -128,7 +128,7 @@
           <span class="vibe-val" id="hypeVal">0%</span>
         </div>
         <div class="vibe-slider-card">
-          <span class="vibe-emoji">🌸</span>
+          
           <div class="vibe-info">
             <label for="chillSlider">Chill</label>
             <span class="vibe-description">Slice of life & comedy</span>
@@ -137,7 +137,7 @@
           <span class="vibe-val" id="chillVal">0%</span>
         </div>
         <div class="vibe-slider-card">
-          <span class="vibe-emoji">😢</span>
+          
           <div class="vibe-info">
             <label for="cryingSlider">Emotional</label>
             <span class="vibe-description">Tear-jerkers & romance</span>
@@ -146,7 +146,7 @@
           <span class="vibe-val" id="cryingVal">0%</span>
         </div>
         <div class="vibe-slider-card">
-          <span class="vibe-emoji">🧙</span>
+          
           <div class="vibe-info">
             <label for="escapismSlider">Escapism</label>
             <span class="vibe-description">Fantasy & deep adventure</span>
@@ -156,19 +156,19 @@
         </div>
       </div>
       <div class="vibe-mixer-actions">
-        <button class="btn btn-primary" id="mixVibesBtn" aria-label="Mix Vibes">🧪 Mix Vibes</button>
+        <button class="btn btn-primary" id="mixVibesBtn" aria-label="Mix Vibes">Mix Vibes</button>
         <button class="btn btn-secondary" id="resetVibesBtn" aria-label="Reset Mix">✕ Reset</button>
       </div>
     </div>
   </section>
   
   <section class="mixer-results-block" id="mixerResultsBlock" style="display: none;">
-    <h2 id="resultsHeader">🧪 Synthesizing...</h2>
+    <h2 id="resultsHeader">Synthesizing...</h2>
     
     <!-- Real-Time Synthesizer Console Diagnostics -->
     <div class="synthesizer-console" style="background: rgba(7, 7, 15, 0.85); border: 1px solid rgba(255, 60, 172, 0.2); border-radius: 16px; padding: 20px; font-family: monospace; color: #a5b4fc; font-size: 13px; line-height: 1.6; margin-bottom: 24px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05); max-width: 800px; margin: 0 auto 30px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 8px;">
-        <span style="font-weight: bold; color: white; display: flex; align-items: center; gap: 8px;">🧪 Vibe Synthesizer Console</span>
+        <span style="font-weight: bold; color: white; display: flex; align-items: center; gap: 8px;">Vibe Synthesizer Console</span>
         <span class="live-badge" id="synthStatusBadge" style="background: var(--accent); padding: 3px 8px; font-size: 9px; border-radius: 20px; font-weight: 700; letter-spacing: 0.5px; animation: pulse 1.5s infinite;">SYNTHESIZING</span>
       </div>
       <div id="synthLogs" style="max-height: 150px; overflow-y: auto; text-align: left; scroll-behavior: smooth;">
@@ -182,36 +182,36 @@
 </main>
 
 <footer class="site-footer">
-  <p>Made with ❤️ by anicrunch · Powered by <a href="https://jikan.moe" target="_blank" rel="noopener">Jikan API</a></p>
+  <p>Made by anicrunch · Powered by <a href="https://jikan.moe" target="_blank" rel="noopener">Jikan API</a></p>
 </footer>
 
 <!-- Modern Mobile Bottom Navigation Bar -->
 <div class="mobile-nav-bar" aria-label="Mobile Navigation Bar">
   <a href="/" class="mobile-nav-item" id="mobileNavHome">
-    <span class="nav-icon">🏠</span>
+    <span class="nav-icon">Home</span>
     <span>Home</span>
   </a>
   <a href="/schedule.html" class="mobile-nav-item" id="mobileNavSchedule">
-    <span class="nav-icon">📅</span>
+    <span class="nav-icon">Schedule</span>
     <span>Schedule</span>
   </a>
   <button onclick="spinWheel()" class="mobile-nav-item" id="mobileNavRandom" aria-label="Random anime">
-    <span class="nav-icon">🎲</span>
+    <span class="nav-icon">Random</span>
     <span>Random</span>
   </button>
   <a href="/watchlist.html" class="mobile-nav-item" id="mobileNavWatchlist">
-    <span class="nav-icon">📚</span>
+    <span class="nav-icon">Watchlist</span>
     <span>Watchlist</span>
   </a>
   <a href="/vibe-mixer.html" class="mobile-nav-item active" id="mobileNavMixer">
-    <span class="nav-icon">🧪</span>
+    <span class="nav-icon">Mixer</span>
     <span>Vibes</span>
   </a>
 </div>
 
 <div class="spin-overlay" id="spinOverlay">
   <div class="spinner-content">
-    <div class="big-spinner">🎲</div>
+    <div class="big-spinner"></div>
     <p style="color: white;">Finding your next anime...</p>
   </div>
 </div>
@@ -225,9 +225,9 @@
 <script>
   // Global Error Catcher for real-time diagnostic reporting on PC/Mobile
   window.onerror = function(msg, url, line, col, error) {
-    console.error("🚨 AniCrunch Vibe Mixer Runtime Exception Caught:", msg, "at line", line, "col", col);
+    console.error("AniCrunch Vibe Mixer Runtime Exception Caught:", msg, "at line", line, "col", col);
     if (typeof showToast === 'function') {
-      showToast(`⚠️ Exception: ${msg} (Line ${line}:${col})`, 'error');
+      showToast(`Exception: ${msg} (Line ${line}:${col})`, 'error');
     }
     return false;
   };
@@ -289,7 +289,7 @@
       if (escapism >= 20) active.push({ name: 'Escapism', val: escapism, genres: [10, 2] });
       
       if (!active.length) {
-        showToast('🧪 Please slide at least one emotion up to 20%!', 'warning');
+        showToast('Please slide at least one emotion up to 20%!', 'warning');
         return;
       }
       
@@ -297,7 +297,7 @@
       active.sort((a, b) => b.val - a.val);
       
       resultsBlock.style.display = "block";
-      resultsHeader.textContent = "🧪 Synthesizing Mix...";
+      resultsHeader.textContent = "Synthesizing Mix...";
       
       // Initialize Console Logs
       const logs = document.getElementById('synthLogs');
@@ -342,21 +342,36 @@
         const uniqueGenreIds = [...new Set(targetGenres)];
         addLog(`Mapped unique genre IDs: [${uniqueGenreIds.join(', ')}]`);
 
-        addLog(`Dispatching Jikan API queries in parallel...`);
-        // Fire parallel Jikan requests for each genre individually to achieve OR logic (Action OR Sports)
-        const fetchPromises = uniqueGenreIds.map(async (genreId) => {
-          try {
-            addLog(`Querying genre ID ${genreId}...`);
-            const data = await queuedFetch(`https://api.jikan.moe/v4/anime?genres=${genreId}&order_by=popularity&sfw=true&limit=16`, 'critical');
-            addLog(`Received genre ID ${genreId}: ${data ? data.length : 0} items.`, 'success');
-            return data;
-          } catch (e) {
-            addLog(`Failed query for ID ${genreId}: ${e.message}`, 'warning');
-            return [];
-          }
-        });
+        addLog(`Dispatching Jikan API synthesis query...`);
+        let rawResultsArray = [];
         
-        const rawResultsArray = await Promise.all(fetchPromises);
+        try {
+          // 1. Primary combined genre search (single fast request)
+          const primaryGenreStr = uniqueGenreIds.slice(0, 3).join(',');
+          const mainData = await queuedFetch(`https://api.jikan.moe/v4/anime?genres=${primaryGenreStr}&order_by=popularity&sfw=true&limit=24`, 'critical');
+          if (Array.isArray(mainData) && mainData.length > 0) {
+            rawResultsArray.push(mainData);
+            addLog(`Primary synthesis fetched ${mainData.length} records.`, 'success');
+          }
+        } catch (e) {
+          addLog(`Primary synthesis fallback: ${e.message}`, 'warning');
+        }
+
+        // 2. If additional genre exploration is needed, fetch sequentially
+        if (uniqueGenreIds.length > 1 && rawResultsArray.length === 0) {
+          for (const genreId of uniqueGenreIds.slice(0, 2)) {
+            try {
+              addLog(`Querying fallback genre ID ${genreId}...`);
+              const data = await queuedFetch(`https://api.jikan.moe/v4/anime?genres=${genreId}&order_by=popularity&sfw=true&limit=16`, 'background');
+              if (Array.isArray(data) && data.length > 0) {
+                rawResultsArray.push(data);
+                addLog(`Received genre ID ${genreId}: ${data.length} items.`, 'success');
+              }
+            } catch (err) {
+              addLog(`Query skipped for ID ${genreId}`, 'warning');
+            }
+          }
+        }
         
         addLog(`Merging and deduplicating visual records...`);
         // Merge lists and deduplicate
@@ -382,7 +397,7 @@
           }
           resultsContainer.innerHTML = `
             <div class="empty-state" style="grid-column: 1 / -1; text-align: center; padding: 40px 0;">
-              <h3>🧪 No matching vibes found</h3>
+              <h3>No matching vibes found</h3>
               <p>Try sliding other vibes to mix them together.</p>
             </div>
           `;
@@ -410,7 +425,7 @@
         }
         
         const mixLabels = active.map(v => `${v.name} (${v.val}%)`).join(' + ');
-        resultsHeader.textContent = `🧪 Mixed Vibes: ${mixLabels}`;
+        resultsHeader.textContent = `Mixed Vibes: ${mixLabels}`;
         
         // Scroll smoothly to results
         resultsBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -424,7 +439,7 @@
         console.error("Vibe mixer error:", err);
         resultsContainer.innerHTML = `
           <div class="error-state" style="grid-column: 1 / -1; text-align: center; padding: 40px 0;">
-            <p>⚠️ Failed to synthesize Jikan vibe blend.</p>
+            <p>Failed to synthesize Jikan vibe blend.</p>
             <button class="retry-btn" onclick="location.reload()" style="padding: 8px 16px; background: var(--accent); border: none; border-radius: 20px; color: white; cursor: pointer; margin-top: 10px;">Retry</button>
           </div>
         `;

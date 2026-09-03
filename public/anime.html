@@ -371,7 +371,7 @@
 <header style="padding: 20px 40px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; background: rgba(0,0,0,0.3); backdrop-filter: blur(10px);">
   <h1 onclick="location.href='/'" style="margin:0; font-size:24px; cursor:pointer; color:white;">anicrunch</h1>
   <div style="flex:1"></div>
-  <a href="/quiz.html" class="nav-link" style="color: var(--muted); margin-right: 20px; text-decoration: none; font-size: 14px; font-weight: 600;">🏆 Trivia Arena</a>
+  <a href="/quiz.html" class="nav-link" style="color: var(--muted); margin-right: 20px; text-decoration: none; font-size: 14px; font-weight: 600;">Trivia Arena</a>
   <a href="/" class="btn btn-secondary" style="padding: 8px 16px;">← Home</a>
 </header>
 
@@ -416,7 +416,7 @@
       <div class="genre-list" id="genres"></div>
 
       <div class="action-row">
-        <button class="btn btn-primary" id="watchlistBtn">➕ Add to Watchlist</button>
+        <button class="btn btn-primary" id="watchlistBtn">Add to Watchlist</button>
         
         <button class="btn btn-trailer" id="trailerBtn" style="display:none" onclick="openModal()">▶ Watch Trailer</button>
         
@@ -458,7 +458,7 @@
     </div>
 
     <div id="episodesSection" style="display:none">
-      <h2 class="section-title">📋 Episode History</h2>
+      <h2 class="section-title">Episode History</h2>
       <div class="episode-history-list" id="episodeList"></div>
       <div class="load-more-episodes" id="loadMoreEpisodesContainer" style="display:none">
         <button id="loadMoreEpisodesBtn">Load More Episodes</button>
@@ -730,7 +730,7 @@ function render(data) {
   } else {
     // No Trailer - Show Search
     tBtn.style.display = 'inline-flex';
-    tBtn.innerText = '🔍 Search Trailer';
+    tBtn.innerText = 'Search Trailer';
     tBtn.className = 'btn btn-search'; // Darker style
     tBtn.onclick = () => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(displayTitle + ' anime trailer')}`, '_blank');
   }
@@ -754,7 +754,7 @@ async function checkWatchlistStatus() {
   }
 }
 
-// 🔥 Watchlist - FIXED FETCH & CREDENTIALS
+// Watchlist - FIXED FETCH & CREDENTIALS
 document.getElementById('watchlistBtn').onclick = async function() {
   this.innerText = 'Adding...';
   this.disabled = true;
@@ -763,11 +763,12 @@ document.getElementById('watchlistBtn').onclick = async function() {
     const res = await fetch(`${API_BASE}/api/watchlist/add`, {
       method: 'POST', 
       headers: {'Content-Type': 'application/json'},
-      credentials: 'include', // 🔥 REQUIRED for cookies
+      credentials: 'include', // REQUIRED for cookies
       body: JSON.stringify({
         animeId: Number(animeId),
         genres: loadedAnimeData?.genres?.map(g => g.name).join(','),
-        title: loadedAnimeData?.title_english || loadedAnimeData?.title
+        title: loadedAnimeData?.title_english || loadedAnimeData?.title,
+        imageUrl: loadedAnimeData?.images?.jpg?.large_image_url || loadedAnimeData?.images?.jpg?.image_url || ''
       })
     });
 
@@ -909,7 +910,7 @@ async function loadEpisodeHistory(page) {
             <div class="ep-title">${ep.title || 'Episode ' + ep.mal_id}</div>
             ${ep.title_japanese ? `<div class="ep-title-jp">${ep.title_japanese}</div>` : ''}
           </div>
-          ${airedDate ? `<span class="ep-aired">📅 ${airedDate}</span>` : ''}
+          ${airedDate ? `<span class="ep-aired">${airedDate}</span>` : ''}
           ${tags}
         `;
         list.appendChild(item);
@@ -963,23 +964,23 @@ load();
 <!-- Modern Mobile Bottom Navigation Bar -->
 <div class="mobile-nav-bar" aria-label="Mobile Navigation Bar">
   <a href="/" class="mobile-nav-item" id="mobileNavHome">
-    <span class="nav-icon">🏠</span>
+    <span class="nav-icon">Home</span>
     <span>Home</span>
   </a>
   <a href="/schedule.html" class="mobile-nav-item" id="mobileNavSchedule">
-    <span class="nav-icon">📅</span>
+    <span class="nav-icon">Schedule</span>
     <span>Schedule</span>
   </a>
   <button onclick="spinWheel()" class="mobile-nav-item" id="mobileNavRandom" aria-label="Random anime">
-    <span class="nav-icon">🎲</span>
+    <span class="nav-icon">Random</span>
     <span>Random</span>
   </button>
   <a href="/watchlist.html" class="mobile-nav-item" id="mobileNavWatchlist">
-    <span class="nav-icon">📚</span>
+    <span class="nav-icon">Watchlist</span>
     <span>Watchlist</span>
   </a>
   <a href="/vibe-mixer.html" class="mobile-nav-item" id="mobileNavMixer">
-    <span class="nav-icon">🧪</span>
+    <span class="nav-icon">Mixer</span>
     <span>Vibes</span>
   </a>
 </div>

@@ -26,13 +26,13 @@
 
 <section class="watchlist-hero" style="min-height: auto; padding: 40px 20px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.08) 0%, rgba(120, 75, 160, 0.08) 100%);">
   <div class="watchlist-hero-content" style="text-align: center;">
-    <h1>💬 Review Feed</h1>
+    <h1>Review Feed</h1>
     <p>Read in-depth reviews and thoughts from the global anime community.</p>
   </div>
 </section>
 
 <main class="page-container">
-  <h2>🌟 Latest Community Reviews</h2>
+  <h2>Latest Community Reviews</h2>
   <div id="reviewsContainer" class="reviews-grid" style="margin-top: 20px;">
     <div style="padding: 40px 0; text-align: center; color: var(--muted);">
       ⏳ Gathering community reports...
@@ -48,7 +48,7 @@
       .then(d => {
         const authArea = document.getElementById("authArea");
         if (d.user && authArea) {
-          authArea.innerHTML = `<span style="color:var(--muted)">👤 ${escapeHtml(d.user.username)}</span>`;
+          authArea.innerHTML = `<span style="color:var(--muted)">${escapeHtml(d.user.username)}</span>`;
         }
       }).catch(() => {});
 
@@ -87,13 +87,13 @@
         card.innerHTML = `
           <div class="review-card-header">
             <div class="review-card-user">
-              <img src="${userAvatar}" alt="${user.username}" class="review-user-avatar">
+              <img src="${userAvatar}" alt="${user.username}" class="review-user-avatar" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Crect width=\'100\' height=\'100\' fill=\'%23222\'/%3E%3C/svg%3E'">
               <span class="review-user-name">${escapeHtml(user.username)}</span>
             </div>
             <span class="review-card-rating">Rating: ⭐ ${score}/10</span>
           </div>
           <a href="${animeUrl}" class="review-anime-ref">
-             📺 Reviewed: ${escapeHtml(anime.title)}
+             Reviewed: ${escapeHtml(anime.title)}
           </a>
           <p class="review-content">${escapeHtml(previewText)}</p>
           <div style="display:flex; justify-content:flex-end;">
@@ -105,7 +105,7 @@
 
     } catch (e) {
       console.error(e);
-      container.innerHTML = `<div style="text-align:center; color:var(--error); padding:20px;">⚠️ Failed to load reviews feed.</div>`;
+      container.innerHTML = `<div style="text-align:center; color:var(--error); padding:20px;">Failed to load reviews feed.</div>`;
     }
   }
 

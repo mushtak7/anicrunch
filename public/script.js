@@ -114,22 +114,9 @@ function escapeHtml(text) {
 }
 
 // Global Rate Limiter for Jikan API
-// Note: safeJikanFetch already has internal queueing (queueChain with 350ms intervals).
-// This wrapper just serializes critical vs background priority to avoid burst flooding.
-let criticalQueue = Promise.resolve();
-let backgroundQueue = Promise.resolve();
-
+// Routes through high-performance dual-lane scheduler in api-client.js
 function queuedFetch(url, priority = 'background') {
-  const queue = priority === 'critical' ? criticalQueue : backgroundQueue;
-
-  const next = queue.catch(() => {}).then(() => {
-    return fetchWithRetry(url);
-  });
-
-  if (priority === 'critical') criticalQueue = next;
-  else backgroundQueue = next;
-
-  return next;
+  return fetchWithRetry(url, 2, 800, priority);
 }
 
 // Skeleton Generator
@@ -223,12 +210,12 @@ function renderLoadMoreButton(container, onClick) {
 }
 
 // =====================
-// FETCH (Smart Retry)
+// FETCH (Smart Dual-Lane & Cache-First)
 // =====================
-async function fetchWithRetry(url, retries = 3, backoff = 1000) {
+async function fetchWithRetry(url, retries = 2, backoff = 800, priority = 'background') {
   if (typeof window.safeJikanFetch === 'function') {
-    const res = await window.safeJikanFetch(url, { retries });
-    if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+    const res = await window.safeJikanFetch(url, { retries, priority });
+    if (res && res.data) {
       return res.data;
     }
   }
@@ -236,26 +223,17 @@ async function fetchWithRetry(url, retries = 3, backoff = 1000) {
   const cached = getCached(url);
   if (cached && cached.length > 0) return cached;
 
-  for (let i = 0; i < retries; i++) {
-    try {
-      const res = await fetch(url);
-      if (res.status === 429) {
-        await delay(backoff * Math.pow(2, i));
-        continue;
-      }
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      
+  try {
+    const res = await fetch(url);
+    if (res.ok) {
       const json = await res.json();
       const data = json.data || [];
       if (Array.isArray(data) && data.length > 0) {
         cacheResponse(url, data);
         return data;
       }
-    } catch (e) {
-      if (i === retries - 1) break;
-      await delay(backoff);
     }
-  }
+  } catch (e) {}
 
   // High-availability fallback data
   if (url.includes("top/anime") || url.includes("airing")) {
@@ -385,7 +363,7 @@ function createEpisodeCard(entry, episode) {
 
   div.innerHTML = `
     <div class="episode-card-poster">
-      <img src="${imgUrl}" alt="${escapeHtml(displayTitle)}" loading="lazy" width="300" height="420">
+      <img src="${imgUrl}" alt="${escapeHtml(displayTitle)}" loading="lazy" width="300" height="420" onerror="handleImageError(this)">
       <span class="episode-badge ${isEp1 ? 'new' : ''}">${epText}</span>
     </div>
     <div class="episode-card-content">
@@ -548,13 +526,13 @@ const HeroCarousel = {
       const badge = slide.querySelector('.hero-badge');
       if (badge) {
         if (anime.airing) {
-          badge.textContent = '📺 Currently Airing';
+          badge.textContent = 'Currently Airing';
           badge.className = 'hero-badge airing';
         } else if (anime.score >= 8.5) {
           badge.textContent = '⭐ Top Rated';
           badge.className = 'hero-badge top-rated';
         } else {
-          badge.textContent = '🔥 Featured';
+          badge.textContent = 'Featured';
           badge.className = 'hero-badge';
         }
       }
@@ -616,7 +594,12 @@ const HeroCarousel = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ animeId: Number(anime.mal_id) })
+      body: JSON.stringify({
+        animeId: Number(anime.mal_id),
+        genres: anime.genres?.map(g => g.name).join(','),
+        title: getTitle(anime),
+        imageUrl: anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || ''
+      })
     })
     .then(res => {
       if (res.ok) {
@@ -774,8 +757,8 @@ document.addEventListener("DOMContentLoaded", () => {
       .then(d => {
         if (d.user && authArea) {
           authArea.innerHTML = `
-            <a href="/profile.html" class="auth-link" style="color: var(--accent); font-weight: bold;">👤 My Profile</a>
-            <a href="/watchlist.html" class="auth-link">📚 Watchlist</a>
+            <a href="/profile.html" class="auth-link" style="color: var(--accent); font-weight: bold;">My Profile</a>
+            <a href="/watchlist.html" class="auth-link">Watchlist</a>
             <button class="auth-link" onclick="logout()">Logout</button>
           `;
         }
@@ -804,7 +787,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if (!data || !data.length) {
             dropdown.innerHTML = `
               <div style="padding: 16px; text-align: center; color: var(--muted); font-size: 13px;">
-                🔭 No anime matches found.
+                No anime matches found.
               </div>
             `;
             dropdown.classList.add("active");
@@ -911,17 +894,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Genre Chips Setup
     const genres = [
-      { id: 1, name: 'Action', icon: '⚔️' }, { id: 2, name: 'Adventure', icon: '🗺️' },
-      { id: 4, name: 'Comedy', icon: '😂' }, { id: 8, name: 'Drama', icon: '🎭' },
-      { id: 10, name: 'Fantasy', icon: '🧙' }, { id: 14, name: 'Horror', icon: '👻' },
-      { id: 22, name: 'Romance', icon: '💕' }, { id: 24, name: 'Sci-Fi', icon: '🚀' },
-      { id: 30, name: 'Sports', icon: '⚽' }, { id: 36, name: 'Slice of Life', icon: '🌸' }
+      { id: 1, name: 'Action', icon: '' }, { id: 2, name: 'Adventure', icon: '' },
+      { id: 4, name: 'Comedy', icon: '' }, { id: 8, name: 'Drama', icon: '' },
+      { id: 10, name: 'Fantasy', icon: '' }, { id: 14, name: 'Horror', icon: '' },
+      { id: 22, name: 'Romance', icon: '' }, { id: 24, name: 'Sci-Fi', icon: '' },
+      { id: 30, name: 'Sports', icon: '' }, { id: 36, name: 'Slice of Life', icon: '' }
     ];
 
     if (genreChips) {
       const allChip = document.createElement('button');
       allChip.className = 'genre-chip active';
-      allChip.innerHTML = '✨ All';
+      allChip.innerHTML = 'All';
       allChip.onclick = () => resetToHome();
       genreChips.appendChild(allChip);
       genres.forEach(g => {
@@ -972,7 +955,7 @@ document.addEventListener("DOMContentLoaded", () => {
       searchHeader.className = "filter-header";
       resultsBox.parentElement.insertBefore(searchHeader, resultsBox);
     }
-    searchHeader.innerHTML = `<h2>🔍 Results for "${escapeHtml(query)}"</h2>`;
+    searchHeader.innerHTML = `<h2>Results for "${escapeHtml(query)}"</h2>`;
     searchHeader.style.display = "block";
 
     resultsBox.replaceChildren();
@@ -1012,7 +995,7 @@ document.addEventListener("DOMContentLoaded", () => {
       renderAnimeGrid(resultsBox, data);
     } catch (err) {
       if (err.name === "AbortError") return;
-      resultsBox.innerHTML = `<div class="empty-state"><p>⚠️ Failed to load search results</p></div>`;
+      resultsBox.innerHTML = `<div class="empty-state"><p>Failed to load search results</p></div>`;
       console.error(err);
     }
   }
@@ -1051,7 +1034,7 @@ document.addEventListener("DOMContentLoaded", () => {
       searchHeader.className = "filter-header";
       resultsBox.parentElement.insertBefore(searchHeader, resultsBox);
     }
-    searchHeader.innerHTML = `<h2 style="font-size: 1.5rem;">${clickedChip ? clickedChip.innerText : '🎭 ' + genreName} Anime</h2>`;
+    searchHeader.innerHTML = `<h2 style="font-size: 1.5rem;">${clickedChip ? clickedChip.innerText : genreName} Anime</h2>`;
     searchHeader.style.display = "block";
 
     resultsBox.replaceChildren();
@@ -1074,7 +1057,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!data.length) {
         if (page === 1) {
-          resultsBox.innerHTML = '<div class="empty-state"><div class="empty-icon">🔭</div><h3>No anime found</h3></div>';
+          resultsBox.innerHTML = '<div class="empty-state"><h3>No anime found</h3></div>';
         } else if (btnElement) {
           btnElement.innerText = 'No more results'; btnElement.disabled = true;
         }
@@ -1090,7 +1073,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     } catch (e) { 
       console.error('Genre load error:', e);
-      if (btnElement) { btnElement.disabled = false; btnElement.style.opacity = '1'; btnElement.innerText = '⚠ Error - Retry'; }
+      if (btnElement) { btnElement.disabled = false; btnElement.style.opacity = '1'; btnElement.innerText = 'Error - Retry'; }
       else {
         const loader = resultsBox.querySelector('.loading'); if (loader) loader.remove();
         resultsBox.innerHTML += '<div class="error-state"><p>Failed to load anime</p><button class="retry-btn" onclick="location.reload()">Retry</button></div>';
@@ -1108,7 +1091,7 @@ document.addEventListener("DOMContentLoaded", () => {
       renderLatestUpdates();
     } catch (e) {
       console.error("Latest updates fetch failed:", e);
-      grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--error); padding:20px;">⚠️ Failed to load updates.</div>`;
+      grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--error); padding:20px;">Failed to load updates.</div>`;
     }
   }
 
@@ -1127,7 +1110,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     grid.innerHTML = "";
     if (!filtered.length) {
-      grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:30px;">🔭 No matching episode updates found.</div>`;
+      grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:30px;">No matching episode updates found.</div>`;
       return;
     }
 
@@ -1223,14 +1206,20 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     } catch (e) {
       console.error("Popular sidebar load failed:", e);
-      list.innerHTML = `<div style="text-align:center; color:var(--error); padding:20px;">⚠️ Failed to load rankings.</div>`;
+      list.innerHTML = `<div style="text-align:center; color:var(--error); padding:20px;">Failed to load rankings.</div>`;
     }
   }
 
-  // Load All Data
+  // Load All Data (Prioritized Viewport & Instant Zero-Frame Hydration)
   async function loadAllData() {
     try {
-      // Critical: Load Hero immediately
+      // 0-frame Hero hydration from pre-seeded/cached data
+      const initialHero = window.FALLBACK_TRENDING_CATALOG || [];
+      if (initialHero.length && !HeroCarousel.animeData.length) {
+        HeroCarousel.populateSlides(initialHero);
+      }
+
+      // 1. Critical Lane: Fresh Hero Carousel
       queuedFetch("https://api.jikan.moe/v4/top/anime?filter=airing&sfw=true&limit=5", 'critical')
         .then(data => {
           if (data && data.length) {
@@ -1238,15 +1227,20 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         });
 
-      idleCallback(() => loadSection("seasonal", "https://api.jikan.moe/v4/seasons/now?sfw=true&limit=25"));
-      idleCallback(() => loadSection("trending", "https://api.jikan.moe/v4/top/anime?filter=airing&sfw=true&limit=25"));
-      idleCallback(() => loadPopularSidebar());
-      idleCallback(() => loadRecentEpisodesPreview());
+      // 2. Critical Lane: Above-the-fold Seasonal Row
+      loadSection("seasonal", "https://api.jikan.moe/v4/seasons/now?sfw=true&limit=25", 'critical');
+
+      // 3. Background Lane: Below-the-fold content
+      idleCallback(() => {
+        loadSection("trending", "https://api.jikan.moe/v4/top/anime?filter=airing&sfw=true&limit=25", 'background');
+        loadPopularSidebar();
+        loadRecentEpisodesPreview();
+      });
 
     } catch (e) { console.error('Error loading data:', e); }
   }
 
-  // Recommends Preview
+  // Recommends Preview (Zero-network instant hydration)
   const recommendsPreviewList = [
     { id: 9253, note: "A rare time-travel story that rewards patience and attention." },
     { id: 16498, note: "A series that redefined how dark and ambitious anime could be." },
@@ -1258,7 +1252,22 @@ document.addEventListener("DOMContentLoaded", () => {
   if (recommendsPreview) {
     recommendsPreview.innerHTML = "";
     const fragment = document.createDocumentFragment();
-    recommendsPreviewList.forEach(() => fragment.appendChild(createSkeletonCard()));
+    const catalog = window.FALLBACK_ANIME_CATALOG || [];
+
+    recommendsPreviewList.forEach(item => {
+      const anime = catalog.find(a => a.mal_id === item.id) || { mal_id: item.id, title: "Anime Recommendation" };
+      const card = createCard(anime, { disableLazy: true });
+      card.style.minWidth = "200px";
+
+      if (item.note) {
+        const note = document.createElement("p");
+        note.className = "editor-note";
+        note.textContent = item.note;
+        const contentDiv = card.querySelector('div:last-child');
+        if (contentDiv) contentDiv.appendChild(note);
+      }
+      fragment.appendChild(card);
+    });
     recommendsPreview.appendChild(fragment);
 
     // Bind scroll boundary check (only once)
@@ -1266,37 +1275,7 @@ document.addEventListener("DOMContentLoaded", () => {
       recommendsPreview.addEventListener("scroll", () => updateScrollButtons(recommendsPreview));
       recommendsPreview.dataset.scrollBound = 'true';
     }
-
-    let itemsLoaded = 0;
-    recommendsPreviewList.forEach(async item => {
-      try {
-        const anime = await queuedFetch(`https://api.jikan.moe/v4/anime/${item.id}`);
-        if (!anime || !anime.mal_id) return;
-        
-        const card = createCard(anime, { disableLazy: true });
-        card.style.minWidth = "200px";
-
-        if (item.note) {
-          const note = document.createElement("p");
-          note.className = "editor-note";
-          note.textContent = item.note;
-          const contentDiv = card.querySelector('div:last-child');
-          if (contentDiv) contentDiv.appendChild(note);
-        }
-
-        const skeleton = recommendsPreview.querySelector(".skeleton-card");
-        if (skeleton) {
-          skeleton.replaceWith(card);
-        } else {
-          recommendsPreview.appendChild(card);
-        }
-        
-        itemsLoaded++;
-        if (itemsLoaded === recommendsPreviewList.length) {
-          setTimeout(() => updateScrollButtons(recommendsPreview), 200);
-        }
-      } catch (e) { console.error("Failed to load recommended anime", e); }
-    });
+    setTimeout(() => updateScrollButtons(recommendsPreview), 100);
   }
 
   function renderCuratedList(containerId, list) {
@@ -1305,21 +1284,22 @@ document.addEventListener("DOMContentLoaded", () => {
     container.className = "responsive-grid";
     container.style.cssText = `display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px;`;
 
-    list.forEach(async item => {
-      try {
-        const anime = await queuedFetch(`https://api.jikan.moe/v4/anime/${item.id}`);
-        
-        const card = createCard(anime);
-        if (item.note) {
-          const note = document.createElement("p");
-          note.className = "editor-note";
-          note.textContent = item.note;
-          const contentDiv = card.querySelector('div:last-child');
-          if (contentDiv) contentDiv.appendChild(note);
-        }
-        container.appendChild(card);
-      } catch (e) { console.error("Failed to render curated list", e); }
+    const catalog = window.FALLBACK_ANIME_CATALOG || [];
+    const fragment = document.createDocumentFragment();
+
+    list.forEach(item => {
+      const anime = catalog.find(a => a.mal_id === item.id) || { mal_id: item.id, title: "Recommended Anime" };
+      const card = createCard(anime);
+      if (item.note) {
+        const note = document.createElement("p");
+        note.className = "editor-note";
+        note.textContent = item.note;
+        const contentDiv = card.querySelector('div:last-child');
+        if (contentDiv) contentDiv.appendChild(note);
+      }
+      fragment.appendChild(card);
     });
+    container.replaceChildren(fragment);
   }
 
   // Defer non-critical curated lists
@@ -1408,16 +1388,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  async function loadSection(id, url) {
+  async function loadSection(id, url, priority = 'background') {
     const box = getElement(id);
     if (!box) return;
     if (!carousels[id]) carousels[id] = { currentPage: 0, totalCards: 0 };
     
     try {
-      const data = await queuedFetch(url);
-      carousels[id].totalCards = data.length;
+      const data = await queuedFetch(url, priority);
+      const items = Array.isArray(data) ? data : [];
+      carousels[id].totalCards = items.length;
       const fragment = document.createDocumentFragment();
-      data.forEach(a => {
+      items.forEach(a => {
         const card = createCard(a);
         card.style.width = '100%';
         card.style.height = '100%';
@@ -1432,7 +1413,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       
       updateCarousel(id);
-      setTimeout(() => updateScrollButtons(box), 150);
+      setTimeout(() => updateScrollButtons(box), 100);
     } catch(e) { 
       console.error(`Section ${id} load error:`, e);
       box.innerHTML = '<div class="error-state">Failed to load</div>';
@@ -1659,7 +1640,7 @@ function updateCountdowns() {
 
     // If within last 30 minutes, or currently airing (assume episode length is 30 mins)
     if (diffMs <= 0 && diffMs > -30 * 60 * 1000) {
-      badge.innerHTML = `<span style="color: #00e676; font-weight: 700;">🔴 Airing Now</span>`;
+      badge.innerHTML = `<span style="color: #00e676; font-weight: 700;">Airing Now</span>`;
       
       // Trigger Notification if matched and watchlisted
       if (diffMs > -10000 && malId) { // Check within first 10 seconds of airing
@@ -1706,7 +1687,7 @@ function checkAndTriggerAiringNotification(malId, title, imgUrl) {
   if (isWatchlisted) {
     notifiedAnimeIds.add(malId);
     try {
-      new Notification(`📺 Now Airing: ${title}`, {
+      new Notification(`Now Airing: ${title}`, {
         body: `A new episode is airing now in Japan!`,
         icon: imgUrl || '/favicon.png'
       });
@@ -1727,11 +1708,11 @@ function initScheduleAlertsToggle() {
     // Update button text on initial state
     const currentPref = localStorage.getItem('anicrunch_alerts');
     if (Notification.permission === 'granted' && currentPref === 'enabled') {
-      toggleBtn.innerText = '🔔 Alerts Enabled';
+      toggleBtn.innerText = 'Alerts Enabled';
       toggleBtn.style.background = 'var(--success)';
       toggleBtn.style.color = '#fff';
     } else {
-      toggleBtn.innerText = '🔔 Get Airing Alerts';
+      toggleBtn.innerText = 'Get Airing Alerts';
       toggleBtn.style.background = 'rgba(255,255,255,0.05)';
       toggleBtn.style.color = 'var(--muted)';
     }
@@ -1742,16 +1723,16 @@ function initScheduleAlertsToggle() {
         const isEnabled = localStorage.getItem('anicrunch_alerts') === 'enabled';
         if (isEnabled) {
           localStorage.setItem('anicrunch_alerts', 'disabled');
-          toggleBtn.innerText = '🔔 Get Airing Alerts';
+          toggleBtn.innerText = 'Get Airing Alerts';
           toggleBtn.style.background = 'rgba(255,255,255,0.05)';
           toggleBtn.style.color = 'var(--muted)';
         } else {
           localStorage.setItem('anicrunch_alerts', 'enabled');
-          toggleBtn.innerText = '🔔 Alerts Enabled';
+          toggleBtn.innerText = 'Alerts Enabled';
           toggleBtn.style.background = 'var(--success)';
           toggleBtn.style.color = '#fff';
           try {
-            new Notification("🔔 Notifications Enabled!", {
+            new Notification("Notifications Enabled!", {
               body: "You'll be alerted when watchlisted anime air!",
               icon: '/favicon.png'
             });
@@ -1888,7 +1869,7 @@ async function loadAllRecentEpisodes(page = 1, append = false) {
     if (existingBtn) existingBtn.remove();
 
     if (!items.length && !append) {
-      grid.innerHTML = '<div class="empty-state"><div class="empty-icon">📺</div><h3>No anime scheduled for today</h3><p>Check back on another day!</p></div>';
+      grid.innerHTML = '<div class="empty-state"><h3>No anime scheduled for today</h3><p>Check back on another day!</p></div>';
       recentEpisodesLoading = false;
       return;
     }
@@ -1953,7 +1934,7 @@ async function spinWheel() {
   // Set up premium roulette wheel layout
   overlay.innerHTML = `
     <div class="roulette-container">
-      <h2 class="roulette-header">🎲 Rolling for Your Next Obsession...</h2>
+      <h2 class="roulette-header">Selecting Next Anime...</h2>
       <div class="roulette-viewport">
         <div class="roulette-pointer"></div>
         <div class="roulette-strip" id="rouletteStrip"></div>
@@ -2040,7 +2021,7 @@ async function spinWheel() {
 
     // 6. Reveal winning states and redirect
     await delay(3500);
-    document.getElementById("rouletteWinnerTitle").innerHTML = `🎉 Winner: <strong style="color: #ff6bc5;">${winnerTitle}</strong>!`;
+    document.getElementById("rouletteWinnerTitle").innerHTML = `Selected: <strong style="color: #ff6bc5;">${winnerTitle}</strong>!`;
     const winnerCardEl = document.querySelector(".winner-card");
     if (winnerCardEl) winnerCardEl.classList.add("reveal");
 
@@ -2086,7 +2067,7 @@ function showToast(message, type = 'info') {
   const icons = {
     success: '✓',
     error: '✕',
-    warning: '⚠',
+    warning: '!',
     info: 'ℹ'
   };
   

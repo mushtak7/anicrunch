@@ -29,7 +29,7 @@
 
 <section class="watchlist-hero" style="min-height: auto; padding: 40px 20px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(120, 75, 160, 0.08) 100%);">
   <div class="watchlist-hero-content" style="text-align: center;">
-    <h1>📖 Manga Vault</h1>
+    <h1>Manga Vault</h1>
     <p>Discover top rated manga, light novels, and manhwa!</p>
   </div>
 </section>
@@ -43,7 +43,7 @@
 <!-- Main Discovery Block -->
 <div id="mangaDiscoveryBlock">
   <section style="margin: 40px 0;">
-    <h2>🔥 Popular Manga</h2>
+    <h2>Popular Manga</h2>
     <div id="popularMangaGrid" class="responsive-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 20px; margin-top: 20px;">
       <div style="grid-column: 1/-1; padding: 40px 0; text-align: center; color: var(--muted);">
         ⏳ Fetching popular titles...
@@ -102,7 +102,7 @@ function escapeHtml(text) {
       .then(d => {
         const authArea = document.getElementById("authArea");
         if (d.user && authArea) {
-          authArea.innerHTML = `<span style="color:var(--muted)">👤 ${escapeHtml(d.user.username)}</span>`;
+          authArea.innerHTML = `<span style="color:var(--muted)">${escapeHtml(d.user.username)}</span>`;
         }
       }).catch(() => {});
 
@@ -127,13 +127,13 @@ function escapeHtml(text) {
           document.getElementById("mangaDiscoveryBlock").style.display = "none";
           const grid = document.getElementById("mangaSearchGrid");
           grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:30px;">⏳ Searching manga vault...</div>`;
-          document.getElementById("mangaSearchTitle").textContent = `🔍 Results for "${query}"`;
+          document.getElementById("mangaSearchTitle").textContent = `Results for "${query}"`;
           
           try {
             const data = await queuedMangaFetch(`https://api.jikan.moe/v4/manga?q=${encodeURIComponent(query)}&limit=12`);
             renderMangaGrid(grid, data);
           } catch (err) {
-            grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--error); padding:20px;">⚠️ Search failed. Please retry.</div>`;
+            grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--error); padding:20px;">Search failed. Please retry.</div>`;
           }
         }, 500);
       };

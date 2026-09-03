@@ -6,295 +6,850 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AniCrunch – Anime Music Lounge & Theme Catalog</title>
-  <meta name="description" content="Discover, stream and watch official anime themes, openings, endings and full creditless music videos with high-definition audio on AniCrunch.">
+  <meta name="description" content="Discover, stream and watch official anime themes, openings, endings and full creditless music videos with high-definition audio in the AniCrunch Anime Music Lounge.">
   <link rel="canonical" href="https://anicrunch.page/music.html">
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
   <script src="/layout.js"></script>
+
   <style>
-    /* Hero Spotlight Section */
-    .music-hero-spotlight {
-      position: relative;
-      border-radius: 24px;
-      overflow: hidden;
-      margin-bottom: 30px;
-      background: linear-gradient(135deg, #181926 0%, #0d0e15 100%);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      min-height: 280px;
-      padding: 30px 40px;
-      box-sizing: border-box;
+    /* ==================================================
+       VIBE LOUNGE AESTHETIC DESIGN SYSTEM & TOKENS
+       ================================================== */
+    :root {
+      --lounge-bg: #070814;
+      --lounge-card: rgba(18, 19, 32, 0.72);
+      --lounge-card-hover: rgba(26, 28, 48, 0.85);
+      --lounge-border: rgba(255, 255, 255, 0.08);
+      --lounge-border-glow: rgba(255, 60, 172, 0.25);
+      --lounge-accent: #ff3cac;
+      --lounge-accent-2: #784ba0;
+      --lounge-cyan: #00f2fe;
+      --lounge-amber: #ff9900;
+      --aura-color-1: rgba(120, 75, 160, 0.22);
+      --aura-color-2: rgba(255, 60, 172, 0.18);
+      --aura-color-3: rgba(0, 242, 254, 0.12);
     }
-    .hero-spotlight-backdrop {
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 60%;
-      height: 100%;
-      background-size: cover;
-      background-position: center 20%;
-      opacity: 0.28;
-      filter: blur(8px);
-      mask-image: linear-gradient(to right, transparent, black);
-      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 70%);
+
+    body {
+      background-color: var(--lounge-bg);
+      overflow-x: hidden;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    /* Ambient Dynamic Aura Background */
+    .lounge-ambient-wrapper {
+      position: fixed;
+      inset: 0;
       pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
     }
-    .hero-spotlight-content {
+    .aura-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(90px);
+      opacity: 0.65;
+      animation: floatAura 18s ease-in-out infinite alternate;
+      transition: background 1s ease;
+    }
+    .aura-blob-1 {
+      width: 550px;
+      height: 550px;
+      top: -100px;
+      right: 5%;
+      background: var(--aura-color-1);
+    }
+    .aura-blob-2 {
+      width: 650px;
+      height: 650px;
+      top: 35%;
+      left: -150px;
+      background: var(--aura-color-2);
+      animation-duration: 24s;
+    }
+    .aura-blob-3 {
+      width: 500px;
+      height: 500px;
+      bottom: -80px;
+      right: 15%;
+      background: var(--aura-color-3);
+      animation-duration: 20s;
+    }
+
+    @keyframes floatAura {
+      0% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(40px, -30px) scale(1.08); }
+      100% { transform: translate(-30px, 40px) scale(0.95); }
+    }
+
+    /* Page Container */
+    .music-lounge-main {
+      position: relative;
+      z-index: 1;
+      padding: 10px 0 100px;
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+
+    /* ==================================================
+       HERO SPOTLIGHT & INTERACTIVE VINYL TURNTABLE
+       ================================================== */
+    .music-hero-station {
+      position: relative;
+      border-radius: 28px;
+      background: linear-gradient(135deg, rgba(19, 21, 37, 0.85) 0%, rgba(10, 11, 20, 0.92) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      margin-bottom: 28px;
+      padding: 36px 42px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 36px;
+      align-items: center;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .music-hero-station:hover {
+      border-color: rgba(255, 60, 172, 0.3);
+      box-shadow: 0 30px 70px rgba(0, 0, 0, 0.7), 0 0 35px rgba(255, 60, 172, 0.15);
+    }
+    .hero-station-backdrop {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center 30%;
+      opacity: 0.16;
+      filter: blur(14px);
+      transform: scale(1.08);
+      pointer-events: none;
+      mask-image: radial-gradient(circle at 75% 50%, black 20%, transparent 80%);
+      -webkit-mask-image: radial-gradient(circle at 75% 50%, black 20%, transparent 80%);
+      transition: background-image 0.8s ease, opacity 0.5s ease;
+    }
+
+    .hero-station-left {
       position: relative;
       z-index: 2;
-      max-width: 620px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
+      max-width: 680px;
     }
-    .hero-pill-badge {
+
+    .hero-status-pill {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 4px 12px;
-      background: rgba(255, 127, 17, 0.15);
-      border: 1px solid rgba(255, 127, 17, 0.35);
-      color: #ff7f11;
-      border-radius: 20px;
+      gap: 8px;
+      padding: 6px 14px;
+      background: rgba(255, 60, 172, 0.12);
+      border: 1px solid rgba(255, 60, 172, 0.35);
+      color: #ff3cac;
+      border-radius: 30px;
       font-size: 11px;
       font-weight: 800;
+      letter-spacing: 0.8px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
       width: fit-content;
+      backdrop-filter: blur(10px);
     }
-    .hero-song-title {
-      font-size: 32px;
+    .hero-status-pill.vibing {
+      background: rgba(0, 242, 254, 0.15);
+      border-color: rgba(0, 242, 254, 0.4);
+      color: #00f2fe;
+      animation: pulseGlow 2s infinite alternate;
+    }
+
+    @keyframes pulseGlow {
+      from { box-shadow: 0 0 10px rgba(0, 242, 254, 0.2); }
+      to { box-shadow: 0 0 20px rgba(0, 242, 254, 0.5); }
+    }
+
+    /* Mini Live Equalizer Bars */
+    .mini-equalizer {
+      display: inline-flex;
+      align-items: flex-end;
+      gap: 2.5px;
+      height: 12px;
+      margin-right: 2px;
+    }
+    .eq-bar {
+      width: 3px;
+      background: currentColor;
+      border-radius: 2px;
+      height: 4px;
+      transition: height 0.2s;
+    }
+    .mini-equalizer.active .eq-bar:nth-child(1) { animation: eqBounce 0.8s ease-in-out infinite alternate; }
+    .mini-equalizer.active .eq-bar:nth-child(2) { animation: eqBounce 1.1s ease-in-out infinite alternate 0.2s; }
+    .mini-equalizer.active .eq-bar:nth-child(3) { animation: eqBounce 0.9s ease-in-out infinite alternate 0.4s; }
+    .mini-equalizer.active .eq-bar:nth-child(4) { animation: eqBounce 1.2s ease-in-out infinite alternate 0.1s; }
+
+    @keyframes eqBounce {
+      0% { height: 3px; }
+      100% { height: 12px; }
+    }
+
+    .hero-title-main {
+      font-family: 'Outfit', sans-serif;
+      font-size: 38px;
       font-weight: 800;
       color: #ffffff;
       line-height: 1.15;
       margin: 0;
-      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+      letter-spacing: -0.5px;
+      text-shadow: 0 4px 25px rgba(0, 0, 0, 0.8);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
-    .hero-artist-name {
+    .hero-artist-tag {
       font-size: 16px;
       color: #cbd5e1;
       font-weight: 600;
-    }
-    .hero-anime-title {
-      font-size: 13px;
-      color: #ff7f11;
-      font-weight: 600;
-    }
-    .hero-btn-row {
       display: flex;
       align-items: center;
-      gap: 14px;
-      margin-top: 10px;
+      gap: 8px;
+    }
+    .hero-anime-subtitle {
+      font-size: 13px;
+      color: #a78bfa;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
       flex-wrap: wrap;
     }
-    .hero-primary-btn {
-      background: linear-gradient(135deg, #ff7f11 0%, #ff5500 100%);
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 12px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.2s;
-      box-shadow: 0 4px 16px rgba(255, 127, 17, 0.35);
-    }
-    .hero-primary-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(255, 127, 17, 0.5);
-    }
-    .hero-secondary-btn {
+    .hero-badge-tag {
       background: rgba(255, 255, 255, 0.08);
-      color: #e2e8f0;
       border: 1px solid rgba(255, 255, 255, 0.12);
-      padding: 12px 20px;
-      border-radius: 12px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.2s;
-    }
-    .hero-secondary-btn:hover {
-      background: rgba(255, 255, 255, 0.15);
-      color: white;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      color: #94a3b8;
     }
 
-    /* Filter & Search Bar */
-    .filter-chips-container {
+    .hero-action-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .btn-lounge-primary {
+      background: linear-gradient(135deg, #ff3cac 0%, #784ba0 100%);
+      color: white;
+      border: none;
+      padding: 13px 26px;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: 'Outfit', sans-serif;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 6px 20px rgba(255, 60, 172, 0.35);
+    }
+    .btn-lounge-primary:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 10px 28px rgba(255, 60, 172, 0.5);
+    }
+    .btn-lounge-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 13px 20px;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'Outfit', sans-serif;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.25s ease;
+      backdrop-filter: blur(10px);
+    }
+    .btn-lounge-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.25);
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    /* Turntable Vinyl Record Visualizer */
+    .hero-station-right {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+    }
+    .turntable-wrapper {
+      position: relative;
+      width: 220px;
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .vinyl-glow-ring {
+      position: absolute;
+      inset: -15px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 60, 172, 0.25) 0%, rgba(0, 242, 254, 0.15) 50%, transparent 70%);
+      filter: blur(12px);
+      transition: opacity 0.5s;
+      opacity: 0.6;
+    }
+    .vinyl-glow-ring.playing {
+      opacity: 1;
+      animation: pulseGlow 3s infinite alternate;
+    }
+
+    /* Vinyl Disc Element */
+    .vinyl-disc {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle at center, #181818 0%, #0d0d0d 35%, #050505 70%, #000000 100%);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), inset 0 0 0 2px rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    /* Vinyl concentric grooves */
+    .vinyl-disc::before {
+      content: '';
+      position: absolute;
+      inset: 8px;
+      border-radius: 50%;
+      border: 1px dashed rgba(255, 255, 255, 0.07);
+      box-shadow: 
+        inset 0 0 0 10px rgba(255, 255, 255, 0.02),
+        inset 0 0 0 22px rgba(255, 255, 255, 0.03),
+        inset 0 0 0 34px rgba(255, 255, 255, 0.02),
+        inset 0 0 0 46px rgba(255, 255, 255, 0.03);
+      pointer-events: none;
+    }
+    /* Vinyl center artwork label */
+    .vinyl-center-art {
+      width: 78px;
+      height: 78px;
+      border-radius: 50%;
+      object-fit: cover;
+      box-shadow: 0 0 0 3px rgba(255, 60, 172, 0.6), 0 0 15px rgba(0, 0, 0, 0.9);
+      transition: transform 0.3s;
+    }
+    .vinyl-center-spindle {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.6), 0 0 6px rgba(255,255,255,0.8);
+      z-index: 3;
+    }
+    /* Turntable Tone Arm */
+    .turntable-arm {
+      position: absolute;
+      top: -15px;
+      right: -10px;
+      width: 60px;
+      height: 100px;
+      pointer-events: none;
+      transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+      transform-origin: top right;
+      transform: rotate(-25deg);
+      z-index: 4;
+    }
+    .turntable-arm.active {
+      transform: rotate(6deg);
+    }
+    .arm-needle {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 4px;
+      height: 90px;
+      background: linear-gradient(to bottom, #94a3b8, #cbd5e1);
+      border-radius: 2px;
+      box-shadow: 2px 4px 10px rgba(0,0,0,0.6);
+    }
+    .arm-head {
+      position: absolute;
+      bottom: 0;
+      left: -6px;
+      width: 16px;
+      height: 10px;
+      background: #ff3cac;
+      border-radius: 3px;
+      box-shadow: 0 0 8px rgba(255, 60, 172, 0.7);
+    }
+
+    /* Vinyl spin animation */
+    .vinyl-disc.spinning {
+      animation: spinVinyl 3.5s linear infinite;
+    }
+    @keyframes spinVinyl {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* ==================================================
+       VIBE MOOD STATIONS & FREQUENCY SELECTOR
+       ================================================== */
+    .vibe-frequency-section {
+      margin-bottom: 32px;
+    }
+    .vibe-section-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 16px;
-      margin-bottom: 30px;
+      margin-bottom: 16px;
       flex-wrap: wrap;
-      background: #14151f;
-      border-top: 3px solid #ff7f11;
-      border-radius: 16px;
-      padding: 14px 20px;
-      width: 100%;
-      box-sizing: border-box;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      gap: 12px;
     }
-    .filter-chips-group {
+    .vibe-section-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      color: #ffffff;
       display: flex;
-      gap: 10px;
       align-items: center;
-      flex-wrap: wrap;
+      gap: 10px;
+      margin: 0;
     }
-    .filter-chip {
+    .vibe-subtitle {
+      font-size: 13px;
+      color: #94a3b8;
+      font-weight: 400;
+    }
+
+    .vibe-stations-scroller {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      width: 100%;
+    }
+    .vibe-station-card {
+      position: relative;
+      background: var(--lounge-card);
+      border: 1px solid var(--lounge-border);
+      border-radius: 18px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      cursor: pointer;
+      backdrop-filter: blur(16px);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+      user-select: none;
+    }
+    .vibe-station-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top right, var(--station-glow, rgba(255, 60, 172, 0.15)), transparent 70%);
+      opacity: 0.35;
+      transition: opacity 0.3s;
+    }
+    .vibe-station-card:hover {
+      transform: translateY(-4px);
+      background: var(--lounge-card-hover);
+      border-color: var(--station-border, rgba(255, 60, 172, 0.4));
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4), 0 0 20px var(--station-glow, rgba(255, 60, 172, 0.2));
+    }
+    .vibe-station-card.active {
+      border-color: var(--station-border, #ff3cac);
+      background: rgba(255, 255, 255, 0.07);
+      box-shadow: 0 0 25px var(--station-glow, rgba(255, 60, 172, 0.35));
+    }
+    .vibe-station-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+    .vibe-station-emoji {
+      font-size: 24px;
+    }
+    .vibe-station-tag {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #e2e8f0;
+      letter-spacing: 0.5px;
+    }
+    .vibe-station-name {
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: #ffffff;
+      position: relative;
+      z-index: 1;
+    }
+    .vibe-station-desc {
+      font-size: 11px;
+      color: #94a3b8;
+      line-height: 1.4;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Ambient Soundscape / Lo-Fi Study Mode Controls */
+    .soundscape-pill-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(18, 19, 32, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 8px 16px;
+      border-radius: 30px;
+      backdrop-filter: blur(16px);
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    .soundscape-btn {
       background: none;
       border: none;
       color: #94a3b8;
-      padding: 8px 14px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: color 0.2s ease, text-shadow 0.2s ease;
-      outline: none;
-      border-radius: 8px;
-      user-select: none;
-      font-family: inherit;
-    }
-    .filter-chip:hover {
-      color: #ffffff;
-      background: rgba(255, 255, 255, 0.04);
-    }
-    .filter-chip.active {
-      color: #ff7f11;
-      background: rgba(255, 127, 17, 0.1);
-      font-weight: 700;
-    }
-    .music-search-input {
-      padding: 9px 16px;
-      border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(0, 0, 0, 0.35);
-      color: #ffffff;
-      font-size: 14px;
-      width: 220px;
-      outline: none;
-      transition: all 0.3s ease;
-    }
-    .music-search-input:focus {
-      border-color: #ff7f11;
-      box-shadow: 0 0 12px rgba(255, 127, 17, 0.3);
-      width: 260px;
-    }
-    .music-upload-btn {
-      background: rgba(255, 255, 255, 0.06);
-      color: #ffffff;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 9px 16px;
-      border-radius: 10px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 13px;
-      transition: all 0.3s ease;
+      padding: 4px 10px;
+      border-radius: 20px;
+      transition: all 0.2s;
     }
-    .music-upload-btn:hover {
-      background: #ff7f11;
-      border-color: #ff7f11;
+    .soundscape-btn:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .soundscape-btn.active {
+      background: rgba(0, 242, 254, 0.2);
+      color: #00f2fe;
+      font-weight: 700;
     }
 
-    /* Anime Theme Grid */
-    .anime-theme-grid {
+    /* ==================================================
+       FILTER CHIPS & SEARCH BAR
+       ================================================== */
+    .lounge-filter-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 26px;
+      flex-wrap: wrap;
+      background: rgba(18, 19, 32, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 12px 20px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+    .lounge-category-tabs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .lounge-tab-pill {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      border-radius: 12px;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      user-select: none;
+    }
+    .lounge-tab-pill:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.06);
+    }
+    .lounge-tab-pill.active {
+      color: #ffffff;
+      background: linear-gradient(135deg, rgba(255, 60, 172, 0.3) 0%, rgba(120, 75, 160, 0.3) 100%);
+      border: 1px solid rgba(255, 60, 172, 0.5);
+      font-weight: 700;
+      box-shadow: 0 4px 16px rgba(255, 60, 172, 0.25);
+    }
+
+    .lounge-search-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      min-width: 280px;
+      flex-grow: 1;
+      max-width: 440px;
+    }
+    .search-icon-left {
+      position: absolute;
+      left: 14px;
+      color: #64748b;
+      font-size: 14px;
+      pointer-events: none;
+    }
+    .lounge-search-input {
+      width: 100%;
+      background: rgba(8, 9, 16, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 10px 38px 10px 38px;
+      color: #ffffff;
+      font-size: 13px;
+      outline: none;
+      transition: all 0.25s ease;
+      font-family: inherit;
+    }
+    .lounge-search-input:focus {
+      border-color: #ff3cac;
+      box-shadow: 0 0 16px rgba(255, 60, 172, 0.3);
+      background: rgba(8, 9, 16, 0.95);
+    }
+    .search-clear-btn {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      color: #64748b;
+      cursor: pointer;
+      font-size: 14px;
+      display: none;
+    }
+    .search-clear-btn:hover { color: white; }
+
+    /* Popular Search Quick Tags */
+    .quick-tags-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: #64748b;
+    }
+    .quick-tag-chip {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: #94a3b8;
+      border-radius: 20px;
+      padding: 3px 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .quick-tag-chip:hover {
+      background: rgba(255, 60, 172, 0.15);
+      border-color: rgba(255, 60, 172, 0.3);
+      color: #ffffff;
+    }
+
+    /* ==================================================
+       ANIME CATALOG GRID & VINYL REVEAL CARDS
+       ================================================== */
+    .lounge-theme-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 24px;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 22px;
       width: 100%;
     }
-    .anime-card {
-      background: #151622;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 16px;
+
+    .vibe-anime-card {
+      position: relative;
+      background: var(--lounge-card);
+      border: 1px solid var(--lounge-border);
+      border-radius: 20px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      position: relative;
-      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s, box-shadow 0.25s;
       cursor: pointer;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s, box-shadow 0.35s;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(12px);
     }
-    .anime-card:hover {
-      transform: translateY(-6px);
-      border-color: rgba(255, 127, 17, 0.4);
-      box-shadow: 0 12px 30px rgba(255, 127, 17, 0.15);
+    .vibe-anime-card:hover {
+      transform: translateY(-8px);
+      border-color: rgba(255, 60, 172, 0.4);
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), 0 0 24px rgba(255, 60, 172, 0.2);
     }
-    .anime-card-poster-wrap {
+
+    .card-poster-viewport {
       position: relative;
       width: 100%;
       aspect-ratio: 3 / 4;
       overflow: hidden;
-      background: #0d0e15;
+      background: #090a12;
     }
-    .anime-card-img {
+    .card-poster-img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transition: transform 0.4s ease;
+      transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s;
     }
-    .anime-card:hover .anime-card-img {
-      transform: scale(1.06);
+    .vibe-anime-card:hover .card-poster-img {
+      transform: scale(1.06) translateX(-4px);
+      filter: brightness(0.9);
     }
-    .anime-card-overlay {
+
+    /* Vinyl Record Peeking Out of Poster Sleeve on Hover */
+    .card-vinyl-peek {
+      position: absolute;
+      top: 50%;
+      right: -65px;
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #222 0%, #0d0d0d 60%, #000 100%);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.8), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+      transform: translateY(-50%) rotate(0deg);
+      transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), right 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .card-vinyl-peek::before {
+      content: '';
+      position: absolute;
+      inset: 6px;
+      border-radius: 50%;
+      border: 1px dashed rgba(255, 255, 255, 0.08);
+    }
+    .card-vinyl-center {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #ff3cac;
+    }
+    .card-vinyl-dot {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #ffffff;
+      box-shadow: 0 0 4px rgba(255,255,255,0.8);
+      z-index: 2;
+    }
+    .vibe-anime-card:hover .card-vinyl-peek {
+      right: -18px;
+      transform: translateY(-50%) rotate(75deg);
+    }
+
+    /* Floating Quick Play Action Button */
+    .card-quick-play-overlay {
       position: absolute;
       inset: 0;
-      background: linear-gradient(to top, rgba(13, 14, 21, 0.95) 0%, rgba(13, 14, 21, 0.2) 60%, transparent 100%);
+      background: linear-gradient(to top, rgba(7, 8, 20, 0.95) 0%, rgba(7, 8, 20, 0.3) 50%, transparent 100%);
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
-      padding: 12px;
+      align-items: flex-start;
+      padding: 14px;
       box-sizing: border-box;
+      z-index: 2;
     }
-    .anime-card-badges {
+    .card-quick-play-btn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.7);
+      opacity: 0;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ff3cac 0%, #784ba0 100%);
+      color: white;
+      border: none;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(255, 60, 172, 0.6);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 4;
+    }
+    .vibe-anime-card:hover .card-quick-play-btn {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    .card-quick-play-btn:hover {
+      transform: translate(-50%, -50%) scale(1.12);
+      box-shadow: 0 0 25px rgba(255, 60, 172, 0.8);
+    }
+
+    .card-badges-top {
       position: absolute;
       top: 10px;
       left: 10px;
       display: flex;
       flex-direction: column;
       gap: 4px;
-      z-index: 2;
+      z-index: 3;
     }
-    .badge-score {
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(6px);
+    .card-badge-score {
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
       color: #fbbf24;
       font-size: 11px;
       font-weight: 800;
-      padding: 3px 6px;
-      border-radius: 6px;
+      padding: 3px 7px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       gap: 3px;
+      border: 1px solid rgba(251, 191, 36, 0.25);
     }
-    .badge-theme-count {
-      background: rgba(255, 127, 17, 0.85);
+    .card-badge-themes {
+      background: rgba(255, 60, 172, 0.85);
+      backdrop-filter: blur(6px);
       color: white;
       font-size: 10px;
       font-weight: 700;
-      padding: 2px 6px;
+      padding: 2px 7px;
       border-radius: 6px;
     }
-    .anime-card-info {
-      padding: 12px;
+
+    .card-details {
+      padding: 14px 16px;
       display: flex;
       flex-direction: column;
       gap: 4px;
+      background: rgba(14, 15, 26, 0.95);
     }
-    .anime-card-title {
+    .card-title {
+      font-family: 'Outfit', sans-serif;
       font-size: 14px;
       font-weight: 700;
       color: #ffffff;
@@ -302,21 +857,26 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .anime-card-sub {
+    .card-meta-sub {
       font-size: 11px;
       color: #94a3b8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    /* Anime Themes Detail Drawer Modal */
-    .theme-drawer-modal {
+    /* ==================================================
+       THEME DRAWER MODAL (GLASSMORPHIC UPGRADE)
+       ================================================== */
+    .lounge-drawer-modal {
       position: fixed;
       inset: 0;
-      background: rgba(10, 11, 18, 0.85);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      background: rgba(5, 6, 12, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       z-index: 20000;
       display: flex;
       justify-content: center;
@@ -329,115 +889,143 @@
       from { opacity: 0; }
       to { opacity: 1; }
     }
-    .theme-drawer-content {
-      background: #141522;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 24px;
-      width: min(840px, 100%);
+    .lounge-drawer-content {
+      background: rgba(18, 20, 34, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 28px;
+      width: min(880px, 100%);
       max-height: 90vh;
       overflow-y: auto;
-      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.7);
+      box-shadow: 0 35px 80px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 60, 172, 0.15);
       position: relative;
       display: flex;
       flex-direction: column;
     }
-    .drawer-header {
-      padding: 28px;
-      display: flex;
-      gap: 24px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    .drawer-cinematic-header {
       position: relative;
+      padding: 32px 36px;
+      display: flex;
+      gap: 26px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      overflow: hidden;
     }
-    .drawer-poster {
+    .drawer-backdrop-blur {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      opacity: 0.18;
+      filter: blur(20px);
+      pointer-events: none;
+      transform: scale(1.1);
+    }
+    .drawer-poster-art {
+      position: relative;
+      z-index: 2;
       width: 140px;
       height: 200px;
-      border-radius: 14px;
+      border-radius: 16px;
       object-fit: cover;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
       flex-shrink: 0;
+      border: 1px solid rgba(255, 255, 255, 0.15);
     }
-    .drawer-anime-info {
+    .drawer-anime-meta {
+      position: relative;
+      z-index: 2;
       flex-grow: 1;
       display: flex;
       flex-direction: column;
       gap: 8px;
       min-width: 0;
     }
-    .drawer-title {
-      font-size: 24px;
+    .drawer-title-text {
+      font-family: 'Outfit', sans-serif;
+      font-size: 26px;
       font-weight: 800;
       color: #ffffff;
       margin: 0;
+      line-height: 1.2;
     }
-    .drawer-meta-row {
+    .drawer-pills-row {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       align-items: center;
       flex-wrap: wrap;
-      font-size: 12px;
-      color: #94a3b8;
     }
-    .drawer-synopsis {
-      font-size: 13px;
+    .drawer-stat-pill {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 3px 8px;
+      font-size: 11px;
       color: #cbd5e1;
-      line-height: 1.5;
+      font-weight: 600;
+    }
+    .drawer-synopsis-text {
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.55;
       display: -webkit-box;
       -webkit-line-clamp: 3;
       -webkit-box-orient: vertical;
       overflow: hidden;
-      margin-top: 4px;
+      margin: 4px 0 0;
     }
-        .drawer-close-btn {
+
+    .drawer-close-circle {
       position: absolute;
-      top: 18px;
-      right: 18px;
-      background: rgba(255, 255, 255, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       color: #ffffff;
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       border-radius: 50%;
       cursor: pointer;
       font-size: 16px;
-      font-weight: 700;
       display: flex;
       align-items: center;
       justify-content: center;
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-      z-index: 100;
-      pointer-events: auto;
+      z-index: 10;
     }
-    .drawer-close-btn:hover {
+    .drawer-close-circle:hover {
       background: #ff3cac;
       border-color: #ff3cac;
-      color: white;
       transform: scale(1.1) rotate(90deg);
-      box-shadow: 0 0 15px rgba(255, 60, 172, 0.5);
+      box-shadow: 0 0 20px rgba(255, 60, 172, 0.6);
     }
 
-    .drawer-body {
-      padding: 24px 28px;
+    .drawer-body-sections {
+      padding: 28px 36px;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 28px;
     }
-    .theme-section-title {
-      font-size: 16px;
+    .drawer-section-heading {
+      font-family: 'Outfit', sans-serif;
+      font-size: 17px;
       font-weight: 700;
-      color: #ff7f11;
+      color: #ff3cac;
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
-    .theme-list {
+    .drawer-section-heading.ending {
+      color: #a78bfa;
+    }
+
+    .drawer-themes-list {
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
-    .theme-item-row {
+    .drawer-theme-card {
       background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.06);
       border-radius: 14px;
       padding: 12px 18px;
       display: flex;
@@ -445,20 +1033,27 @@
       justify-content: space-between;
       gap: 14px;
       transition: all 0.2s;
+      cursor: pointer;
     }
-    .theme-item-row:hover {
-      background: rgba(255, 255, 255, 0.07);
-      border-color: rgba(255, 127, 17, 0.3);
+    .drawer-theme-card:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 60, 172, 0.35);
       transform: translateX(4px);
     }
-    .theme-item-left {
+    .drawer-theme-card.is-currently-playing {
+      background: rgba(255, 60, 172, 0.12);
+      border-color: #ff3cac;
+      box-shadow: 0 0 16px rgba(255, 60, 172, 0.25);
+    }
+
+    .theme-card-left {
       display: flex;
       align-items: center;
       gap: 14px;
       min-width: 0;
     }
-    .theme-type-tag {
-      background: #ff7f11;
+    .theme-tag-pill {
+      background: linear-gradient(135deg, #ff3cac, #784ba0);
       color: white;
       font-size: 11px;
       font-weight: 800;
@@ -466,66 +1061,65 @@
       border-radius: 6px;
       flex-shrink: 0;
     }
-    .theme-type-tag.ed {
-      background: #8b5cf6;
+    .theme-tag-pill.ed {
+      background: linear-gradient(135deg, #8b5cf6, #6366f1);
     }
-    .theme-item-details {
+
+    .theme-text-block {
       display: flex;
       flex-direction: column;
       gap: 2px;
       min-width: 0;
     }
-    .theme-item-title {
+    .theme-song-name {
       font-size: 14px;
       font-weight: 700;
       color: white;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    .theme-item-artist {
+    .theme-artist-name {
       font-size: 12px;
       color: #94a3b8;
     }
-    .theme-item-badges {
+    .theme-badges-row {
       display: flex;
       gap: 6px;
       margin-top: 2px;
     }
-    .quality-badge {
+    .theme-qual-badge {
       font-size: 9px;
       font-weight: 700;
-      padding: 2px 5px;
+      padding: 2px 6px;
       border-radius: 4px;
       text-transform: uppercase;
     }
-    .quality-badge.hd {
+    .theme-qual-badge.hd {
       background: rgba(16, 185, 129, 0.15);
       color: #10b981;
       border: 1px solid rgba(16, 185, 129, 0.3);
     }
-    .quality-badge.nc {
+    .theme-qual-badge.nc {
       background: rgba(255, 60, 172, 0.15);
       color: #ff3cac;
       border: 1px solid rgba(255, 60, 172, 0.3);
     }
-    .quality-badge.itunes {
-      background: rgba(168, 85, 247, 0.15);
-      color: #c084fc;
-      border: 1px solid rgba(168, 85, 247, 0.3);
-    }
 
-    .theme-item-actions {
+    .theme-card-actions {
       display: flex;
       align-items: center;
       gap: 8px;
       flex-shrink: 0;
     }
-    .theme-play-btn {
+    .theme-action-play {
       width: 36px;
       height: 36px;
       border-radius: 50%;
-      background: #ff7f11;
+      background: linear-gradient(135deg, #ff3cac, #784ba0);
       border: none;
       color: white;
       display: flex;
@@ -535,11 +1129,11 @@
       font-size: 13px;
       transition: transform 0.2s, box-shadow 0.2s;
     }
-    .theme-play-btn:hover {
+    .theme-action-play:hover {
       transform: scale(1.1);
-      box-shadow: 0 0 14px rgba(255, 127, 17, 0.6);
+      box-shadow: 0 0 16px rgba(255, 60, 172, 0.6);
     }
-    .theme-video-btn {
+    .theme-action-video {
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid rgba(255, 255, 255, 0.12);
       color: white;
@@ -553,49 +1147,127 @@
       gap: 6px;
       transition: all 0.2s;
     }
-    .theme-video-btn:hover {
-      background: rgba(255, 127, 17, 0.2);
-      border-color: #ff7f11;
-      color: #ff7f11;
+    .theme-action-video:hover {
+      background: rgba(255, 60, 172, 0.2);
+      border-color: #ff3cac;
+      color: #ff3cac;
     }
-    .theme-queue-btn {
+    .theme-action-icon {
       background: none;
       border: none;
       color: #94a3b8;
       cursor: pointer;
-      font-size: 16px;
+      font-size: 15px;
       padding: 6px;
       border-radius: 6px;
+      transition: all 0.2s;
     }
-    .theme-queue-btn:hover {
+    .theme-action-icon:hover {
       color: white;
       background: rgba(255, 255, 255, 0.08);
+      transform: scale(1.1);
+    }
+    .theme-action-icon.liked {
+      color: #ff3cac;
     }
 
-    @media (max-width: 600px) {
-      .music-hero-spotlight {
-        padding: 20px;
-        min-height: auto;
+    /* Toast Notification for Vibe Lounge Actions */
+    .lounge-toast {
+      position: fixed;
+      bottom: 95px;
+      left: 50%;
+      transform: translateX(-50%) translateY(30px);
+      background: rgba(18, 20, 36, 0.95);
+      border: 1px solid rgba(255, 60, 172, 0.4);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 20px rgba(255, 60, 172, 0.3);
+      backdrop-filter: blur(20px);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 30000;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .lounge-toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 900px) {
+      .music-hero-station {
+        grid-template-columns: 1fr;
+        padding: 26px 24px;
+        text-align: center;
+        gap: 24px;
       }
-      .hero-song-title {
-        font-size: 24px;
+      .hero-station-left {
+        align-items: center;
       }
-      .drawer-header {
+      .hero-title-main {
+        font-size: 28px;
+      }
+      .hero-action-row {
+        justify-content: center;
+      }
+      .hero-station-right {
+        order: -1;
+      }
+      .turntable-wrapper {
+        width: 170px;
+        height: 170px;
+      }
+      .vinyl-disc {
+        width: 160px;
+        height: 160px;
+      }
+      .vinyl-center-art {
+        width: 60px;
+        height: 60px;
+      }
+    }
+
+    @media (max-width: 650px) {
+      .lounge-filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .lounge-search-wrap {
+        max-width: 100%;
+      }
+      .drawer-cinematic-header {
         flex-direction: column;
         align-items: center;
         text-align: center;
+        padding: 24px;
       }
-      .drawer-poster {
+      .drawer-poster-art {
         width: 120px;
         height: 170px;
       }
-      .drawer-meta-row {
+      .drawer-pills-row {
         justify-content: center;
+      }
+      .drawer-body-sections {
+        padding: 20px;
       }
     }
   </style>
 </head>
 <body>
+
+<!-- Dynamic Ambient Glow Aura -->
+<div class="lounge-ambient-wrapper">
+  <div class="aura-blob aura-blob-1" id="auraBlob1"></div>
+  <div class="aura-blob aura-blob-2" id="auraBlob2"></div>
+  <div class="aura-blob aura-blob-3" id="auraBlob3"></div>
+</div>
 
 <header style="display: none;">
   <h1 class="logo" onclick="location.href='/'">anicrunch</h1>
@@ -603,80 +1275,228 @@
   <div id="authArea"></div>
 </header>
 
-<main class="page-container" style="padding-top: 10px;">
-  <!-- Hero Spotlight: Featured Anime Theme -->
-  <section class="music-hero-spotlight" id="musicHeroSection">
-    <div class="hero-spotlight-backdrop" id="heroBackdrop"></div>
-    <div class="hero-spotlight-content">
-      <div class="hero-pill-badge">✨ Featured Theme of the Day</div>
-      <h2 class="hero-song-title" id="heroSongTitle">Yuusha (勇者)</h2>
-      <div class="hero-artist-name" id="heroArtistName">by YOASOBI</div>
-      <div class="hero-anime-title" id="heroAnimeTitle">Sousou no Frieren • Opening 1 (1080p Creditless)</div>
-      
-      <div class="hero-btn-row">
-        <button class="hero-primary-btn" id="heroPlayBtn">
-          ▶ Play Full Song
+<main class="page-container music-lounge-main">
+  <!-- Interactive Turntable & Hero Studio -->
+  <section class="music-hero-station" id="musicHeroSection">
+    <div class="hero-station-backdrop" id="heroBackdrop"></div>
+    
+    <div class="hero-station-left">
+      <div class="hero-status-pill" id="heroStatusPill">
+        <span class="mini-equalizer" id="heroEqIndicator">
+          <span class="eq-bar"></span>
+          <span class="eq-bar"></span>
+          <span class="eq-bar"></span>
+          <span class="eq-bar"></span>
+        </span>
+        <span id="heroStatusText">Featured Theme of the Day</span>
+      </div>
+
+      <h2 class="hero-title-main" id="heroSongTitle">Yuusha (勇者)</h2>
+      <div class="hero-artist-tag" id="heroArtistName">by YOASOBI</div>
+      <div class="hero-anime-subtitle" id="heroAnimeSubtitle">
+        <span id="heroAnimeName">Sousou no Frieren</span>
+        <span>•</span>
+        <span id="heroThemeType">Opening 1</span>
+        <span class="hero-badge-tag" id="heroQualityTag">1080p Creditless</span>
+      </div>
+
+      <div class="hero-action-row">
+        <button class="btn-lounge-primary" id="heroPlayBtn">
+          <span id="heroPlayIcon">▶</span> <span id="heroPlayText">Play Full Song</span>
         </button>
-        <button class="hero-secondary-btn" id="heroWatchVideoBtn">
-          🎬 Watch OP Video
+        <button class="btn-lounge-secondary" id="heroWatchVideoBtn">
+          Watch Video
         </button>
-        <button class="hero-secondary-btn" id="heroExploreBtn">
-          📜 View All Themes
+        <button class="btn-lounge-secondary" id="heroExploreBtn">
+          View Themes
         </button>
+        <button class="btn-lounge-secondary" id="heroSurpriseBtn" title="Play a random anime theme">
+          Random Mix
+        </button>
+      </div>
+    </div>
+
+    <div class="hero-station-right">
+      <div class="turntable-wrapper" id="heroTurntable" title="Click to Play / Pause">
+        <div class="vinyl-glow-ring" id="vinylGlowRing"></div>
+        <div class="vinyl-disc" id="heroVinylDisc">
+          <img src="/favicon.png" alt="" class="vinyl-center-art" id="vinylCenterArt">
+          <div class="vinyl-center-spindle"></div>
+        </div>
+        <div class="turntable-arm" id="turntableArm">
+          <div class="arm-needle"></div>
+          <div class="arm-head"></div>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- Filter & Category Section -->
-  <div class="filter-chips-container" id="musicFilterChips">
-    <div class="filter-chips-group">
-      <button class="filter-chip active" data-filter="trending" onclick="setMusicCategory('trending')">🔥 Trending OP/ED</button>
-      <button class="filter-chip" data-filter="seasonal" onclick="setMusicCategory('seasonal')">🌸 Seasonal Themes</button>
-      <button class="filter-chip" data-filter="radio" onclick="setMusicCategory('radio')">📻 Anime Radio Stream</button>
+  <!-- Vibe Mood Stations (Curated Frequencies) -->
+  <section class="vibe-frequency-section">
+    <div class="vibe-section-header">
+      <div>
+        <h3 class="vibe-section-title">
+          Anime Vibe Stations
+        </h3>
+        <span class="vibe-subtitle">Tune into tailored anime soundscapes and emotional frequencies</span>
+      </div>
+      
+      <!-- Lo-Fi Study / Ambient Rain & Vinyl Soundscape Generator -->
+      <div class="soundscape-pill-bar">
+        <span>Ambient Lounge:</span>
+        <button class="soundscape-btn" id="soundscapeRainBtn" onclick="toggleSoundscape('rain')">
+          Rain
+        </button>
+        <button class="soundscape-btn" id="soundscapeVinylBtn" onclick="toggleSoundscape('crackle')">
+          Vinyl
+        </button>
+      </div>
     </div>
-    <div style="display: flex; gap: 12px; align-items: center; flex-grow: 1; justify-content: flex-end;">
-      <input type="text" id="musicSearchInput" class="music-search-input" oninput="handleMusicSearch(this.value)" placeholder="Search anime or songs..." style="max-width: 360px; width: 100%;">
+
+    <div class="vibe-stations-scroller">
+      <!-- 1. Hype Battle -->
+      <div class="vibe-station-card" onclick="setVibeStation('hype')" style="--station-glow: rgba(255, 60, 172, 0.3); --station-border: #ff3cac;">
+        <div class="vibe-station-top">
+          
+          <span class="vibe-station-tag">High Energy</span>
+        </div>
+        <div class="vibe-station-name">Battle Hype</div>
+        <div class="vibe-station-desc">Adrenaline-pumping shonen anthems & rock riffs</div>
+      </div>
+
+      <!-- 2. Lo-Fi Chill -->
+      <div class="vibe-station-card" onclick="setVibeStation('chill')" style="--station-glow: rgba(0, 242, 254, 0.3); --station-border: #00f2fe;">
+        <div class="vibe-station-top">
+          
+          <span class="vibe-station-tag">Relax / Study</span>
+        </div>
+        <div class="vibe-station-name">Midnight Lo-Fi</div>
+        <div class="vibe-station-desc">Mellow acoustics, cozy beats & slice-of-life melodies</div>
+      </div>
+
+      <!-- 3. Emotional -->
+      <div class="vibe-station-card" onclick="setVibeStation('emotional')" style="--station-glow: rgba(168, 85, 247, 0.3); --station-border: #a855f7;">
+        <div class="vibe-station-top">
+          
+          <span class="vibe-station-tag">Ballads</span>
+        </div>
+        <div class="vibe-station-name">Tearjerkers</div>
+        <div class="vibe-station-desc">Soul-stirring piano, orchestral climaxes & romantic nostalgia</div>
+      </div>
+
+      <!-- 4. Cyberpunk & Synth -->
+      <div class="vibe-station-card" onclick="setVibeStation('cyberpunk')" style="--station-glow: rgba(234, 179, 8, 0.3); --station-border: #eab308;">
+        <div class="vibe-station-top">
+          
+          <span class="vibe-station-tag">Synth / Bass</span>
+        </div>
+        <div class="vibe-station-name">Cyberpunk Wave</div>
+        <div class="vibe-station-desc">Dystopian bass, neon synthwave & electronic grooves</div>
+      </div>
+
+      <!-- 5. All-Time Classics -->
+      <div class="vibe-station-card" onclick="setVibeStation('classics')" style="--station-glow: rgba(249, 115, 22, 0.3); --station-border: #f97316;">
+        <div class="vibe-station-top">
+          
+          <span class="vibe-station-tag">Hall of Fame</span>
+        </div>
+        <div class="vibe-station-name">Legendary Classics</div>
+        <div class="vibe-station-desc">Steins;Gate, Bebop, Evangelion, Death Note & timeless gems</div>
+      </div>
+
+      <!-- 6. 24/7 Live Radio -->
+      <div class="vibe-station-card" onclick="setVibeStation('radio')" style="--station-glow: rgba(16, 185, 129, 0.3); --station-border: #10b981;">
+        <div class="vibe-station-top">
+          
+          <span class="vibe-station-tag">Live Stream</span>
+        </div>
+        <div class="vibe-station-name">AnimeThemes Radio</div>
+        <div class="vibe-station-desc">Continuous endless high-bitrate anime OP & ED mix</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filter, Category Tabs & Search Bar -->
+  <div class="lounge-filter-bar">
+    <div class="lounge-category-tabs" id="loungeCategoryTabs">
+      <button class="lounge-tab-pill active" data-filter="trending" onclick="setMusicCategory('trending')">
+        Trending
+      </button>
+      <button class="lounge-tab-pill" data-filter="seasonal" onclick="setMusicCategory('seasonal')">
+        Seasonal
+      </button>
+      <button class="lounge-tab-pill" data-filter="classics" onclick="setMusicCategory('classics')">
+        Classics
+      </button>
+      <button class="lounge-tab-pill" data-filter="favorites" onclick="setMusicCategory('favorites')">
+        Favorites (<span id="favCountBadge">0</span>)
+      </button>
+    </div>
+
+    <div class="lounge-search-wrap">
+      <span class="search-icon-left"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+      <input type="text" id="musicSearchInput" class="lounge-search-input" oninput="handleMusicSearch(this.value)" placeholder="Search anime, themes, or artists (e.g. YOASOBI, LiSA)...">
+      <button class="search-clear-btn" id="searchClearBtn" onclick="clearMusicSearch()" title="Clear">✕</button>
     </div>
   </div>
 
-  <!-- Anime Catalog Grid -->
-  <div id="animeThemeGrid" class="anime-theme-grid">
+  <!-- Quick Query Tags -->
+  <div class="quick-tags-row">
+    <span>Popular vibes:</span>
+    <span class="quick-tag-chip" onclick="quickTagSearch('Frieren')">Sousou no Frieren</span>
+    <span class="quick-tag-chip" onclick="quickTagSearch('Attack on Titan')">Attack on Titan</span>
+    <span class="quick-tag-chip" onclick="quickTagSearch('Jujutsu Kaisen')">Jujutsu Kaisen</span>
+    <span class="quick-tag-chip" onclick="quickTagSearch('Chainsaw Man')">Chainsaw Man</span>
+    <span class="quick-tag-chip" onclick="quickTagSearch('YOASOBI')">YOASOBI</span>
+    <span class="quick-tag-chip" onclick="quickTagSearch('Aimer')">Aimer</span>
+    <span class="quick-tag-chip" onclick="quickTagSearch('LiSA')">LiSA</span>
+  </div>
+
+  <!-- Anime Theme Grid -->
+  <div id="animeThemeGrid" class="lounge-theme-grid">
     <div style="grid-column: 1/-1; padding: 60px 0; text-align: center; color: var(--muted); width: 100%;">
-      ⏳ Loading anime theme catalog and tuning frequencies...
+      ⏳ Tuning into anime frequencies & loading catalog...
     </div>
   </div>
 </main>
 
-<!-- Theme Drawer Modal -->
-<div id="themeDrawerModal" class="theme-drawer-modal" style="display: none;">
-  <div class="theme-drawer-content">
-    <button id="drawerCloseBtn" class="drawer-close-btn" onclick="closeThemeDrawer()" aria-label="Close" title="Close Details">✕</button>
-    <div class="drawer-header">
-      <img id="drawerAnimeImg" src="/favicon.png" alt="" class="drawer-poster">
-      <div class="drawer-anime-info">
-        <h3 id="drawerAnimeTitle" class="drawer-title">Anime Title</h3>
-        <div class="drawer-meta-row" id="drawerMetaRow">
-          <span id="drawerScore">⭐ 8.9</span>
-          <span id="drawerEpisodes">24 Episodes</span>
-          <span id="drawerSeason">Fall 2023</span>
-          <span id="drawerStudio">Madhouse</span>
+<!-- Glassmorphic Theme Drawer Modal -->
+<div id="themeDrawerModal" class="lounge-drawer-modal" style="display: none;">
+  <div class="lounge-drawer-content">
+    <button id="drawerCloseBtn" class="drawer-close-circle" onclick="closeThemeDrawer()" aria-label="Close" title="Close Details">✕</button>
+    
+    <div class="drawer-cinematic-header">
+      <div class="drawer-backdrop-blur" id="drawerBackdropBlur"></div>
+      <img id="drawerAnimeImg" src="/favicon.png" alt="" class="drawer-poster-art">
+      <div class="drawer-anime-meta">
+        <h3 id="drawerAnimeTitle" class="drawer-title-text">Anime Title</h3>
+        <div class="drawer-pills-row" id="drawerMetaRow">
+          <span class="drawer-stat-pill" id="drawerScore">8.9</span>
+          <span class="drawer-stat-pill" id="drawerEpisodes">24 Episodes</span>
+          <span class="drawer-stat-pill" id="drawerSeason">Fall 2023</span>
+          <span class="drawer-stat-pill" id="drawerStudio">Madhouse</span>
         </div>
-        <p id="drawerSynopsis" class="drawer-synopsis">Anime description loading...</p>
+        <p id="drawerSynopsis" class="drawer-synopsis-text">Loading synopsis...</p>
       </div>
     </div>
-    <div class="drawer-body">
+
+    <div class="drawer-body-sections">
       <!-- Openings Section -->
       <div>
-        <div class="theme-section-title">✨ Opening Themes</div>
-        <div class="theme-list" id="drawerOpeningsList">
+        <div class="drawer-section-heading">
+          Opening Themes
+        </div>
+        <div class="drawer-themes-list" id="drawerOpeningsList">
           <div style="color: var(--muted); font-size: 13px;">Loading openings...</div>
         </div>
       </div>
 
       <!-- Endings Section -->
       <div>
-        <div class="theme-section-title" style="color: #a78bfa;">🌙 Ending Themes</div>
-        <div class="theme-list" id="drawerEndingsList">
+        <div class="drawer-section-heading ending">
+          Ending Themes
+        </div>
+        <div class="drawer-themes-list" id="drawerEndingsList">
           <div style="color: var(--muted); font-size: 13px;">Loading endings...</div>
         </div>
       </div>
@@ -684,37 +1504,62 @@
   </div>
 </div>
 
+<!-- Lounge Feedback Toast Notification -->
+<div class="lounge-toast" id="loungeToast">
+  <span id="toastIcon"></span>
+  <span id="toastMessage">Song added to queue</span>
+</div>
+
 <script>
   let currentCategory = 'trending';
-  let discoveryData = { trending: [], seasonal: [] };
+  let discoveryData = { trending: [], seasonal: [], classics: [], vibes: {} };
   let currentHeroAnime = null;
   let currentHeroTrack = null;
   let searchDebounceTimer = null;
+  let activeVibeStation = null;
+
+  // Ambient soundscape generator state
+  let soundscapeAudioCtx = null;
+  let rainNode = null;
+  let crackleNode = null;
+  let activeSoundscapes = { rain: false, crackle: false };
 
   // 1. Initialize Page Data
   async function initMusicLounge() {
+    updateFavoritesBadge();
+
     try {
       const res = await fetch(`${API_BASE}/api/music/discovery`);
       if (res.ok) {
         discoveryData = await res.json();
       }
 
-      // Setup Hero Featured Anime (Frieren or first trending)
+      // Setup Hero Featured Anime
       setupHeroSpotlight();
       
       // Render Initial Category
       renderCategoryView('trending');
+
+      // Listen for player changes from layout.js
+      window.addEventListener("anicrunch_player_change", onPlayerStateChange);
+
+      // Check if player is already playing on load
+      if (typeof window.getCurrentThemeTrack === 'function') {
+        const activeTrack = window.getCurrentThemeTrack();
+        const isPlaying = typeof window.isThemePlayerPlaying === 'function' ? window.isThemePlayerPlaying() : false;
+        if (activeTrack) {
+          syncHeroWithActiveTrack(activeTrack, isPlaying);
+        }
+      }
     } catch (err) {
       console.error("Init music error:", err);
     }
   }
 
   // 2. Setup Hero Spotlight Section
-  async function setupHeroSpotlight() {
-    // Default featured: Frieren (MAL ID 52991)
-    const featuredMalId = 52991;
+  async function setupHeroSpotlight(targetMalId = 52991) {
     try {
-      const res = await fetch(`${API_BASE}/api/music/themes/${featuredMalId}`);
+      const res = await fetch(`${API_BASE}/api/music/themes/${targetMalId}`);
       if (res.ok) {
         const data = await res.json();
         currentHeroAnime = data.anime;
@@ -722,23 +1567,34 @@
         currentHeroTrack = opTrack;
 
         if (opTrack) {
-          document.getElementById("heroSongTitle").textContent = opTrack.title || "Yuusha (勇者)";
-          document.getElementById("heroArtistName").textContent = `by ${opTrack.artist || 'YOASOBI'}`;
-          document.getElementById("heroAnimeTitle").textContent = `${data.anime.title} • ${opTrack.themeLabel || 'OP1'} (${opTrack.resolution || '1080p'})`;
-          
-          const poster = data.anime.images?.jpg?.large_image_url || data.anime.images?.jpg?.image_url;
-          if (poster) {
-            document.getElementById("heroBackdrop").style.backgroundImage = `url('${poster}')`;
-          }
+          updateHeroDisplay(opTrack, data.anime, false);
 
           document.getElementById("heroPlayBtn").onclick = () => {
-            window.playThemeTrack(opTrack, data.tracks, 0, false);
+            const isPlaying = typeof window.isThemePlayerPlaying === 'function' && window.isThemePlayerPlaying();
+            const cur = typeof window.getCurrentThemeTrack === 'function' ? window.getCurrentThemeTrack() : null;
+            if (cur && cur.title === opTrack.title) {
+              window.togglePlayerPlay();
+            } else {
+              window.playThemeTrack(opTrack, data.tracks, 0, false);
+            }
           };
           document.getElementById("heroWatchVideoBtn").onclick = () => {
             window.playThemeTrack(opTrack, data.tracks, 0, true);
           };
           document.getElementById("heroExploreBtn").onclick = () => {
-            openThemeDrawer(featuredMalId);
+            openThemeDrawer(targetMalId);
+          };
+          document.getElementById("heroSurpriseBtn").onclick = () => {
+            playSurpriseTheme();
+          };
+          document.getElementById("heroTurntable").onclick = () => {
+            const isPlaying = typeof window.isThemePlayerPlaying === 'function' && window.isThemePlayerPlaying();
+            const cur = typeof window.getCurrentThemeTrack === 'function' ? window.getCurrentThemeTrack() : null;
+            if (cur) {
+              window.togglePlayerPlay();
+            } else {
+              window.playThemeTrack(opTrack, data.tracks, 0, false);
+            }
           };
         }
       }
@@ -747,30 +1603,173 @@
     }
   }
 
-  // 3. Category Switcher
-  function setMusicCategory(cat) {
-    currentCategory = cat;
-    document.querySelectorAll(".filter-chip").forEach(c => {
-      c.classList.toggle("active", c.dataset.filter === cat);
-    });
+  function updateHeroDisplay(track, anime, isPlaying = false) {
+    if (!track) return;
+    document.getElementById("heroSongTitle").textContent = track.title || "Theme Song";
+    document.getElementById("heroArtistName").textContent = `by ${track.artist || 'Unknown Artist'}`;
+    document.getElementById("heroAnimeName").textContent = anime?.title || track.animeTitle || "Anime";
+    document.getElementById("heroThemeType").textContent = track.themeLabel || track.themeType || "Theme";
+    document.getElementById("heroQualityTag").textContent = track.resolution ? `${track.resolution} Creditless` : "Creditless HD";
 
-    if (cat === 'radio') {
-      startRadioStream();
+    const poster = anime?.images?.jpg?.large_image_url || anime?.images?.jpg?.image_url || track.artwork || "/favicon.png";
+    document.getElementById("heroBackdrop").style.backgroundImage = `url('${poster}')`;
+    document.getElementById("vinylCenterArt").src = poster;
+
+    // Turntable and vinyl spin sync
+    const vinyl = document.getElementById("heroVinylDisc");
+    const glow = document.getElementById("vinylGlowRing");
+    const arm = document.getElementById("turntableArm");
+    const statusPill = document.getElementById("heroStatusPill");
+    const eq = document.getElementById("heroEqIndicator");
+    const statusText = document.getElementById("heroStatusText");
+    const playBtn = document.getElementById("heroPlayBtn");
+    const playIcon = document.getElementById("heroPlayIcon");
+    const playText = document.getElementById("heroPlayText");
+
+    if (isPlaying) {
+      vinyl.classList.add("spinning");
+      glow.classList.add("playing");
+      arm.classList.add("active");
+      statusPill.classList.add("vibing");
+      eq.classList.add("active");
+      statusText.textContent = "Now Vibing • Live Lounge";
+      playIcon.textContent = "⏸";
+      playText.textContent = "Pause Playback";
     } else {
-      renderCategoryView(cat);
+      vinyl.classList.remove("spinning");
+      glow.classList.remove("playing");
+      arm.classList.remove("active");
+      statusPill.classList.remove("vibing");
+      eq.classList.remove("active");
+      statusText.textContent = "Featured Theme Spotlight";
+      playIcon.textContent = "▶";
+      playText.textContent = "Play Full Song";
     }
   }
 
-  // 4. Render Anime Grid
+  // 3. Synchronize with Player State
+  function onPlayerStateChange(e) {
+    const detail = e.detail || {};
+    const track = detail.track || (typeof window.getCurrentThemeTrack === 'function' ? window.getCurrentThemeTrack() : null);
+    const isPlaying = Boolean(detail.isPlaying);
+
+    if (track) {
+      syncHeroWithActiveTrack(track, isPlaying);
+    } else {
+      const vinyl = document.getElementById("heroVinylDisc");
+      const glow = document.getElementById("vinylGlowRing");
+      const arm = document.getElementById("turntableArm");
+      const eq = document.getElementById("heroEqIndicator");
+      vinyl.classList.remove("spinning");
+      glow.classList.remove("playing");
+      arm.classList.remove("active");
+      eq.classList.remove("active");
+    }
+
+    // Update active indicators inside Drawer modal if open
+    highlightCurrentlyPlayingInDrawer(track, isPlaying);
+  }
+
+  function syncHeroWithActiveTrack(track, isPlaying) {
+    currentHeroTrack = track;
+    updateHeroDisplay(track, { title: track.animeTitle }, isPlaying);
+  }
+
+  // 4. Category Switcher
+  function setMusicCategory(cat) {
+    currentCategory = cat;
+    activeVibeStation = null;
+    
+    // Clear vibe cards active state
+    document.querySelectorAll(".vibe-station-card").forEach(c => c.classList.remove("active"));
+
+    document.querySelectorAll(".lounge-tab-pill").forEach(c => {
+      c.classList.toggle("active", c.dataset.filter === cat);
+    });
+
+    renderCategoryView(cat);
+  }
+
+  // 5. Vibe Mood Station Activator
+  async function setVibeStation(vibeKey) {
+    activeVibeStation = vibeKey;
+    
+    // Highlight station card
+    document.querySelectorAll(".vibe-station-card").forEach(c => {
+      const onclickAttr = c.getAttribute("onclick") || "";
+      c.classList.toggle("active", onclickAttr.includes(`'${vibeKey}'`));
+    });
+
+    // Shift ambient aura colors depending on mood
+    shiftAmbientAura(vibeKey);
+
+    if (vibeKey === 'radio') {
+      startRadioStream();
+      return;
+    }
+
+    // Deactivate category tabs
+    document.querySelectorAll(".lounge-tab-pill").forEach(c => c.classList.remove("active"));
+
+    const grid = document.getElementById("animeThemeGrid");
+    grid.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--muted);">Channeling ${vibeKey.toUpperCase()} frequency...</div>`;
+
+    let vibeList = [];
+    if (discoveryData.vibes && discoveryData.vibes[vibeKey]) {
+      vibeList = discoveryData.vibes[vibeKey];
+    } else if (vibeKey === 'classics') {
+      vibeList = discoveryData.classics || [];
+    }
+
+    if (vibeList.length === 0) {
+      grid.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--muted);">No themes registered for this vibe.</div>`;
+      return;
+    }
+
+    // Set first anime of the vibe as Hero spotlight
+    setupHeroSpotlight(vibeList[0].mal_id);
+
+    renderAnimeCards(vibeList, grid);
+    showLoungeToast(`Tuned to ${vibeKey.toUpperCase()} frequency`);
+  }
+
+  function shiftAmbientAura(vibeKey) {
+    const b1 = document.getElementById("auraBlob1");
+    const b2 = document.getElementById("auraBlob2");
+    const b3 = document.getElementById("auraBlob3");
+
+    const palettes = {
+      hype: ['rgba(255, 60, 172, 0.3)', 'rgba(239, 68, 68, 0.25)', 'rgba(245, 158, 11, 0.2)'],
+      chill: ['rgba(0, 242, 254, 0.25)', 'rgba(59, 130, 246, 0.2)', 'rgba(16, 185, 129, 0.18)'],
+      emotional: ['rgba(168, 85, 247, 0.3)', 'rgba(236, 72, 153, 0.25)', 'rgba(99, 102, 241, 0.2)'],
+      cyberpunk: ['rgba(234, 179, 8, 0.25)', 'rgba(6, 182, 212, 0.3)', 'rgba(236, 72, 153, 0.2)'],
+      classics: ['rgba(249, 115, 22, 0.25)', 'rgba(139, 92, 246, 0.25)', 'rgba(234, 179, 8, 0.18)'],
+      radio: ['rgba(16, 185, 129, 0.3)', 'rgba(0, 242, 254, 0.25)', 'rgba(139, 92, 246, 0.2)']
+    };
+
+    const chosen = palettes[vibeKey] || palettes.chill;
+    b1.style.background = chosen[0];
+    b2.style.background = chosen[1];
+    b3.style.background = chosen[2];
+  }
+
+  // 6. Render Anime Grid
   function renderCategoryView(cat) {
     const grid = document.getElementById("animeThemeGrid");
     grid.innerHTML = "";
+
+    if (cat === 'favorites') {
+      renderFavoritesView(grid);
+      return;
+    }
 
     let animeList = [];
     if (cat === 'trending') {
       animeList = discoveryData.trending || [];
     } else if (cat === 'seasonal') {
       animeList = discoveryData.seasonal || [];
+    } else if (cat === 'classics') {
+      animeList = discoveryData.classics || [];
     }
 
     if (animeList.length === 0) {
@@ -778,34 +1777,85 @@
       return;
     }
 
-    animeList.forEach(anime => {
+    renderAnimeCards(animeList, grid);
+  }
+
+  function renderAnimeCards(list, container) {
+    container.innerHTML = "";
+    list.forEach(anime => {
       const card = document.createElement("div");
-      card.className = "anime-card";
+      card.className = "vibe-anime-card";
+      const poster = anime.image || '/favicon.png';
+      
       card.innerHTML = `
-        <div class="anime-card-poster-wrap">
-          <img src="${anime.image || '/favicon.png'}" class="anime-card-img" alt="${escapeHtml(anime.title)}">
-          <div class="anime-card-badges">
-            ${anime.score ? `<span class="badge-score">⭐ ${anime.score}</span>` : ''}
-            <span class="badge-theme-count">📜 OP/ED</span>
+        <div class="card-poster-viewport">
+          <img src="${poster}" class="card-poster-img" alt="${escapeHtml(anime.title)}">
+          
+          <!-- Vinyl Disc peek on hover -->
+          <div class="card-vinyl-peek">
+            <img src="${poster}" class="card-vinyl-center" alt="">
+            <div class="card-vinyl-dot"></div>
           </div>
-          <div class="anime-card-overlay">
-            <div style="font-size: 11px; color: #ff7f11; font-weight: 700;">${anime.year || anime.season || 'Anime'}</div>
+
+          <div class="card-badges-top">
+            ${anime.score ? `<span class="card-badge-score">${anime.score}</span>` : ''}
+            <span class="card-badge-themes">OP/ED</span>
+          </div>
+
+          <!-- Quick Play Hover Action -->
+          <div class="card-quick-play-overlay">
+            <button class="card-quick-play-btn" title="Quick Play Main Theme" onclick="event.stopPropagation(); quickPlayAnimeTheme(${anime.mal_id})">
+              ▶
+            </button>
+            <div style="font-size: 11px; color: #ff3cac; font-weight: 700;">${anime.year || anime.season || 'Anime'}</div>
           </div>
         </div>
-        <div class="anime-card-info">
-          <div class="anime-card-title" title="${escapeHtml(anime.title)}">${escapeHtml(anime.title)}</div>
-          <div class="anime-card-sub">${escapeHtml(anime.studios || anime.status || '')}</div>
+        <div class="card-details">
+          <div class="card-title" title="${escapeHtml(anime.title)}">${escapeHtml(anime.title)}</div>
+          <div class="card-meta-sub">
+            <span>${escapeHtml(anime.studios || anime.status || 'Series')}</span>
+            ${anime.episodes ? `<span>${anime.episodes} eps</span>` : ''}
+          </div>
         </div>
       `;
       card.onclick = () => openThemeDrawer(anime.mal_id);
-      grid.appendChild(card);
+      container.appendChild(card);
     });
   }
 
-  // 5. Radio Stream Mode
+  // Quick Play Theme directly from grid hover
+  async function quickPlayAnimeTheme(malId) {
+    showLoungeToast("Tuning frequencies...");
+    try {
+      const res = await fetch(`${API_BASE}/api/music/themes/${malId}`);
+      if (res.ok) {
+        const data = await res.json();
+        const op = (data.tracks || []).find(t => t.themeType === 'OP') || data.tracks[0];
+        if (op) {
+          window.playThemeTrack(op, data.tracks, 0, false);
+          showLoungeToast(`▶ Playing ${op.title} (${data.anime.title})`);
+        } else {
+          showLoungeToast("No playable track found for this title.");
+        }
+      }
+    } catch (e) {
+      showLoungeToast("Error loading track.");
+    }
+  }
+
+  // 7. Surprise Mix Feature
+  function playSurpriseTheme() {
+    const pool = [...(discoveryData.trending || []), ...(discoveryData.classics || [])];
+    if (pool.length === 0) return;
+    const randomAnime = pool[Math.floor(Math.random() * pool.length)];
+    quickPlayAnimeTheme(randomAnime.mal_id);
+    setupHeroSpotlight(randomAnime.mal_id);
+  }
+
+  // 8. Radio Stream Mode
   async function startRadioStream() {
     const grid = document.getElementById("animeThemeGrid");
-    grid.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--muted);">📻 Connecting to Anime Radio frequency and buffering high-quality mix...</div>`;
+    grid.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--muted);">Connecting to 24/7 Anime Radio stream...</div>`;
 
     try {
       const res = await fetch(`${API_BASE}/api/music/radio`);
@@ -815,16 +1865,23 @@
           window.playThemeTrack(data.tracks[0], data.tracks, 0, false);
           
           grid.innerHTML = `
-            <div style="grid-column: 1/-1; background: #141522; border: 1px solid rgba(255, 127, 17, 0.3); border-radius: 18px; padding: 24px; text-align: center;">
-              <h3 style="color: #ff7f11; margin-top: 0;">📻 Live Anime Radio Stream Active</h3>
-              <p style="color: #cbd5e1; font-size: 14px; max-width: 500px; margin: 0 auto 16px;">
-                Streaming continuous anime openings & endings directly from AnimeThemes. Sit back, relax, and discover anime music tracks!
+            <div style="grid-column: 1/-1; background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(18, 19, 32, 0.9)); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 24px; padding: 36px 28px; text-align: center; backdrop-filter: blur(20px);">
+              
+              <h3 style="color: #10b981; font-family: 'Outfit', sans-serif; font-size: 24px; margin: 0 0 10px;">Live Anime Radio Stream Active</h3>
+              <p style="color: #cbd5e1; font-size: 14px; max-width: 540px; margin: 0 auto 20px; line-height: 1.6;">
+                Streaming continuous anime openings & endings automatically. Sit back, relax, and immerse yourself in classic and modern anime music vibes!
               </p>
-              <div style="display: flex; gap: 10px; justify-content: center;">
-                <button onclick="setMusicCategory('trending')" class="filter-chip active">Back to Catalog</button>
+              <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                <button onclick="window.playNextTrack()" class="btn-lounge-primary" style="background: linear-gradient(135deg, #10b981, #059669);">
+                  ⏭ Skip to Next Stream Track
+                </button>
+                <button onclick="setMusicCategory('trending')" class="btn-lounge-secondary">
+                  Back to Catalog
+                </button>
               </div>
             </div>
           `;
+          showLoungeToast("Radio Stream Connected");
         }
       }
     } catch (err) {
@@ -832,9 +1889,12 @@
     }
   }
 
-  // 6. Live Search Handler (Anime & Songs)
+  // 9. Live Search Handler
   function handleMusicSearch(query) {
     clearTimeout(searchDebounceTimer);
+    const clearBtn = document.getElementById("searchClearBtn");
+    if (clearBtn) clearBtn.style.display = query.length > 0 ? "block" : "none";
+
     if (!query || query.trim().length < 2) {
       renderCategoryView(currentCategory);
       return;
@@ -842,7 +1902,7 @@
 
     searchDebounceTimer = setTimeout(async () => {
       const grid = document.getElementById("animeThemeGrid");
-      grid.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--muted);">🔍 Searching anime & theme tracks for "${escapeHtml(query)}"...</div>`;
+      grid.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: var(--muted);">Searching anime & tracks for "${escapeHtml(query)}"...</div>`;
 
       try {
         const res = await fetch(`${API_BASE}/api/music/search?q=${encodeURIComponent(query)}`);
@@ -854,25 +1914,30 @@
           return;
         }
 
-        // Render Song Direct Hits
+        // Direct Song Hits
         if (data.songs && data.songs.length > 0) {
           data.songs.forEach(song => {
             const card = document.createElement("div");
-            card.className = "anime-card";
+            card.className = "vibe-anime-card";
+            const art = song.artwork || '/favicon.png';
             card.innerHTML = `
-              <div class="anime-card-poster-wrap">
-                <img src="${song.artwork || '/favicon.png'}" class="anime-card-img" alt="">
-                <div class="anime-card-badges">
-                  <span class="badge-theme-count" style="background:#ff7f11;">🎧 ${song.themeLabel || (song.source === 'itunes' ? '30s Preview' : 'Full Theme')}</span>
-                  ${song.resolution ? `<span class="badge-score" style="color:#10b981;">${song.resolution}</span>` : ''}
+              <div class="card-poster-viewport">
+                <img src="${art}" class="card-poster-img" alt="">
+                <div class="card-vinyl-peek">
+                  <img src="${art}" class="card-vinyl-center" alt="">
+                  <div class="card-vinyl-dot"></div>
                 </div>
-                <div class="anime-card-overlay">
-                  <div style="font-size: 11px; color: #ff7f11; font-weight: 700;">${escapeHtml(song.artist || 'Artist')}</div>
+                <div class="card-badges-top">
+                  <span class="card-badge-themes" style="background:#ff3cac;">${song.themeLabel || 'Song'}</span>
+                </div>
+                <div class="card-quick-play-overlay">
+                  <button class="card-quick-play-btn" title="Play Song">▶</button>
+                  <div style="font-size: 11px; color: #ff3cac; font-weight: 700;">${escapeHtml(song.artist || 'Artist')}</div>
                 </div>
               </div>
-              <div class="anime-card-info">
-                <div class="anime-card-title" title="${escapeHtml(song.title)}">${escapeHtml(song.title)}</div>
-                <div class="anime-card-sub">${escapeHtml(song.animeTitle || song.artist || 'Song')}</div>
+              <div class="card-details">
+                <div class="card-title" title="${escapeHtml(song.title)}">${escapeHtml(song.title)}</div>
+                <div class="card-meta-sub">${escapeHtml(song.animeTitle || 'Track')}</div>
               </div>
             `;
             card.onclick = () => window.playThemeTrack(song, [song], 0, false);
@@ -880,38 +1945,33 @@
           });
         }
 
-        // Render Anime Results
+        // Anime Results
         if (data.anime && data.anime.length > 0) {
-          data.anime.forEach(anime => {
-            const card = document.createElement("div");
-            card.className = "anime-card";
-            card.innerHTML = `
-              <div class="anime-card-poster-wrap">
-                <img src="${anime.image || '/favicon.png'}" class="anime-card-img" alt="${escapeHtml(anime.title)}">
-                <div class="anime-card-badges">
-                  ${anime.score ? `<span class="badge-score">⭐ ${anime.score}</span>` : ''}
-                  <span class="badge-theme-count">📜 OP/ED</span>
-                </div>
-                <div class="anime-card-overlay">
-                  <div style="font-size: 11px; color: #ff7f11; font-weight: 700;">Anime Franchise</div>
-                </div>
-              </div>
-              <div class="anime-card-info">
-                <div class="anime-card-title" title="${escapeHtml(anime.title)}">${escapeHtml(anime.title)}</div>
-                <div class="anime-card-sub">${anime.year || 'Anime'}</div>
-              </div>
-            `;
-            card.onclick = () => openThemeDrawer(anime.mal_id || anime.slug);
-            grid.appendChild(card);
-          });
+          renderAnimeCards(data.anime, grid);
         }
       } catch (err) {
         console.error("Search error:", err);
       }
-    }, 350);
+    }, 300);
   }
 
-  // 7. Open Theme Drawer Modal
+  function clearMusicSearch() {
+    const input = document.getElementById("musicSearchInput");
+    if (input) input.value = "";
+    const clearBtn = document.getElementById("searchClearBtn");
+    if (clearBtn) clearBtn.style.display = "none";
+    renderCategoryView(currentCategory);
+  }
+
+  function quickTagSearch(tagName) {
+    const input = document.getElementById("musicSearchInput");
+    if (input) {
+      input.value = tagName;
+      handleMusicSearch(tagName);
+    }
+  }
+
+  // 10. Open Theme Drawer Modal
   async function openThemeDrawer(identifier) {
     const modal = document.getElementById("themeDrawerModal");
     const opsList = document.getElementById("drawerOpeningsList");
@@ -929,18 +1989,26 @@
       const tracks = data.tracks || [];
 
       document.getElementById("drawerAnimeTitle").textContent = anime.title || "Anime Themes";
-      document.getElementById("drawerAnimeImg").src = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || "/favicon.png";
-      document.getElementById("drawerScore").textContent = anime.score ? `⭐ ${anime.score}` : '';
-      document.getElementById("drawerEpisodes").textContent = anime.episodes ? `${anime.episodes} eps` : '';
-      document.getElementById("drawerSeason").textContent = `${anime.season || ''} ${anime.year || ''}`.trim();
-      document.getElementById("drawerStudio").textContent = (anime.studios || []).map(s=>s.name).join(", ");
-      document.getElementById("drawerSynopsis").textContent = anime.synopsis || "No description provided.";
+      const poster = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || "/favicon.png";
+      document.getElementById("drawerAnimeImg").src = poster;
+      document.getElementById("drawerBackdropBlur").style.backgroundImage = `url('${poster}')`;
+      
+      document.getElementById("drawerScore").textContent = anime.score ? `${anime.score}` : 'Popular';
+      document.getElementById("drawerEpisodes").textContent = anime.episodes ? `${anime.episodes} eps` : 'TV Series';
+      document.getElementById("drawerSeason").textContent = `${anime.season || ''} ${anime.year || ''}`.trim() || 'Theme Catalog';
+      document.getElementById("drawerStudio").textContent = (anime.studios || []).map(s=>s.name).join(", ") || 'Official';
+      document.getElementById("drawerSynopsis").textContent = anime.synopsis || "Explore high-definition official theme tracks and creditless videos on AniCrunch.";
 
       const ops = tracks.filter(t => t.themeType === 'OP');
       const eds = tracks.filter(t => t.themeType === 'ED');
 
       renderThemeListSection(ops, opsList, tracks);
       renderThemeListSection(eds, edsList, tracks);
+
+      // Check if current playing track is in this list
+      const cur = typeof window.getCurrentThemeTrack === 'function' ? window.getCurrentThemeTrack() : null;
+      const isPlaying = typeof window.isThemePlayerPlaying === 'function' && window.isThemePlayerPlaying();
+      if (cur) highlightCurrentlyPlayingInDrawer(cur, isPlaying);
     } catch (err) {
       opsList.innerHTML = `<div style="color: var(--error);">Error resolving themes.</div>`;
       edsList.innerHTML = "";
@@ -955,79 +2023,317 @@
     }
 
     themeTracks.forEach((t, idx) => {
+      const isFav = isThemeFavorited(t);
       const row = document.createElement("div");
-      row.className = "theme-item-row";
-      row.style.cursor = "pointer";
+      row.className = "drawer-theme-card";
+      row.dataset.trackTitle = t.title || "";
+      row.dataset.themeLabel = t.themeLabel || "";
+
       row.innerHTML = `
-        <div class="theme-item-left">
-          <span class="theme-type-tag ${t.themeType === 'ED' ? 'ed' : ''}">${t.themeLabel || t.themeType}</span>
-          <div class="theme-item-details">
-            <div class="theme-item-title">${escapeHtml(t.title || 'Theme')}</div>
-            <div class="theme-item-artist">by ${escapeHtml(t.artist || 'Unknown Artist')} ${t.episodes ? `(${t.episodes})` : ''}</div>
-            <div class="theme-item-badges">
-              ${t.resolution ? `<span class="quality-badge hd">${t.resolution}</span>` : ''}
-              ${t.isCreditless ? `<span class="quality-badge nc">Creditless</span>` : ''}
+        <div class="theme-card-left">
+          <span class="theme-tag-pill ${t.themeType === 'ED' ? 'ed' : ''}">${t.themeLabel || t.themeType}</span>
+          <div class="theme-text-block">
+            <div class="theme-song-name">
+              <span class="track-title-label">${escapeHtml(t.title || 'Theme')}</span>
+              <span class="mini-equalizer theme-track-eq" style="display:none;">
+                <span class="eq-bar"></span>
+                <span class="eq-bar"></span>
+                <span class="eq-bar"></span>
+                <span class="eq-bar"></span>
+              </span>
+            </div>
+            <div class="theme-artist-name">by ${escapeHtml(t.artist || 'Unknown Artist')} ${t.episodes ? `(${t.episodes})` : ''}</div>
+            <div class="theme-badges-row">
+              ${t.resolution ? `<span class="theme-qual-badge hd">${t.resolution}</span>` : ''}
+              ${t.isCreditless ? `<span class="theme-qual-badge nc">Creditless</span>` : ''}
             </div>
           </div>
         </div>
-        <div class="theme-item-actions">
-          <button class="theme-play-btn" title="Play Audio">▶</button>
-          ${t.videoUrl ? `<button class="theme-video-btn" title="Watch Video">🎬 Video</button>` : ''}
-          <button class="theme-queue-btn" title="Add to Queue">➕</button>
+        <div class="theme-card-actions">
+          <button class="theme-action-play" title="Play Audio">▶</button>
+          ${t.videoUrl ? `<button class="theme-action-video" title="Watch Creditless Video">Video</button>` : ''}
+          <button class="theme-action-icon theme-queue-btn" title="Add to Queue">+</button>
+          <button class="theme-action-icon theme-fav-btn ${isFav ? 'liked' : ''}" title="Favorite">${isFav ? '★' : '☆'}</button>
         </div>
       `;
 
-      const startPlayback = async (inVideoMode = false) => {
+      const startPlayback = (inVideoMode = false) => {
         window.playThemeTrack(t, allTracks, idx, inVideoMode);
       };
 
       row.onclick = () => startPlayback(false);
-      row.querySelector(".theme-play-btn").onclick = (e) => { e.stopPropagation(); startPlayback(false); };
+      row.querySelector(".theme-action-play").onclick = (e) => { e.stopPropagation(); startPlayback(false); };
       
-      const vidBtn = row.querySelector(".theme-video-btn");
+      const vidBtn = row.querySelector(".theme-action-video");
       if (vidBtn) vidBtn.onclick = (e) => { e.stopPropagation(); startPlayback(true); };
 
       const queueBtn = row.querySelector(".theme-queue-btn");
-      if (queueBtn) queueBtn.onclick = (e) => { e.stopPropagation(); window.playThemeTrack(t); };
+      if (queueBtn) queueBtn.onclick = (e) => {
+        e.stopPropagation();
+        window.playThemeTrack(t);
+        showLoungeToast(`Added "${t.title}" to queue`);
+      };
+
+      const favBtn = row.querySelector(".theme-fav-btn");
+      if (favBtn) favBtn.onclick = (e) => {
+        e.stopPropagation();
+        toggleFavoriteTheme(t, favBtn);
+      };
 
       container.appendChild(row);
     });
   }
 
-  // 8. Close Theme Drawer Modal
-  window.closeThemeDrawer = function() {
-    const modal = document.getElementById("themeDrawerModal");
-    if (modal) {
-      modal.style.display = "none";
-    }
-  };
-
-  // Close on button click
-  const closeBtn = document.getElementById("drawerCloseBtn");
-  if (closeBtn) {
-    closeBtn.addEventListener("click", function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      window.closeThemeDrawer();
-    });
-  }
-
-  // Close on backdrop click
-  const drawerModal = document.getElementById("themeDrawerModal");
-  if (drawerModal) {
-    drawerModal.addEventListener("click", function(e) {
-      if (e.target === this) {
-        window.closeThemeDrawer();
+  function highlightCurrentlyPlayingInDrawer(currentTrack, isPlaying) {
+    if (!currentTrack) return;
+    document.querySelectorAll(".drawer-theme-card").forEach(card => {
+      const match = (card.dataset.trackTitle && card.dataset.trackTitle === currentTrack.title) ||
+                    (card.dataset.themeLabel && card.dataset.themeLabel === currentTrack.themeLabel);
+      const eq = card.querySelector(".theme-track-eq");
+      if (match && isPlaying) {
+        card.classList.add("is-currently-playing");
+        if (eq) { eq.style.display = "inline-flex"; eq.classList.add("active"); }
+      } else {
+        card.classList.remove("is-currently-playing");
+        if (eq) { eq.style.display = "none"; eq.classList.remove("active"); }
       }
     });
   }
 
-  // Close on ESC key press
+  // 11. Close Theme Drawer Modal
+  window.closeThemeDrawer = function() {
+    const modal = document.getElementById("themeDrawerModal");
+    if (modal) modal.style.display = "none";
+  };
+
+  const drawerModal = document.getElementById("themeDrawerModal");
+  if (drawerModal) {
+    drawerModal.addEventListener("click", function(e) {
+      if (e.target === this) window.closeThemeDrawer();
+    });
+  }
   document.addEventListener("keydown", function(e) {
-    if (e.key === "Escape" || e.key === "Esc") {
-      window.closeThemeDrawer();
-    }
+    if (e.key === "Escape" || e.key === "Esc") window.closeThemeDrawer();
   });
+
+  // 12. Favorites Library System
+  function getStoredFavorites() {
+    try {
+      return JSON.parse(localStorage.getItem("anicrunch_favorite_themes") || "[]");
+    } catch { return []; }
+  }
+
+  function isThemeFavorited(track) {
+    const favs = getStoredFavorites();
+    return favs.some(f => f.title === track.title && (f.animeTitle === track.animeTitle || f.artist === track.artist));
+  }
+
+  function toggleFavoriteTheme(track, btnEl) {
+    let favs = getStoredFavorites();
+    const index = favs.findIndex(f => f.title === track.title && (f.animeTitle === track.animeTitle || f.artist === track.artist));
+    if (index >= 0) {
+      favs.splice(index, 1);
+      btnEl.classList.remove("liked");
+      btnEl.textContent = "☆";
+      showLoungeToast(`Removed from Favorites`);
+    } else {
+      favs.push({
+        title: track.title,
+        artist: track.artist,
+        animeTitle: track.animeTitle,
+        themeLabel: track.themeLabel,
+        themeType: track.themeType,
+        audioUrl: track.audioUrl,
+        videoUrl: track.videoUrl,
+        artwork: track.artwork,
+        source: track.source
+      });
+      btnEl.classList.add("liked");
+      btnEl.textContent = "★";
+      showLoungeToast(`Saved to Favorites`);
+    }
+    localStorage.setItem("anicrunch_favorite_themes", JSON.stringify(favs));
+    updateFavoritesBadge();
+
+    if (currentCategory === 'favorites') {
+      renderFavoritesView(document.getElementById("animeThemeGrid"));
+    }
+  }
+
+  function updateFavoritesBadge() {
+    const count = getStoredFavorites().length;
+    const badge = document.getElementById("favCountBadge");
+    if (badge) badge.textContent = count;
+  }
+
+  function renderFavoritesView(container) {
+    const favs = getStoredFavorites();
+    container.innerHTML = "";
+    if (favs.length === 0) {
+      container.innerHTML = `
+        <div style="grid-column: 1/-1; padding: 60px 20px; text-align: center; color: var(--muted); background: rgba(18, 19, 32, 0.5); border-radius: 20px; border: 1px dashed rgba(255,255,255,0.1);">
+          
+          <h3 style="color: white; margin: 0 0 8px; font-family: 'Outfit', sans-serif;">Your Liked Themes is Empty</h3>
+          <p style="font-size: 13px; max-width: 440px; margin: 0 auto 18px;">
+            Save any theme track in the catalog to add it to your personal lounge favorites.
+          </p>
+          <button onclick="setMusicCategory('trending')" class="btn-lounge-primary" style="margin: 0 auto;">
+            Explore Trending OP/ED
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    favs.forEach((track, idx) => {
+      const card = document.createElement("div");
+      card.className = "vibe-anime-card";
+      const art = track.artwork || '/favicon.png';
+      card.innerHTML = `
+        <div class="card-poster-viewport">
+          <img src="${art}" class="card-poster-img" alt="">
+          <div class="card-vinyl-peek">
+            <img src="${art}" class="card-vinyl-center" alt="">
+            <div class="card-vinyl-dot"></div>
+          </div>
+          <div class="card-badges-top">
+            <span class="card-badge-themes" style="background:#ff3cac;">Saved</span>
+          </div>
+          <div class="card-quick-play-overlay">
+            <button class="card-quick-play-btn" title="Play">▶</button>
+            <div style="font-size: 11px; color: #ff3cac; font-weight: 700;">${escapeHtml(track.artist || 'Artist')}</div>
+          </div>
+        </div>
+        <div class="card-details">
+          <div class="card-title" title="${escapeHtml(track.title)}">${escapeHtml(track.title)}</div>
+          <div class="card-meta-sub">${escapeHtml(track.animeTitle || 'Theme')}</div>
+        </div>
+      `;
+      card.onclick = () => window.playThemeTrack(track, favs, idx, false);
+      container.appendChild(card);
+    });
+  }
+
+  // 13. Web Audio Ambient Soundscapes (Rain & Vinyl Crackle)
+  function initSoundscapeAudio() {
+    if (!soundscapeAudioCtx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      soundscapeAudioCtx = new AudioCtx();
+    }
+    if (soundscapeAudioCtx.state === 'suspended') {
+      soundscapeAudioCtx.resume();
+    }
+  }
+
+  function toggleSoundscape(type) {
+    initSoundscapeAudio();
+    const btn = type === 'rain' ? document.getElementById("soundscapeRainBtn") : document.getElementById("soundscapeVinylBtn");
+
+    if (activeSoundscapes[type]) {
+      // Stop soundscape
+      activeSoundscapes[type] = false;
+      if (btn) btn.classList.remove("active");
+      if (type === 'rain' && rainNode) {
+        rainNode.stop();
+        rainNode.disconnect();
+        rainNode = null;
+      }
+      if (type === 'crackle' && crackleNode) {
+        crackleNode.stop();
+        crackleNode.disconnect();
+        crackleNode = null;
+      }
+      showLoungeToast(`Ambiance: ${type} off`);
+    } else {
+      // Start soundscape
+      activeSoundscapes[type] = true;
+      if (btn) btn.classList.add("active");
+
+      if (type === 'rain') {
+        startRainSynthesizer();
+      } else if (type === 'crackle') {
+        startVinylCrackleSynthesizer();
+      }
+      showLoungeToast(`Ambiance: ${type === 'rain' ? 'Gentle Rain' : 'Vintage Vinyl'} active!`);
+    }
+  }
+
+  function startRainSynthesizer() {
+    const bufferSize = 2 * soundscapeAudioCtx.sampleRate;
+    const noiseBuffer = soundscapeAudioCtx.createBuffer(1, bufferSize, soundscapeAudioCtx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      b0 = 0.99886 * b0 + white * 0.0555179;
+      b1 = 0.99332 * b1 + white * 0.0750759;
+      b2 = 0.96900 * b2 + white * 0.1538520;
+      b3 = 0.86650 * b3 + white * 0.3104856;
+      b4 = 0.55000 * b4 + white * 0.5329522;
+      b5 = -0.7616 * b5 - white * 0.0168980;
+      output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.035;
+      b6 = white * 0.115926;
+    }
+
+    const whiteNoise = soundscapeAudioCtx.createBufferSource();
+    whiteNoise.buffer = noiseBuffer;
+    whiteNoise.loop = true;
+
+    const filter = soundscapeAudioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(800, soundscapeAudioCtx.currentTime);
+
+    const gain = soundscapeAudioCtx.createGain();
+    gain.gain.setValueAtTime(0.08, soundscapeAudioCtx.currentTime);
+
+    whiteNoise.connect(filter);
+    filter.connect(gain);
+    gain.connect(soundscapeAudioCtx.destination);
+    whiteNoise.start();
+    rainNode = whiteNoise;
+  }
+
+  function startVinylCrackleSynthesizer() {
+    const bufferSize = soundscapeAudioCtx.sampleRate * 2;
+    const buffer = soundscapeAudioCtx.createBuffer(1, bufferSize, soundscapeAudioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+
+    for (let i = 0; i < bufferSize; i++) {
+      // Occasional crackle pops
+      if (Math.random() < 0.0008) {
+        data[i] = (Math.random() * 2 - 1) * 0.35;
+      } else {
+        data[i] = (Math.random() * 2 - 1) * 0.005;
+      }
+    }
+
+    const crackle = soundscapeAudioCtx.createBufferSource();
+    crackle.buffer = buffer;
+    crackle.loop = true;
+
+    const gain = soundscapeAudioCtx.createGain();
+    gain.gain.setValueAtTime(0.12, soundscapeAudioCtx.currentTime);
+
+    crackle.connect(gain);
+    gain.connect(soundscapeAudioCtx.destination);
+    crackle.start();
+    crackleNode = crackle;
+  }
+
+  // 14. Toast Feedback Notification
+  let toastTimer = null;
+  function showLoungeToast(msg) {
+    const toast = document.getElementById("loungeToast");
+    const text = document.getElementById("toastMessage");
+    if (!toast || !text) return;
+    text.textContent = msg;
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toast.classList.remove("show");
+    }, 2800);
+  }
 
   function escapeHtml(text) {
     if (!text) return "";

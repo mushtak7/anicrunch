@@ -402,7 +402,7 @@
       </div>
 
       <div class="error-msg" id="errorMsg" role="alert" aria-live="polite">
-        <span>⚠️</span>
+        
         <span id="errorText">Invalid credentials</span>
       </div>
 
@@ -420,7 +420,7 @@
               aria-required="true"
               aria-describedby="usernameError"
             >
-            <span class="input-icon" aria-hidden="true">👤</span>
+            
           </div>
           <span class="input-error" id="usernameError"></span>
         </div>
@@ -437,9 +437,9 @@
               aria-required="true"
               aria-describedby="passwordError"
             >
-            <span class="input-icon" aria-hidden="true">🔒</span>
+            
             <button type="button" class="password-toggle" onclick="togglePassword()" aria-label="Toggle password visibility">
-              👁️
+              
             </button>
           </div>
           <span class="input-error" id="passwordError"></span>
@@ -474,7 +474,7 @@
     const btn = document.querySelector(".password-toggle");
     isPasswordVisible = !isPasswordVisible;
     input.type = isPasswordVisible ? "text" : "password";
-    btn.textContent = isPasswordVisible ? "🙈" : "👁️";
+    btn.textContent = isPasswordVisible ? "Hide" : "Show";
     btn.setAttribute('aria-label', isPasswordVisible ? 'Hide password' : 'Show password');
   }
 

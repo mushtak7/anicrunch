@@ -80,49 +80,49 @@ window.handleImageError = function(img) {
       </div>
       <nav class="sidebar-menu">
         <a href="/" id="menuHome">
-          <span class="menu-icon">🏠</span>
+          <span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
           <span class="menu-label">Home</span>
         </a>
         <a href="/catalog.html" id="menuAnime">
-          <span class="menu-icon">📺</span>
+          <span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg></span>
           <span class="menu-label">Anime</span>
         </a>
         <a href="/manga.html" id="menuManga">
-          <span class="menu-icon">📖</span>
+          <span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
           <span class="menu-label">Manga</span>
         </a>
         <a href="/music.html" id="menuMusic">
-          <span class="menu-icon">🎵</span>
+          <span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>
           <span class="menu-label">Music</span>
         </a>
         <a href="/tier-list.html" id="menuTierList">
-          <span class="menu-icon">📊</span>
+          <span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
           <span class="menu-label">Tier Lists</span>
         </a>
         <a href="/recommendations.html" id="menuRecs">
-          <span class="menu-icon">✨</span>
+          <span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
           <span class="menu-label">Recommendations</span>
         </a>
         <a href="/reviews.html" id="menuReviews">
-          <span class="menu-icon">💬</span>
+          <span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
           <span class="menu-label">Reviews</span>
         </a>
         <a href="/history.html" id="menuHistory">
-          <span class="menu-icon">🕒</span>
+          <span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
           <span class="menu-label">History</span>
         </a>
         <div class="menu-group">
           <div class="menu-group-header">Others</div>
           <a href="/vibe-mixer.html" id="menuMixer">
-            <span class="menu-icon">🧪</span>
+            <span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.31M14 9.3V1.99M8.5 2h7M14 9.3a6.5 6.5 0 1 1-4 0"/></svg></span>
             <span class="menu-label">Vibe Mixer</span>
           </a>
           <a href="/quiz.html" id="menuQuiz">
-            <span class="menu-icon">🏆</span>
+            <span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></span>
             <span class="menu-label">Trivia Arena</span>
           </a>
           <a href="/schedule.html" id="menuSchedule">
-            <span class="menu-icon">📅</span>
+            <span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
             <span class="menu-label">Schedule</span>
           </a>
         </div>
@@ -156,20 +156,22 @@ window.handleImageError = function(img) {
 
     const headerActions = document.createElement('div');
     headerActions.className = 'top-header-actions';
-
     // Theme toggle button
     const themeBtn = document.createElement('button');
     themeBtn.className = 'header-action-btn';
     themeBtn.id = 'themeToggleBtn';
-    themeBtn.title = 'Toggle Theme';
-    themeBtn.innerHTML = '🌓';
+    themeBtn.setAttribute('aria-label', 'Toggle Visual Theme');
+    themeBtn.title = 'Switch Theme (Sakura, Cyberpunk, OLED, Dark)';
+    themeBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
 
-    // Watchlist quick link
+    // Watchlist quick button
     const watchlistBtn = document.createElement('a');
     watchlistBtn.href = '/watchlist.html';
     watchlistBtn.className = 'header-action-btn';
+    watchlistBtn.id = 'watchlistHeaderBtn';
+    watchlistBtn.setAttribute('aria-label', 'Watchlist');
     watchlistBtn.title = 'My Watchlist';
-    watchlistBtn.innerHTML = '📚';
+    watchlistBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
 
     // Target wrapper for original authentication
     const authTarget = document.createElement('div');
@@ -305,20 +307,20 @@ window.handleImageError = function(img) {
             const usernameEl = document.getElementById('sidebarUsername');
             if (usernameEl) usernameEl.textContent = d.user.username;
           } else {
-            footerAreaNode.innerHTML = `<a href="/login.html" style="text-decoration:none; color:var(--muted); font-weight:600;">👤 Guest (Sign In)</a>`;
+            footerAreaNode.innerHTML = `<a href="/login.html" style="text-decoration:none; color:var(--muted); font-weight:600;">Sign In</a>`;
           }
         }
       })
       .catch(() => {
         const footerAreaNode = document.getElementById('sidebarUserArea');
         if (footerAreaNode) {
-          footerAreaNode.innerHTML = `<a href="/login.html" style="text-decoration:none; color:var(--muted); font-weight:600;">👤 Guest (Sign In)</a>`;
+          footerAreaNode.innerHTML = `<a href="/login.html" style="text-decoration:none; color:var(--muted); font-weight:600;">Sign In</a>`;
         }
       });
 
     /* =====================
        NEXT-GEN PERSISTENT MEDIA ENGINE (AUDIO + VIDEO)
-    ===================== */
+     ===================== */
     const playerHtml = `
       <!-- Floating Main Music Bar -->
       <div id="floatingMusicPlayer" class="floating-music-player">
@@ -328,7 +330,7 @@ window.handleImageError = function(img) {
         <div class="player-left-col">
           <div class="player-poster-wrap" onclick="toggleVideoMode()">
             <img id="playerPoster" src="/favicon.png" alt="" class="player-poster">
-            <div class="player-poster-hover">🎬</div>
+            <div class="player-poster-hover"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>
           </div>
           <div class="player-info">
             <div class="player-title-row">
@@ -342,11 +344,11 @@ window.handleImageError = function(img) {
         <!-- Center Controls & Scrubbing Bar -->
         <div class="player-center-col">
           <div class="player-btn-row">
-            <button id="playerShuffleBtn" class="player-btn-icon" title="Shuffle" onclick="togglePlayerShuffle()">🔀</button>
-            <button id="playerPrevBtn" class="player-btn-icon" title="Previous Track" onclick="playPrevTrack()">⏮</button>
+            <button id="playerShuffleBtn" class="player-btn-icon" title="Shuffle" onclick="togglePlayerShuffle()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg></button>
+            <button id="playerPrevBtn" class="player-btn-icon" title="Previous Track" onclick="playPrevTrack()"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2"/></svg></button>
             <button id="playerPlayPauseBtn" class="player-btn-play" title="Play / Pause" onclick="togglePlayerPlay()">▶</button>
-            <button id="playerNextBtn" class="player-btn-icon" title="Next Track" onclick="playNextTrack()">⏭</button>
-            <button id="playerRepeatBtn" class="player-btn-icon" title="Repeat" onclick="cyclePlayerRepeat()">🔁</button>
+            <button id="playerNextBtn" class="player-btn-icon" title="Next Track" onclick="playNextTrack()"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"/></svg></button>
+            <button id="playerRepeatBtn" class="player-btn-icon" title="Repeat" onclick="cyclePlayerRepeat()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></button>
           </div>
           <div class="player-scrub-row">
             <span id="playerCurrentTime" class="player-time">0:00</span>
@@ -358,17 +360,17 @@ window.handleImageError = function(img) {
         <!-- Right Volume & Mode Toggles -->
         <div class="player-right-col">
           <button id="playerVideoToggle" class="player-feature-btn" title="Toggle OP/ED Video Mode" onclick="toggleVideoMode()">
-            🎬 <span class="feature-label">Video</span>
+            <span class="feature-label">Video</span>
           </button>
           <button id="playerVisualizerToggle" class="player-feature-btn" title="Toggle Audio Visualizer" onclick="toggleVisualizer()">
-            📊
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
           </button>
           <button id="playerQueueToggle" class="player-feature-btn" title="Queue List" onclick="toggleQueueDrawer()">
-            📋 <span id="playerQueueCount" class="queue-count-badge" style="display:none;">0</span>
+            <span class="feature-label">Queue</span> <span id="playerQueueCount" class="queue-count-badge" style="display:none;">0</span>
           </button>
 
           <div class="player-volume-wrap">
-            <button id="playerMuteBtn" class="player-btn-icon" title="Mute/Unmute" onclick="togglePlayerMute()">🔊</button>
+            <button id="playerMuteBtn" class="player-btn-icon" title="Mute/Unmute" onclick="togglePlayerMute()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>
             <input type="range" id="playerVolume" class="player-volume-slider" min="0" max="1" step="0.02" value="1">
           </div>
 
@@ -396,7 +398,7 @@ window.handleImageError = function(img) {
       <div id="playerQueueDrawer" class="player-queue-drawer" style="display: none;">
         <div class="queue-drawer-header">
           <div style="font-weight: 700; font-size: 15px; color: white; display: flex; align-items: center; gap: 6px;">
-            📋 Upcoming Queue (<span id="queueDrawerCount">0</span>)
+            Upcoming Queue (<span id="queueDrawerCount">0</span>)
           </div>
           <div style="display: flex; gap: 8px;">
             <button class="queue-action-btn" onclick="clearPlayerQueue()">Clear</button>
@@ -1094,6 +1096,14 @@ window.handleImageError = function(img) {
       window.dispatchEvent(new CustomEvent("anicrunch_player_change", { detail: { track, isPlaying: true } }));
     };
 
+    window.getCurrentThemeTrack = function() {
+      return currentTrack;
+    };
+
+    window.isThemePlayerPlaying = function() {
+      return mediaEl ? !mediaEl.paused : false;
+    };
+
     // Backward-compatible alias
     window.playLocalSong = function(track) {
       window.playThemeTrack({
@@ -1263,17 +1273,14 @@ window.handleImageError = function(img) {
     window.cyclePlayerRepeat = function() {
       if (repeatMode === 'off') {
         repeatMode = 'all';
-        repeatBtn.textContent = '🔁';
         repeatBtn.classList.add("active");
-        repeatBtn.title = "Repeat All";
+        repeatBtn.title = "Repeat All (On)";
       } else if (repeatMode === 'all') {
         repeatMode = 'one';
-        repeatBtn.textContent = '🔂';
         repeatBtn.classList.add("active");
-        repeatBtn.title = "Repeat Current";
+        repeatBtn.title = "Repeat Current Track";
       } else {
         repeatMode = 'off';
-        repeatBtn.textContent = '🔁';
         repeatBtn.classList.remove("active");
         repeatBtn.title = "Repeat Off";
       }
@@ -1293,7 +1300,10 @@ window.handleImageError = function(img) {
 
     window.togglePlayerMute = function() {
       mediaEl.muted = !mediaEl.muted;
-      muteBtn.textContent = mediaEl.muted ? "🔇" : "🔊";
+      muteBtn.classList.toggle("muted", mediaEl.muted);
+      muteBtn.innerHTML = mediaEl.muted 
+        ? `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>`
+        : `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>`;
     };
 
     window.closeMusicPlayer = function() {
@@ -1302,17 +1312,17 @@ window.handleImageError = function(img) {
       playerEl.classList.remove("active");
       videoSurface.style.display = "none";
       queueDrawer.style.display = "none";
-      window.dispatchEvent(new CustomEvent("anicrunch_player_change", { detail: { isPlaying: false } }));
+      window.dispatchEvent(new CustomEvent("anicrunch_player_change", { detail: { track: currentTrack, isPlaying: false } }));
     };
 
     // Event Listeners on Media Element
     mediaEl.addEventListener("play", () => {
       playPauseBtn.textContent = "⏸";
-      window.dispatchEvent(new CustomEvent("anicrunch_player_change", { detail: { isPlaying: true } }));
+      window.dispatchEvent(new CustomEvent("anicrunch_player_change", { detail: { track: currentTrack, isPlaying: true } }));
     });
     mediaEl.addEventListener("pause", () => {
       playPauseBtn.textContent = "▶";
-      window.dispatchEvent(new CustomEvent("anicrunch_player_change", { detail: { isPlaying: false } }));
+      window.dispatchEvent(new CustomEvent("anicrunch_player_change", { detail: { track: currentTrack, isPlaying: false } }));
     });
     mediaEl.addEventListener("timeupdate", () => {
       currentTimeEl.textContent = formatSec(mediaEl.currentTime);
@@ -1334,7 +1344,10 @@ window.handleImageError = function(img) {
     volumeSlider.addEventListener("input", (e) => {
       mediaEl.volume = e.target.value;
       mediaEl.muted = false;
-      muteBtn.textContent = e.target.value > 0 ? "🔊" : "🔇";
+      muteBtn.classList.toggle("muted", e.target.value <= 0);
+      muteBtn.innerHTML = e.target.value > 0 
+        ? `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>`
+        : `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>`;
     });
 
     // Add layout-ready class to show layout

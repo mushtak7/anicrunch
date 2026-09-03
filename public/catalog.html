@@ -26,7 +26,7 @@
 
 <section class="watchlist-hero" style="min-height: auto; padding: 40px 20px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(120, 75, 160, 0.08) 100%);">
   <div class="watchlist-hero-content" style="text-align: center;">
-    <h1>📺 Anime Database</h1>
+    <h1>Anime Database</h1>
     <p>Filter, sort, and browse through the entire catalog of anime titles!</p>
   </div>
 </section>
@@ -194,7 +194,7 @@ function escapeHtml(text) {
       .then(d => {
         const authArea = document.getElementById("authArea");
         if (d.user && authArea) {
-          authArea.innerHTML = `<span style="color:var(--muted)">👤 ${escapeHtml(d.user.username)}</span>`;
+          authArea.innerHTML = `<span style="color:var(--muted)">${escapeHtml(d.user.username)}</span>`;
         }
       }).catch(() => {});
 
@@ -312,7 +312,7 @@ function escapeHtml(text) {
       console.error(e);
       isLoading = false;
       if (currentPage === 1) {
-        grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--error); padding: 40px 0;">⚠️ Failed to load catalog data.</div>`;
+        grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--error); padding: 40px 0;">Failed to load catalog data.</div>`;
       }
     }
   }

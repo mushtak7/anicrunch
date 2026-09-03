@@ -186,7 +186,7 @@
     }
 
     .search-filter::before {
-      content: "🔍";
+      content: "";
       position: absolute;
       left: 16px;
       top: 50%; 
@@ -476,25 +476,25 @@
 <header>
   <h1 onclick="location.href='/'" style="cursor:pointer">anicrunch</h1>
   <div style="flex:1"></div>
-  <a href="/quiz.html" class="nav-link" style="color: var(--muted); margin-right: 20px; text-decoration: none;">🏆 Trivia Arena</a>
+  <a href="/quiz.html" class="nav-link" style="color: var(--muted); margin-right: 20px; text-decoration: none;">Trivia Arena</a>
   <div id="authArea"></div>
 </header>
 
 <section class="watchlist-hero">
   <div class="watchlist-hero-content">
-    <h1>📚 My Watchlist</h1>
+    <h1>My Watchlist</h1>
     <p>Track your anime progress</p>
     <div class="stats-bar">
       <div class="stat-card">
-        <div class="stat-icon">📺</div>
+        <div class="stat-icon"></div>
         <div class="stat-info"><h3 id="statWatching">0</h3><p>Watching</p></div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon">✅</div>
+        <div class="stat-icon"></div>
         <div class="stat-info"><h3 id="statCompleted">0</h3><p>Completed</p></div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon">📅</div>
+        <div class="stat-icon"></div>
         <div class="stat-info"><h3 id="statPlan">0</h3><p>Plan to Watch</p></div>
       </div>
     </div>
@@ -556,7 +556,7 @@ document.addEventListener("DOMContentLoaded", () => {
     .then(r => r.json())
     .then(d => {
       if (d.user) {
-        authArea.innerHTML = `<span style="color:var(--muted)">👤 ${escapeHtml(d.user.username)}</span> <button class="auth-link" onclick="logout()">Logout</button>`;
+        authArea.innerHTML = `<span style="color:var(--muted)">${escapeHtml(d.user.username)}</span> <button class="auth-link" onclick="logout()">Logout</button>`;
       } else {
         showLoginState();
       }
@@ -578,7 +578,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 async function loadWatchlist() {
   try {
-    // Load Watchlist (FIXED: Added API_BASE and credentials)
     const res = await fetch(`${API_BASE}/api/watchlist`, { credentials: "include" });
     
     if (res.status === 401) { showLoginState(); return; }
@@ -586,30 +585,57 @@ async function loadWatchlist() {
     const items = await res.json();
     if (!items || !items.length) { showEmptyState(); return; }
 
-    document.getElementById("watchlistGrid").innerHTML = "";
+    const grid = document.getElementById("watchlistGrid");
+    grid.innerHTML = "";
+    allAnime = [];
 
-    // Store backend data
+    // Instant 1-Query Rendering for all items
+    const missingImageItems = [];
+
     for (const item of items) {
       userAnimeData[item.anime_id] = { 
         status: item.status || 'plan', 
         progress: item.progress || 0, 
         score: item.score 
       };
-    }
 
-    // Load Cards with concurrency limit of 3 for faster loading
-    const ids = items.map(item => item.anime_id);
-    const concurrencyLimit = 3;
-    for (let i = 0; i < ids.length; i += concurrencyLimit) {
-      const batch = ids.slice(i, i + concurrencyLimit);
-      await Promise.all(batch.map(id => fetchAndRenderCard(id)));
-      // Small delay between batches to respect Jikan rate limits
-      if (i + concurrencyLimit < ids.length) {
-        await new Promise(r => setTimeout(r, 350));
+      const title = item.anime_title || `Anime #${item.anime_id}`;
+      const imgUrl = item.image_url || window.DEFAULT_POSTER_SVG;
+
+      const anime = {
+        mal_id: item.anime_id,
+        title: title,
+        title_english: title,
+        images: {
+          jpg: {
+            large_image_url: imgUrl,
+            image_url: imgUrl
+          }
+        },
+        userStatus: item.status || 'plan',
+        progress: item.progress || 0,
+        score: item.score
+      };
+
+      allAnime.push(anime);
+
+      const card = document.createElement("div");
+      card.className = "watchlist-card";
+      card.dataset.id = item.anime_id;
+      renderCardContent(card, anime);
+      grid.appendChild(card);
+
+      if (!item.image_url || item.image_url === window.DEFAULT_POSTER_SVG) {
+        missingImageItems.push(item);
       }
     }
-    
+
     updateStats();
+
+    // Background Enrichment for any legacy items lacking stored poster images
+    if (missingImageItems.length > 0) {
+      enrichMissingMetadata(missingImageItems);
+    }
 
   } catch (err) {
     console.error(err);
@@ -617,25 +643,41 @@ async function loadWatchlist() {
   }
 }
 
-async function fetchAndRenderCard(id) {
-  try {
-    // Jikan API Call (Stays the same - this is 3rd party)
-    const res = await fetch(`https://api.jikan.moe/v4/anime/${id}`);
-    const data = await res.json();
-    const anime = data.data;
+async function enrichMissingMetadata(items) {
+  for (const item of items) {
+    try {
+      const fetchFn = window.safeJikanFetch || fetch;
+      const res = await fetchFn(`https://api.jikan.moe/v4/anime/${item.anime_id}`);
+      const data = res.data ? res.data : res;
+      if (data && data.mal_id) {
+        const posterUrl = data.images?.jpg?.large_image_url || data.images?.jpg?.image_url || '';
+        const fullTitle = data.title_english || data.title || item.anime_title;
+        
+        const anime = allAnime.find(a => a.mal_id === item.anime_id);
+        if (anime) {
+          anime.title = fullTitle;
+          anime.images = data.images;
+          anime.episodes = data.episodes;
+          const card = document.querySelector(`.watchlist-card[data-id="${item.anime_id}"]`);
+          if (card) renderCardContent(card, anime);
+        }
 
-    anime.userStatus = userAnimeData[id]?.status || 'plan';
-    anime.progress = userAnimeData[id]?.progress || 0;
-    allAnime.push(anime);
-
-    const card = document.createElement("div");
-    card.className = "watchlist-card";
-    card.dataset.id = id;
-    
-    renderCardContent(card, anime);
-    document.getElementById("watchlistGrid").appendChild(card);
-
-  } catch (e) { console.error(e); }
+        // Persist to backend so subsequent loads are instant
+        if (posterUrl) {
+          fetch(`${API_BASE}/api/watchlist/update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              animeId: item.anime_id,
+              title: fullTitle,
+              imageUrl: posterUrl
+            })
+          }).catch(() => {});
+        }
+      }
+    } catch (_) {}
+  }
 }
 
 function renderCardContent(card, anime) {
@@ -644,17 +686,18 @@ function renderCardContent(card, anime) {
   const totalEps = anime.episodes || '?';
   
   // Progress Bar Width
-  const progressPercent = (typeof totalEps === 'number') ? Math.min((anime.progress / totalEps) * 100, 100) : 0;
+  const progressPercent = (typeof totalEps === 'number' && totalEps > 0) ? Math.min((anime.progress / totalEps) * 100, 100) : 0;
+  const posterUrl = anime.images?.jpg?.large_image_url || anime.images?.jpg?.image_url || window.DEFAULT_POSTER_SVG;
 
   card.innerHTML = `
-    <span class="card-badge ${badgeClass}">${statusLabels[anime.userStatus]}</span>
+    <span class="card-badge ${badgeClass}">${statusLabels[anime.userStatus] || 'Watchlist'}</span>
     <div class="card-image">
-      <img src="${anime.images.jpg.large_image_url}" alt="${escapeHtml(anime.title)}">
+      <img src="${posterUrl}" alt="${escapeHtml(anime.title)}" loading="lazy" onerror="handleImageError(this)">
       <div class="card-actions-overlay">
         <select class="status-select" onchange="updateAnimeStatus(${anime.mal_id}, this.value)">
-          <option value="watching" ${anime.userStatus === 'watching' ? 'selected' : ''}>📺 Watching</option>
-          <option value="completed" ${anime.userStatus === 'completed' ? 'selected' : ''}>✅ Completed</option>
-          <option value="plan" ${anime.userStatus === 'plan' ? 'selected' : ''}>📅 Plan to Watch</option>
+          <option value="watching" ${anime.userStatus === 'watching' ? 'selected' : ''}>Watching</option>
+          <option value="completed" ${anime.userStatus === 'completed' ? 'selected' : ''}>Completed</option>
+          <option value="plan" ${anime.userStatus === 'plan' ? 'selected' : ''}>Plan to Watch</option>
         </select>
         <button class="remove-btn" onclick="removeAnime(${anime.mal_id})">Remove</button>
       </div>
@@ -822,23 +865,23 @@ function showLoginState() {
 <!-- Modern Mobile Bottom Navigation Bar -->
 <div class="mobile-nav-bar" aria-label="Mobile Navigation Bar">
   <a href="/" class="mobile-nav-item" id="mobileNavHome">
-    <span class="nav-icon">🏠</span>
+    <span class="nav-icon">Home</span>
     <span>Home</span>
   </a>
   <a href="/schedule.html" class="mobile-nav-item" id="mobileNavSchedule">
-    <span class="nav-icon">📅</span>
+    <span class="nav-icon">Schedule</span>
     <span>Schedule</span>
   </a>
   <button onclick="spinWheel()" class="mobile-nav-item" id="mobileNavRandom" aria-label="Random anime">
-    <span class="nav-icon">🎲</span>
+    <span class="nav-icon">Random</span>
     <span>Random</span>
   </button>
   <a href="/watchlist.html" class="mobile-nav-item active" id="mobileNavWatchlist">
-    <span class="nav-icon">📚</span>
+    <span class="nav-icon">Watchlist</span>
     <span>Watchlist</span>
   </a>
   <a href="/vibe-mixer.html" class="mobile-nav-item" id="mobileNavMixer">
-    <span class="nav-icon">🧪</span>
+    <span class="nav-icon">Mixer</span>
     <span>Vibes</span>
   </a>
 </div>

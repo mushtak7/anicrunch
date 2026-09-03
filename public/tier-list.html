@@ -26,7 +26,7 @@
 
 <section class="watchlist-hero" style="min-height: auto; padding: 40px 20px; background: linear-gradient(135deg, rgba(255, 127, 127, 0.08) 0%, rgba(120, 75, 160, 0.08) 100%);">
   <div class="watchlist-hero-content" style="text-align: center;">
-    <h1>📊 Anime Tier Builder</h1>
+    <h1>Anime Tier Builder</h1>
     <p>Rank your favorite anime titles into custom tiers and export your setup!</p>
   </div>
 </section>
@@ -34,8 +34,8 @@
 <main class="page-container">
   
   <div style="display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 20px;">
-    <button class="btn-action" style="padding: 10px 20px;" onclick="resetTierList()">🔄 Reset List</button>
-    <button class="btn-action" style="padding: 10px 20px;" onclick="exportTierList()">📸 Copy Share Text</button>
+    <button class="btn-action" style="padding: 10px 20px;" onclick="resetTierList()">Reset List</button>
+    <button class="btn-action" style="padding: 10px 20px;" onclick="exportTierList()">Copy Share Text</button>
   </div>
 
   <div class="tier-list-container" id="tierWorkspace">
@@ -68,7 +68,7 @@
 
   <!-- Search & Add Panel -->
   <div class="tier-search-panel">
-    <h3>🔍 Find Anime to Rank</h3>
+    <h3>Find Anime to Rank</h3>
     <input type="text" class="tier-search-input" id="tierSearchInput" placeholder="Type anime title (e.g. Naruto, Bleach, Attack on Titan)...">
     <div id="tierSearchResults" class="tier-search-results"></div>
   </div>
@@ -85,7 +85,7 @@
       .then(d => {
         const authArea = document.getElementById("authArea");
         if (d.user && authArea) {
-          authArea.innerHTML = `<span style="color:var(--muted)">👤 ${escapeHtml(d.user.username)}</span>`;
+          authArea.innerHTML = `<span style="color:var(--muted)">${escapeHtml(d.user.username)}</span>`;
         }
       }).catch(() => {});
 
@@ -262,7 +262,7 @@
     
     try {
       const state = JSON.parse(listState);
-      let text = "🎌 My AniCrunch Anime Tier List Rankings! 🎌\n\n";
+      let text = "My AniCrunch Anime Tier List Rankings!\n\n";
       let totalRanked = 0;
       
       ["S", "A", "B", "C", "D", "E"].forEach(tier => {
@@ -279,7 +279,7 @@
       }
 
       navigator.clipboard.writeText(text).then(() => {
-        alert("📋 Rankings share text copied to clipboard! Share it with your friends.");
+        alert("Rankings share text copied to clipboard! Share it with your friends.");
       });
     } catch (e) {
       alert("Failed to export.");

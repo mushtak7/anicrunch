@@ -70,7 +70,7 @@ app.use(express.json());
 app.use((req, res, next) => {
   res.on("finish", () => {
     if (res.statusCode === 404) {
-      console.warn(`⚠️ [HTTP 404] ${req.method} ${req.originalUrl}`);
+      console.warn(`[HTTP 404] ${req.method} ${req.originalUrl}`);
     }
   });
   next();
@@ -298,7 +298,10 @@ const authLimiter = rateLimit({
 ===================== */
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL || "postgres://postgres:postgres@localhost:5432/anicrunch",
-  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000
 });
 
 /* =====================
@@ -349,7 +352,8 @@ async function initDB() {
       ADD COLUMN IF NOT EXISTS progress INTEGER DEFAULT 0,
       ADD COLUMN IF NOT EXISTS score INTEGER DEFAULT NULL,
       ADD COLUMN IF NOT EXISTS genres TEXT DEFAULT '',
-      ADD COLUMN IF NOT EXISTS anime_title TEXT DEFAULT '';
+      ADD COLUMN IF NOT EXISTS anime_title TEXT DEFAULT '',
+      ADD COLUMN IF NOT EXISTS image_url TEXT DEFAULT '';
     `);
     
     // Add missing columns to users table
@@ -408,13 +412,13 @@ async function initDB() {
       ADD COLUMN IF NOT EXISTS plays INTEGER DEFAULT 0;
     `);
     
-    console.log("✅ Database schema verified/updated");
+    console.log("Database schema verified/updated");
 
     // Auto-seed quiz table if empty or has fewer questions than our curated list
     const checkQuiz = await pool.query("SELECT COUNT(*) FROM quizzes");
-    console.log(`📊 Quizzes table check: current count is ${checkQuiz.rows[0].count}`);
+    console.log(`Quizzes table check: current count is ${checkQuiz.rows[0].count}`);
     
-    console.log("🌱 Syncing trivia quizzes pool...");
+    console.log("Syncing trivia quizzes pool...");
     const sampleQuizzes = [
       {
         question: "Who is the main protagonist of 'One Piece'?",
@@ -654,7 +658,7 @@ async function initDB() {
         insertedCount++;
       }
     }
-    console.log(`🌱 Seeding complete! Synchronized ${insertedCount} new quizzes. Total count is now ${parseInt(checkQuiz.rows[0].count, 10) + insertedCount}.`);
+    console.log(`Seeding complete! Synchronized ${insertedCount} new quizzes. Total count is now ${parseInt(checkQuiz.rows[0].count, 10) + insertedCount}.`);
   } catch (err) {
     console.error("Database migration error:", err);
   }
@@ -775,7 +779,7 @@ app.get("/api/me", (req, res) => {
 app.get("/api/watchlist", requireAuth, async (req, res) => {
   try {
     const result = await pool.query(
-      "SELECT anime_id, status, progress, score, genres, anime_title FROM watchlists WHERE user_id=$1",
+      "SELECT anime_id, status, progress, score, genres, anime_title, image_url FROM watchlists WHERE user_id=$1 ORDER BY id DESC",
       [req.session.user.id]
     );
     res.json(result.rows);
@@ -786,14 +790,16 @@ app.get("/api/watchlist", requireAuth, async (req, res) => {
 });
 
 app.post("/api/watchlist/add", requireAuth, async (req, res) => {
-  const { animeId, genres, title } = req.body;
+  const { animeId, genres, title, imageUrl } = req.body;
 
   try {
-    // NOTE: This requires a UNIQUE constraint on (user_id, anime_id) in the watchlists table.
-    // Run this if not already done: ALTER TABLE watchlists ADD CONSTRAINT watchlists_user_anime_unique UNIQUE (user_id, anime_id);
     await pool.query(
-      "INSERT INTO watchlists (user_id, anime_id, status, progress, genres, anime_title) VALUES ($1, $2, 'plan', 0, $3, $4) ON CONFLICT (user_id, anime_id) DO NOTHING",
-      [req.session.user.id, animeId, genres || '', title || '']
+      `INSERT INTO watchlists (user_id, anime_id, status, progress, genres, anime_title, image_url) 
+       VALUES ($1, $2, 'plan', 0, $3, $4, $5) 
+       ON CONFLICT (user_id, anime_id) DO UPDATE 
+       SET anime_title = EXCLUDED.anime_title,
+           image_url = CASE WHEN EXCLUDED.image_url <> '' THEN EXCLUDED.image_url ELSE watchlists.image_url END`,
+      [req.session.user.id, animeId, genres || '', title || '', imageUrl || '']
     );
     res.json({ success: true });
   } catch (err) {
@@ -803,7 +809,7 @@ app.post("/api/watchlist/add", requireAuth, async (req, res) => {
 });
 
 app.post("/api/watchlist/update", requireAuth, async (req, res) => {
-  const { animeId, status, progress, score, genres, title } = req.body;
+  const { animeId, status, progress, score, genres, title, imageUrl } = req.body;
 
   try {
     await pool.query(
@@ -812,9 +818,10 @@ app.post("/api/watchlist/update", requireAuth, async (req, res) => {
            progress = COALESCE($4, progress),
            score = COALESCE($5, score),
            genres = COALESCE($6, genres),
-           anime_title = COALESCE($7, anime_title)
+           anime_title = COALESCE($7, anime_title),
+           image_url = COALESCE($8, image_url)
        WHERE user_id=$1 AND anime_id=$2`,
-      [req.session.user.id, animeId, status, progress, score, genres, title]
+      [req.session.user.id, animeId, status, progress, score, genres, title, imageUrl]
     );
     res.json({ success: true });
   } catch (err) {
@@ -1871,14 +1878,56 @@ app.get("/api/music/discovery", async (req, res) => {
       ];
     }
     
-    if (seasonal.length === 0) {
-      seasonal = [...trending].reverse();
-    }
+    // Curated Classics Pool
+    const classics = [
+      { mal_id: 9253, title: "Steins;Gate", title_english: "Steins;Gate", image: "https://cdn.myanimelist.net/images/anime/1935/127974l.jpg", score: 9.1, episodes: 24, season: "Spring", year: 2011, studios: "White Fox", genres: ["Sci-Fi", "Drama"] },
+      { mal_id: 5114, title: "Fullmetal Alchemist: Brotherhood", title_english: "Fullmetal Alchemist: Brotherhood", image: "https://cdn.myanimelist.net/images/anime/1223/96541l.jpg", score: 9.1, episodes: 64, season: "Spring", year: 2009, studios: "Bones", genres: ["Action", "Adventure"] },
+      { mal_id: 1535, title: "Death Note", title_english: "Death Note", image: "https://cdn.myanimelist.net/images/anime/9/9453l.jpg", score: 8.6, episodes: 37, season: "Fall", year: 2006, studios: "Madhouse", genres: ["Mystery", "Supernatural"] },
+      { mal_id: 1, title: "Cowboy Bebop", title_english: "Cowboy Bebop", image: "https://cdn.myanimelist.net/images/anime/4/19644l.jpg", score: 8.7, episodes: 26, season: "Spring", year: 1998, studios: "Sunrise", genres: ["Action", "Sci-Fi"] },
+      { mal_id: 30, title: "Neon Genesis Evangelion", title_english: "Neon Genesis Evangelion", image: "https://cdn.myanimelist.net/images/anime/1314/108941l.jpg", score: 8.3, episodes: 26, season: "Fall", year: 1995, studios: "Gainax", genres: ["Sci-Fi", "Psychological"] },
+      { mal_id: 1575, title: "Code Geass: Hangyaku no Lelouch", title_english: "Code Geass: Lelouch of the Rebellion", image: "https://cdn.myanimelist.net/images/anime/1032/135088l.jpg", score: 8.7, episodes: 25, season: "Fall", year: 2006, studios: "Sunrise", genres: ["Action", "Mecha"] },
+      { mal_id: 2001, title: "Tengen Toppa Gurren Lagann", title_english: "Gurren Lagann", image: "https://cdn.myanimelist.net/images/anime/4/5123l.jpg", score: 8.6, episodes: 27, season: "Spring", year: 2007, studios: "Gainax", genres: ["Action", "Sci-Fi"] },
+      { mal_id: 11061, title: "Hunter x Hunter (2011)", title_english: "Hunter x Hunter", image: "https://cdn.myanimelist.net/images/anime/1337/99013l.jpg", score: 9.0, episodes: 148, season: "Fall", year: 2011, studios: "Madhouse", genres: ["Action", "Adventure"] }
+    ];
+
+    // Curated Vibe Pools for one-click Mood Stations
+    const vibes = {
+      hype: [
+        { mal_id: 16498, title: "Attack on Titan", title_english: "Attack on Titan", image: "https://cdn.myanimelist.net/images/anime/10/47347l.jpg", score: 8.5, year: 2013, themeHint: "Guren no Yumiya", vibe: "Battle Hype" },
+        { mal_id: 40748, title: "Jujutsu Kaisen", title_english: "Jujutsu Kaisen", image: "https://cdn.myanimelist.net/images/anime/1171/109222l.jpg", score: 8.6, year: 2020, themeHint: "Kaikai Kitan", vibe: "Battle Hype" },
+        { mal_id: 38000, title: "Demon Slayer", title_english: "Demon Slayer: Kimetsu no Yaiba", image: "https://cdn.myanimelist.net/images/anime/1286/99889l.jpg", score: 8.5, year: 2019, themeHint: "Gurenge", vibe: "Battle Hype" },
+        { mal_id: 44511, title: "Chainsaw Man", title_english: "Chainsaw Man", image: "https://cdn.myanimelist.net/images/anime/1806/126216l.jpg", score: 8.5, year: 2022, themeHint: "Kick Back", vibe: "Battle Hype" },
+        { mal_id: 52299, title: "Solo Leveling", title_english: "Solo Leveling", image: "https://cdn.myanimelist.net/images/anime/1917/141019l.jpg", score: 8.3, year: 2024, themeHint: "LEveL", vibe: "Battle Hype" },
+        { mal_id: 30276, title: "One Punch Man", title_english: "One Punch Man", image: "https://cdn.myanimelist.net/images/anime/12/76049l.jpg", score: 8.5, year: 2015, themeHint: "The Hero!!", vibe: "Battle Hype" }
+      ],
+      chill: [
+        { mal_id: 52991, title: "Sousou no Frieren", title_english: "Frieren: Beyond Journey's End", image: "https://cdn.myanimelist.net/images/anime/1015/138006l.jpg", score: 9.3, year: 2023, themeHint: "Anytime Anywhere", vibe: "Lo-Fi Chill" },
+        { mal_id: 47917, title: "Bocchi the Rock!", title_english: "Bocchi the Rock!", image: "https://cdn.myanimelist.net/images/anime/1448/127956l.jpg", score: 8.8, year: 2022, themeHint: "Seishun Complex", vibe: "Lo-Fi Chill" },
+        { mal_id: 50265, title: "Spy x Family", title_english: "Spy x Family", image: "https://cdn.myanimelist.net/images/anime/1441/122795l.jpg", score: 8.5, year: 2022, themeHint: "Mixed Nuts", vibe: "Lo-Fi Chill" },
+        { mal_id: 34798, title: "Yuru Camp", title_english: "Laid-Back Camp", image: "https://cdn.myanimelist.net/images/anime/4/89877l.jpg", score: 8.3, year: 2018, themeHint: "Shiny Days", vibe: "Lo-Fi Chill" },
+        { mal_id: 50346, title: "Yofukashi no Uta", title_english: "Call of the Night", image: "https://cdn.myanimelist.net/images/anime/1138/124701l.jpg", score: 7.9, year: 2022, themeHint: "Daten", vibe: "Lo-Fi Chill" },
+        { mal_id: 205, title: "Samurai Champloo", title_english: "Samurai Champloo", image: "https://cdn.myanimelist.net/images/anime/11/29134l.jpg", score: 8.5, year: 2004, themeHint: "Battlecry", vibe: "Lo-Fi Chill" }
+      ],
+      emotional: [
+        { mal_id: 23273, title: "Shigatsu wa Kimi no Uso", title_english: "Your Lie in April", image: "https://cdn.myanimelist.net/images/anime/1435/134442l.jpg", score: 8.7, year: 2014, themeHint: "Hikaru Nara", vibe: "Emotional" },
+        { mal_id: 33352, title: "Violet Evergarden", title_english: "Violet Evergarden", image: "https://cdn.myanimelist.net/images/anime/1795/95088l.jpg", score: 8.7, year: 2018, themeHint: "Sincerely", vibe: "Emotional" },
+        { mal_id: 28851, title: "Koe no Katachi", title_english: "A Silent Voice", image: "https://cdn.myanimelist.net/images/anime/1122/96442l.jpg", score: 8.9, year: 2016, themeHint: "Koi wo Shita no wa", vibe: "Emotional" },
+        { mal_id: 9989, title: "Ano Hi Mita Hana", title_english: "Anohana: The Flower We Saw That Day", image: "https://cdn.myanimelist.net/images/anime/5/79697l.jpg", score: 8.3, year: 2011, themeHint: "Secret Base", vibe: "Emotional" },
+        { mal_id: 2167, title: "Clannad", title_english: "Clannad", image: "https://cdn.myanimelist.net/images/anime/1804/95033l.jpg", score: 8.0, year: 2007, themeHint: "Dango Daikazoku", vibe: "Emotional" },
+        { mal_id: 6547, title: "Angel Beats!", title_english: "Angel Beats!", image: "https://cdn.myanimelist.net/images/anime/10/79819l.jpg", score: 8.1, year: 2010, themeHint: "My Soul, Your Beats!", vibe: "Emotional" }
+      ],
+      cyberpunk: [
+        { mal_id: 42310, title: "Cyberpunk: Edgerunners", title_english: "Cyberpunk: Edgerunners", image: "https://cdn.myanimelist.net/images/anime/1818/126435l.jpg", score: 8.6, year: 2022, themeHint: "I Really Want to Stay At Your House", vibe: "Cyberpunk" },
+        { mal_id: 13601, title: "Psycho-Pass", title_english: "Psycho-Pass", image: "https://cdn.myanimelist.net/images/anime/1879/117906l.jpg", score: 8.3, year: 2012, themeHint: "Abnormalize", vibe: "Cyberpunk" },
+        { mal_id: 43, title: "Koukaku Kidoutai", title_english: "Ghost in the Shell", image: "https://cdn.myanimelist.net/images/anime/1766/120689l.jpg", score: 8.3, year: 1995, themeHint: "Making of Cyborg", vibe: "Cyberpunk" },
+        { mal_id: 46102, title: "Vivy: Fluorite Eye's Song", title_english: "Vivy: Fluorite Eye's Song", image: "https://cdn.myanimelist.net/images/anime/1447/115456l.jpg", score: 8.4, year: 2021, themeHint: "Sing My Pleasure", vibe: "Cyberpunk" }
+      ]
+    };
     
-    res.json({ trending, seasonal });
+    res.json({ trending, seasonal, classics, vibes });
   } catch (err) {
     console.error("Discovery error:", err);
-    res.status(500).json({ trending: [], seasonal: [] });
+    res.status(500).json({ trending: [], seasonal: [], classics: [], vibes: {} });
   }
 });
 
@@ -2048,5 +2097,5 @@ app.get("/api/search", async (req, res) => {
    START SERVER
 ===================== */
 app.listen(PORT, () => {
-  console.log(`✅ anicrunch backend running on port ${PORT}`);
+  console.log(`anicrunch backend running on port ${PORT}`);
 });

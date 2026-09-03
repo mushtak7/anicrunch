@@ -163,7 +163,7 @@
   <h1 onclick="location.href='/'" style="cursor:pointer; margin: 0; font-size: 24px; font-weight: bold; color: white;">anicrunch</h1>
   <div style="flex:1"></div>
   <a href="/watchlist.html" class="nav-link" style="color: var(--muted); margin-right: 20px; text-decoration: none;">Watchlist</a>
-  <a href="/quiz.html" class="nav-link" style="color: var(--muted); margin-right: 20px; text-decoration: none;">🏆 Trivia Arena</a>
+  <a href="/quiz.html" class="nav-link" style="color: var(--muted); margin-right: 20px; text-decoration: none;">Trivia Arena</a>
   <div id="authArea"></div>
 </header>
 
@@ -175,14 +175,14 @@
   <section class="profile-hero">
     <div class="profile-hero-content">
       <div class="avatar-container" id="avatarDisplay">
-        👤
+        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       </div>
       <div class="profile-info">
         <h1 id="usernameDisplay">Username</h1>
         <p class="profile-bio" id="bioDisplay">No bio set.</p>
         <div class="stats-bar" style="margin-top: 25px; flex-wrap: wrap;">
           <div class="stat-card">
-            <div class="stat-icon">✅</div>
+            <div class="stat-icon"></div>
             <div class="stat-info"><h3 id="statTotalWatched">0</h3><p>Completed</p></div>
           </div>
           <div class="stat-card">
@@ -194,7 +194,7 @@
             <div class="stat-info"><h3 id="statMeanScore">0.0</h3><p>Mean Score</p></div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon">🏷️</div>
+            <div class="stat-icon"></div>
             <div class="stat-info"><h3 id="statFavGenre" style="font-size: 16px; font-weight: 700; color: white;">N/A</h3><p>Fav Genre</p></div>
           </div>
         </div>
@@ -203,12 +203,12 @@
   </section>
 
   <section class="profile-settings" style="margin-top: 30px;">
-    <h2>📊 Watchlist Distribution</h2>
+    <h2>Watchlist Distribution</h2>
     <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
       <!-- Watching -->
       <div>
         <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; font-weight: 600;">
-          <span style="color: #3b82f6;">📺 Watching</span>
+          <span style="color: #3b82f6;">Watching</span>
           <span id="distWatchingVal">0 shows</span>
         </div>
         <div style="width: 100%; height: 10px; background: rgba(255,255,255,0.05); border-radius: 99px; overflow: hidden; border: 1px solid var(--border);">
@@ -218,7 +218,7 @@
       <!-- Completed -->
       <div>
         <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; font-weight: 600;">
-          <span style="color: #10b981;">✅ Completed</span>
+          <span style="color: #10b981;">Completed</span>
           <span id="distCompletedVal">0 shows</span>
         </div>
         <div style="width: 100%; height: 10px; background: rgba(255,255,255,0.05); border-radius: 99px; overflow: hidden; border: 1px solid var(--border);">
@@ -228,7 +228,7 @@
       <!-- Plan to Watch -->
       <div>
         <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 14px; font-weight: 600;">
-          <span style="color: #f59e0b;">📅 Plan to Watch</span>
+          <span style="color: #f59e0b;">Plan to Watch</span>
           <span id="distPlanVal">0 shows</span>
         </div>
         <div style="width: 100%; height: 10px; background: rgba(255,255,255,0.05); border-radius: 99px; overflow: hidden; border: 1px solid var(--border);">
@@ -253,9 +253,9 @@
         <label for="siteTheme">Website Theme</label>
         <select id="siteTheme" style="width: 100%; padding: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); border-radius: 8px; color: white; font-family: inherit;">
           <option value="default" style="background:#1a1a2e; color:white;">Classic Midnight (Default)</option>
-          <option value="sakura" style="background:#1a1a2e; color:white;">🌸 Sakura Pink</option>
-          <option value="cyberpunk" style="background:#1a1a2e; color:white;">⚡ Neon Cyberpunk</option>
-          <option value="oled" style="background:#1a1a2e; color:white;">🖤 OLED Pure Black</option>
+          <option value="sakura" style="background:#1a1a2e; color:white;">Sakura Pink</option>
+          <option value="cyberpunk" style="background:#1a1a2e; color:white;">Neon Cyberpunk</option>
+          <option value="oled" style="background:#1a1a2e; color:white;">OLED Pure Black</option>
         </select>
       </div>
       <button type="submit" class="btn-save" id="saveBtn">Save Changes</button>
@@ -279,7 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
     .then(r => r.json())
     .then(d => {
       if (d.user) {
-        authArea.innerHTML = `<span style="color:var(--muted)">👤 ${escapeHtml(d.user.username)}</span> <button class="auth-link" style="background: none; border: none; color: var(--accent); cursor: pointer; margin-left: 10px;" onclick="logout()">Logout</button>`;
+        authArea.innerHTML = `<span style="color:var(--muted)">${escapeHtml(d.user.username)}</span> <button class="auth-link" style="background: none; border: none; color: var(--accent); cursor: pointer; margin-left: 10px;" onclick="logout()">Logout</button>`;
         loadProfile();
       } else {
         location.href = '/login.html';
@@ -344,7 +344,7 @@ document.addEventListener("DOMContentLoaded", () => {
           img.alt = 'Avatar';
           avatarDisplay.replaceChildren(img);
         } else {
-          avatarDisplay.textContent = '👤';
+          avatarDisplay.textContent = '';
         }
         document.getElementById('bioDisplay').innerText = bio || 'No bio set.';
       }
@@ -376,7 +376,7 @@ async function loadProfile() {
       avatarDisplay.replaceChildren(img);
       document.getElementById('avatarUrl').value = data.user.avatar_url;
     } else {
-      avatarDisplay.textContent = '👤';
+      avatarDisplay.textContent = '';
     }
     
     if (data.user.bio) {
@@ -456,23 +456,23 @@ async function loadProfile() {
 <!-- Modern Mobile Bottom Navigation Bar -->
 <div class="mobile-nav-bar" aria-label="Mobile Navigation Bar">
   <a href="/" class="mobile-nav-item" id="mobileNavHome">
-    <span class="nav-icon">🏠</span>
+    <span class="nav-icon">Home</span>
     <span>Home</span>
   </a>
   <a href="/schedule.html" class="mobile-nav-item" id="mobileNavSchedule">
-    <span class="nav-icon">📅</span>
+    <span class="nav-icon">Schedule</span>
     <span>Schedule</span>
   </a>
   <button onclick="spinWheel()" class="mobile-nav-item" id="mobileNavRandom" aria-label="Random anime">
-    <span class="nav-icon">🎲</span>
+    <span class="nav-icon">Random</span>
     <span>Random</span>
   </button>
   <a href="/watchlist.html" class="mobile-nav-item" id="mobileNavWatchlist">
-    <span class="nav-icon">📚</span>
+    <span class="nav-icon">Watchlist</span>
     <span>Watchlist</span>
   </a>
   <a href="/vibe-mixer.html" class="mobile-nav-item" id="mobileNavMixer">
-    <span class="nav-icon">🧪</span>
+    <span class="nav-icon">Mixer</span>
     <span>Vibes</span>
   </a>
 </div>

@@ -289,13 +289,13 @@
 <header>
   <h1 class="logo" onclick="location.href='/'">anicrunch</h1>
   <nav class="nav-links">
-    <a href="/blog/" class="nav-link"><span>📖</span> <span>Blog</span></a>
+    <a href="/blog/" class="nav-link"><span>Blog</span></a>
     <a href="/recent-episodes.html" class="nav-link"><span>🆕</span> <span>New Episodes</span></a>
-    <a href="/schedule.html" class="nav-link"><span>📅</span> <span>Schedule</span></a>
-    <a href="/vibe-mixer.html" class="nav-link"><span>🧪</span> <span>Vibe Mixer</span></a>
-    <a href="/quiz.html" class="nav-link active"><span>🏆</span> <span>Trivia Arena</span></a>
+    <a href="/schedule.html" class="nav-link"><span>Schedule</span></a>
+    <a href="/vibe-mixer.html" class="nav-link"><span>Vibe Mixer</span></a>
+    <a href="/quiz.html" class="nav-link active"><span>Trivia Arena</span></a>
     <button onclick="spinWheel()" class="btn-random" aria-label="Random anime">
-      <span>🎲</span> <span>Random</span>
+      <span>Random</span>
     </button>
   </nav>
   <div id="authArea"></div>
@@ -303,7 +303,7 @@
 
 <section class="watchlist-hero" style="min-height: auto; padding: 50px 20px;">
   <div class="watchlist-hero-content" style="text-align: center;">
-    <h1>🏆 Trivia Arena</h1>
+    <h1>Trivia Arena</h1>
     <p>Test your anime knowledge, gain points, and dominate the daily leaderboard!</p>
   </div>
 </section>
@@ -321,7 +321,7 @@
 
   <!-- Right Side: Leaderboard -->
   <aside class="leaderboard-card">
-    <h2 class="leaderboard-title">🥇 Top 10 Leaders</h2>
+    <h2 class="leaderboard-title">Top 10 Leaders</h2>
     <table class="leaderboard-table">
       <tbody id="leaderboardBody">
         <tr>
@@ -334,7 +334,7 @@
 
 <div class="spin-overlay" id="spinOverlay">
   <div class="spinner-content">
-    <div class="big-spinner">🎲</div>
+    <div class="big-spinner"></div>
     <p style="color: white;">Finding your next anime...</p>
   </div>
 </div>
@@ -352,7 +352,7 @@
       .then(d => {
         const authArea = document.getElementById("authArea");
         if (d.user) {
-          authArea.innerHTML = `<span style="color:var(--muted)">👤 ${escapeHtml(d.user.username)}</span> <button class="auth-link" style="background: none; border: none; color: var(--accent); cursor: pointer; margin-left: 10px;" onclick="logout()">Logout</button>`;
+          authArea.innerHTML = `<span style="color:var(--muted)">${escapeHtml(d.user.username)}</span> <button class="auth-link" style="background: none; border: none; color: var(--accent); cursor: pointer; margin-left: 10px;" onclick="logout()">Logout</button>`;
           loadQuizChallenge();
         } else {
           showLoginMessage();
@@ -383,7 +383,7 @@
       console.error(err);
       document.getElementById('quizContent').innerHTML = `
         <div style="text-align: center; padding: 40px 20px; color: #ff5252;">
-          <h3>⚠️ Error Loading Trivia</h3>
+          <h3>Error Loading Trivia</h3>
           <p>Failed to retrieve today's questions. Please try again later.</p>
         </div>
       `;
@@ -480,7 +480,7 @@
       console.error(err);
       container.innerHTML = `
         <div style="text-align: center; padding: 40px 20px; color: #ff5252;">
-          <h3>⚠️ Submission Error</h3>
+          <h3>Submission Error</h3>
           <p>Failed to submit your answers. Please refresh the page and try again.</p>
         </div>
       `;
@@ -488,10 +488,10 @@
   }
 
   function showResultsState(score, points) {
-    const stars = ['🌑 Run', '⭐ Decent', '⭐⭐ Pro', '⭐⭐⭐ Legend'];
+    const stars = ['Run', 'Decent', 'Pro', 'Legend'];
     document.getElementById('quizContent').innerHTML = `
       <div class="cooldown-state">
-        <div class="cooldown-icon">🎉</div>
+        <div class="cooldown-icon"></div>
         <h2 style="color: white; font-size: 28px; margin-bottom: 5px;">Challenge Completed!</h2>
         <p style="font-size: 16px; color: var(--muted); margin: 0 0 25px 0;">Rank achieved: <span style="color: var(--accent); font-weight: 700;">${stars[score]}</span></p>
         
@@ -507,7 +507,7 @@
         </div>
         
         <p style="color: var(--muted); font-size: 14px; margin-bottom: 25px;">You have played today's challenge. Come back tomorrow for brand new trivia!</p>
-        <button class="btn-action" onclick="shareResults(${score})">🔗 Share My Score</button>
+        <button class="btn-action" onclick="shareResults(${score})">Share My Score</button>
       </div>
     `;
   }
@@ -524,7 +524,7 @@
           <div id="quizTimerDisplay" style="font-size: 24px; font-weight: 700; color: var(--accent);">00:00:00</div>
         </div>
         
-        <button class="btn-action" onclick="shareResults(${score})">🔗 Share Results</button>
+        <button class="btn-action" onclick="shareResults(${score})">Share Results</button>
       </div>
     `;
     startQuizCooldownTimer();
@@ -536,9 +536,9 @@
 
     function tick() {
       const now = new Date();
-      // Next day starts at midnight in local time
-      const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-      const diffMs = tomorrow.getTime() - now.getTime();
+      // Server rolls over at UTC midnight (Date.now() / 86400000)
+      const nextUtcMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+      const diffMs = nextUtcMidnight.getTime() - now.getTime();
       
       if (diffMs <= 0) {
         location.reload();
@@ -558,10 +558,10 @@
   }
 
   function shareResults(score) {
-    const text = `🏆 I scored ${score}/3 in today's AniCrunch Daily Trivia Arena! Think you can beat me? Play now at ${location.origin}/quiz.html! ⚔️`;
+    const text = `I scored ${score}/3 in today's AniCrunch Daily Trivia Arena! Play now at ${location.origin}/quiz.html!`;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text).then(() => {
-        alert("📋 Share text copied to clipboard!");
+        alert("Share text copied to clipboard!");
       });
     } else {
       alert("Results: " + text);
@@ -585,12 +585,12 @@
       board.forEach((player, idx) => {
         const rank = idx + 1;
         let rankBadge = `${rank}`;
-        if (rank === 1) rankBadge = `<span class="badge-rank-1">👑</span>`;
-        else if (rank === 2) rankBadge = `<span class="badge-rank-2">🥈</span>`;
-        else if (rank === 3) rankBadge = `<span class="badge-rank-3">🥉</span>`;
+        if (rank === 1) rankBadge = `<span class="badge-rank-1">#1</span>`;
+        else if (rank === 2) rankBadge = `<span class="badge-rank-2">#2</span>`;
+        else if (rank === 3) rankBadge = `<span class="badge-rank-3">#3</span>`;
         
         const avatarUrl = player.avatar_url;
-        const avatar = (avatarUrl && /^https?:\/\//i.test(avatarUrl)) ? `<img src="${escapeHtml(avatarUrl)}" alt="Avatar">` : '👤';
+        const avatar = (avatarUrl && /^https?:\/\//i.test(avatarUrl)) ? `<img src="${escapeHtml(avatarUrl)}" alt="Avatar">` : '';
         
         const tr = document.createElement('tr');
         tr.className = 'leaderboard-row';
@@ -607,7 +607,7 @@
     } catch (err) {
       console.error(err);
       document.getElementById('leaderboardBody').innerHTML = `
-        <tr><td colspan="3" style="text-align: center; padding: 40px; color: #ff5252;">⚠️ Error loading leaderboard.</td></tr>
+        <tr><td colspan="3" style="text-align: center; padding: 40px; color: #ff5252;">Error loading leaderboard.</td></tr>
       `;
     }
   }
@@ -615,7 +615,7 @@
   function showLoginMessage() {
     document.getElementById('quizContent').innerHTML = `
       <div class="cooldown-state">
-        <div class="cooldown-icon">🔒</div>
+        <div class="cooldown-icon"></div>
         <h2 style="color: white; font-size: 26px; margin-bottom: 10px;">Login Required</h2>
         <p style="font-size: 15px; color: var(--muted); margin-bottom: 25px;">You must be logged in to participate in the Daily Trivia Arena and compete on the global leaderboard.</p>
         <a href="/login.html" class="btn-action">Sign In to Play</a>

@@ -1,9 +1,10 @@
 // IMPORTANT: Bump this version string on every release to bust the cache
-const CACHE_NAME = "anicrunch-v2";
+const CACHE_NAME = "anicrunch-v3";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
   "/style.css",
+  "/api-client.js",
   "/script.js",
   "/layout.js",
   "/favicon.png",
@@ -15,7 +16,7 @@ const ASSETS_TO_CACHE = [
 self.addEventListener("install", (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log("⚡ [Service Worker] Pre-caching site assets...");
+      console.log("[Service Worker] Pre-caching site assets...");
       return cache.addAll(ASSETS_TO_CACHE);
     }).then(() => self.skipWaiting())
   );
@@ -28,7 +29,7 @@ self.addEventListener("activate", (e) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
-            console.log("🧹 [Service Worker] Removing old cache:", key);
+            console.log("[Service Worker] Removing old cache:", key);
             return caches.delete(key);
           }
         })
@@ -39,8 +40,9 @@ self.addEventListener("activate", (e) => {
 
 // Fetch: Serve from cache, fallback to network
 self.addEventListener("fetch", (e) => {
-  // Only intercept HTTP/S requests (skip chrome extensions or API calls)
-  if (!e.request.url.startsWith(self.location.origin)) return;
+  // Only intercept HTTP/S GET requests and bypass all API calls
+  if (e.request.method !== 'GET') return;
+  if (!e.request.url.startsWith(self.location.origin) || e.request.url.includes('/api/')) return;
 
   e.respondWith(
     caches.match(e.request).then((cachedResponse) => {

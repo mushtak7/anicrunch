@@ -24,14 +24,14 @@
 
 <section class="watchlist-hero" style="min-height: auto; padding: 40px 20px; background: linear-gradient(135deg, rgba(142, 142, 168, 0.08) 0%, rgba(120, 75, 160, 0.08) 100%);">
   <div class="watchlist-hero-content" style="text-align: center;">
-    <h1>🕒 Watch History</h1>
+    <h1>Watch History</h1>
     <p>Check the anime titles you have recently discovered on AniCrunch.</p>
   </div>
 </section>
 
 <main class="page-container">
   <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
-    <button class="btn-action" style="padding: 10px 20px;" onclick="clearHistory()">🗑️ Clear History</button>
+    <button class="btn-action" style="padding: 10px 20px;" onclick="clearHistory()">Clear History</button>
   </div>
 
   <div id="historyGrid" class="responsive-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 20px;">
@@ -56,7 +56,7 @@ function escapeHtml(text) {
       .then(d => {
         const authArea = document.getElementById("authArea");
         if (d.user && authArea) {
-          authArea.innerHTML = `<span style="color:var(--muted)">👤 ${escapeHtml(d.user.username)}</span>`;
+          authArea.innerHTML = `<span style="color:var(--muted)">${escapeHtml(d.user.username)}</span>`;
         }
       }).catch(() => {});
 
@@ -86,7 +86,7 @@ function escapeHtml(text) {
 
         card.innerHTML = `
           <div class="anime-card-poster">
-            <img src="${imgUrl}" alt="${escapeHtml(title)}" loading="lazy">
+            <img src="${imgUrl}" alt="${escapeHtml(title)}" loading="lazy" onerror="handleImageError(this)">
             <div class="anime-card-rating">⭐ ${score}</div>
           </div>
           <div class="anime-card-content">
